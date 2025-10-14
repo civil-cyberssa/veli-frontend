@@ -27,7 +27,7 @@ export function NavUser() {
 
   const handleLogout = async () => {
     await signOut({ 
-      callbackUrl: "/login"
+      callbackUrl: "/auth"
     })
   }
 
