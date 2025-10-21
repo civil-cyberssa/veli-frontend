@@ -29,12 +29,28 @@ export default function LoginScreen() {
     "https://randomuser.me/api/portraits/women/68.jpg",
   ];
 
-  // Garantir que o componente está montado antes de usar o tema
+  const carouselImages = [
+    "https://images.unsplash.com/photo-1562918231-f286de6e3194?q=80&w=1272&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  ];
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Carregar credenciais salvas ao montar o componente
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === carouselImages.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const savedCredentials = localStorage.getItem("userCredentials");
     const hasLoggedBefore = localStorage.getItem("hasLoggedBefore");
@@ -56,7 +72,6 @@ export default function LoginScreen() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Validação básica
     if (!email || !password) {
       toast.error("Campos obrigatórios", {
         description: "Por favor, preencha email e senha.",
@@ -69,7 +84,6 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      // Salvar ou remover credenciais
       if (saveCredentials) {
         localStorage.setItem(
           "userCredentials",
@@ -82,7 +96,6 @@ export default function LoginScreen() {
         localStorage.removeItem("userCredentials");
       }
 
-      // Autenticar com NextAuth
       const result = await signIn("credentials", {
         email,
         password,
@@ -101,17 +114,14 @@ export default function LoginScreen() {
         return;
       }
 
-      // Login bem-sucedido
       toast.success("Login realizado com sucesso!", {
         description: "Você será redirecionado para o sistema.",
         position: "top-center",
         duration: 3000,
       });
 
-      // Verificar se é primeiro login
       if (isFirstLogin) {
         localStorage.setItem("hasLoggedBefore", "true");
-        // Você pode adicionar um modal de boas-vindas aqui
         setTimeout(() => {
           router.replace("/home");
         }, 1500);
@@ -130,38 +140,64 @@ export default function LoginScreen() {
     }
   };
 
-  // Evitar flash de conteúdo não estilizado
   if (!mounted) {
     return null;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
-      <div className="fixed top-6 right-6">
+    <div className="h-screen overflow-hidden flex flex-col lg:flex-row">
+      {/* Toggle de tema - fixo no topo direito */}
+      <div className="fixed top-4 right-4 z-50 lg:top-6 lg:right-6">
         <ModeToggle />
       </div>
 
-      <div className="w-full max-w-7xl flex rounded-3xl shadow-2xl overflow-hidden bg-card border border-border">
-        <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden">
+      {/* Seção da imagem - 100% do espaço à esquerda em desktop */}
+      <div className="hidden lg:block lg:w-1/2 xl:w-3/5 relative h-full">
+        {carouselImages.map((image, index) => (
           <img
-            src="https://images.unsplash.com/photo-1562918231-f286de6e3194?q=80&w=1272&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            alt="Livros de aprendizado de japonês"
-            className="w-full h-full object-cover"
+            key={index}
+            src={image}
+            alt={`Slide ${index + 1}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+            }`}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
+        ))}
+        
+        {/* Overlays de gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+        
+        {/* Indicadores do carrossel */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {carouselImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`h-2 rounded-full transition-all ${
+                index === currentImageIndex 
+                  ? 'bg-white w-8' 
+                  : 'bg-white/50 hover:bg-white/75 w-2'
+              }`}
+              aria-label={`Ir para slide ${index + 1}`}
+            />
+          ))}
         </div>
+      </div>
 
-        <div className="flex-1 flex items-center justify-center p-8 lg:p-16">
-          <div className="w-full max-w-md space-y-8">
-            <div className="text-center space-y-3">
+      {/* Seção do formulário - responsiva para todos os tamanhos */}
+      <div className="flex-1 lg:w-1/2 xl:w-2/5 flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-muted">
+        <div className="w-full max-w-md px-6 py-12 sm:px-8 md:px-12">
+          <div className="space-y-8">
+            {/* Cabeçalho */}
+            <div className="text-center space-y-4">
               <img
                 src={resolvedTheme === 'light' ? '/logo/logo.png' : '/logo/logo_white.png'}
-                className="w-36 h-20 mx-auto mb-4"
+                className="w-32 h-auto mx-auto mb-6 sm:w-36"
                 alt="Logo Veli"
               />
 
-              <h2 className="text-3xl font-bold text-foreground">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
                 Bem-vindo de volta!
               </h2>
 
@@ -172,22 +208,20 @@ export default function LoginScreen() {
                       key={index}
                       src={avatar}
                       alt={`Usuário ${index + 1}`}
-                      className="w-9 h-9 rounded-full ring-2 ring-background object-cover"
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ring-2 ring-background object-cover"
                     />
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Junte-se a milhares de estudantes
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Formulário */}
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="text-sm font-medium"
-                >
+                <Label htmlFor="email" className="text-sm font-medium">
                   E-mail
                 </Label>
                 <div className="relative group">
@@ -200,22 +234,19 @@ export default function LoginScreen() {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
                     required
-                    className="pl-11 h-12 bg-muted/50 focus:bg-background transition-all rounded-lg"
+                    className="pl-11 h-11 sm:h-12 bg-muted/50 focus:bg-background transition-all rounded-lg"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="password"
-                    className="text-sm font-medium"
-                  >
+                  <Label htmlFor="password" className="text-sm font-medium">
                     Senha
                   </Label>
                   <a
                     href="/recuperar-senha"
-                    className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                    className="text-xs sm:text-sm text-primary hover:text-primary/80 font-medium transition-colors"
                   >
                     Esqueceu a senha?
                   </a>
@@ -230,7 +261,7 @@ export default function LoginScreen() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                     required
-                    className="pl-11 pr-11 h-12 bg-muted/50 focus:bg-background transition-all rounded-lg"
+                    className="pl-11 pr-11 h-11 sm:h-12 bg-muted/50 focus:bg-background transition-all rounded-lg"
                   />
                   <button
                     type="button"
@@ -265,7 +296,7 @@ export default function LoginScreen() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all mt-8"
+                className="w-full h-11 sm:h-12 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all mt-6"
               >
                 {isLoading ? (
                   <>
@@ -280,7 +311,7 @@ export default function LoginScreen() {
                 )}
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground leading-relaxed pt-4">
+              <p className="text-xs text-center text-muted-foreground leading-relaxed pt-3">
                 Ao continuar, você concorda com nossos{" "}
                 <a href="/termos" className="text-primary hover:underline font-medium">
                   Termos de Uso
