@@ -32,7 +32,7 @@ export default function LoginScreen() {
   const carouselImages = [
     "https://images.unsplash.com/photo-1562918231-f286de6e3194?q=80&w=1272&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    "https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   ];
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -43,7 +43,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => 
+      setCurrentImageIndex((prevIndex) =>
         prevIndex === carouselImages.length - 1 ? 0 : prevIndex + 1
       );
     }, 5000);
@@ -90,7 +90,7 @@ export default function LoginScreen() {
           JSON.stringify({
             savedEmail: email,
             savedPassword: password,
-          }),
+          })
         );
       } else {
         localStorage.removeItem("userCredentials");
@@ -104,7 +104,8 @@ export default function LoginScreen() {
 
       if (!result?.ok) {
         toast.error("Falha na autenticação", {
-          description: "Email ou senha incorretos. Por favor, verifique suas informações.",
+          description:
+            "Email ou senha incorretos. Por favor, verifique suas informações.",
           position: "top-center",
           duration: 5000,
         });
@@ -131,7 +132,8 @@ export default function LoginScreen() {
     } catch (error) {
       console.error("Erro durante autenticação:", error);
       toast.error("Erro de sistema", {
-        description: "Ocorreu um erro durante a autenticação. Por favor, tente novamente.",
+        description:
+          "Ocorreu um erro durante a autenticação. Por favor, tente novamente.",
         position: "top-center",
         duration: 5000,
       });
@@ -145,74 +147,61 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col lg:flex-row">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4 lg:p-8">
       {/* Toggle de tema - fixo no topo direito */}
       <div className="fixed top-4 right-4 z-50 lg:top-6 lg:right-6">
         <ModeToggle />
       </div>
 
-      {/* Seção da imagem - 100% do espaço à esquerda em desktop */}
-      <div className="hidden lg:block lg:w-1/2 xl:w-3/5 relative h-full">
-        {carouselImages.map((image, index) => (
-          <img
-            key={index}
-            src={image}
-            alt={`Slide ${index + 1}`}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-        ))}
-        
-        {/* Overlays de gradiente */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-        
-        {/* Indicadores do carrossel */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-          {carouselImages.map((_, index) => (
-            <button
+      {/* Container principal centralizado */}
+      <div className="w-full max-w-6xl xl:max-w-7xl flex rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden bg-card border border-border/50 backdrop-blur-sm">
+        {/* Seção do carrossel de imagens - lado esquerdo */}
+        <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden">
+          {carouselImages.map((image, index) => (
+            <img
               key={index}
-              onClick={() => setCurrentImageIndex(index)}
-              className={`h-2 rounded-full transition-all ${
-                index === currentImageIndex 
-                  ? 'bg-white w-8' 
-                  : 'bg-white/50 hover:bg-white/75 w-2'
+              src={image}
+              alt={`Slide ${index + 1}`}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                index === currentImageIndex ? "opacity-100" : "opacity-0"
               }`}
-              aria-label={`Ir para slide ${index + 1}`}
             />
           ))}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
         </div>
-      </div>
 
-      {/* Seção do formulário - responsiva para todos os tamanhos */}
-      <div className="flex-1 lg:w-1/2 xl:w-2/5 flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-muted">
-        <div className="w-full max-w-md px-6 py-12 sm:px-8 md:px-12">
-          <div className="space-y-8">
+        {/* Seção do formulário - lado direito */}
+        <div className="flex-1 lg:w-2/5 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-background to-muted/30">
+          <div className="w-full max-w-md space-y-8">
             {/* Cabeçalho */}
             <div className="text-center space-y-4">
               <img
-                src={resolvedTheme === 'light' ? '/logo/logo.png' : '/logo/logo_white.png'}
-                className="w-32 h-auto mx-auto mb-6 sm:w-36"
+                src={
+                  resolvedTheme === "light"
+                    ? "/logo/logo.png"
+                    : "/logo/logo_white.png"
+                }
+                className="w-28 h-auto mx-auto mb-6 sm:w-32 lg:w-36 transition-all"
                 alt="Logo Veli"
               />
 
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
                 Bem-vindo de volta!
               </h2>
 
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center justify-center gap-3 pt-2">
                 <div className="flex -space-x-2">
                   {publicFigures.map((avatar, index) => (
                     <img
                       key={index}
                       src={avatar}
                       alt={`Usuário ${index + 1}`}
-                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ring-2 ring-background object-cover"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-2 ring-background object-cover transition-transform hover:scale-110 hover:z-10"
                     />
                   ))}
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
                   Junte-se a milhares de estudantes
                 </p>
               </div>
@@ -221,7 +210,10 @@ export default function LoginScreen() {
             {/* Formulário */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-semibold text-foreground"
+                >
                   E-mail
                 </Label>
                 <div className="relative group">
@@ -234,19 +226,22 @@ export default function LoginScreen() {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
                     required
-                    className="pl-11 h-11 sm:h-12 bg-muted/50 focus:bg-background transition-all rounded-lg"
+                    className="pl-11 h-12 bg-muted/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-semibold text-foreground"
+                  >
                     Senha
                   </Label>
                   <a
                     href="/recuperar-senha"
-                    className="text-xs sm:text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                    className="text-xs sm:text-sm text-primary hover:text-primary/80 font-semibold transition-colors"
                   >
                     Esqueceu a senha?
                   </a>
@@ -261,13 +256,15 @@ export default function LoginScreen() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                     required
-                    className="pl-11 pr-11 h-11 sm:h-12 bg-muted/50 focus:bg-background transition-all rounded-lg"
+                    className="pl-11 pr-11 h-12 bg-muted/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={
+                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                    }
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -278,16 +275,18 @@ export default function LoginScreen() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 py-1">
                 <Checkbox
                   id="save-credentials"
                   checked={saveCredentials}
-                  onCheckedChange={(checked) => setSaveCredentials(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setSaveCredentials(checked as boolean)
+                  }
                   disabled={isLoading}
                 />
                 <Label
                   htmlFor="save-credentials"
-                  className="text-sm font-medium cursor-pointer"
+                  className="text-sm font-medium cursor-pointer select-none"
                 >
                   Lembrar minhas credenciais
                 </Label>
@@ -296,7 +295,7 @@ export default function LoginScreen() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-11 sm:h-12 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all mt-6"
+                className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-xl"
               >
                 {isLoading ? (
                   <>
@@ -311,13 +310,19 @@ export default function LoginScreen() {
                 )}
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground leading-relaxed pt-3">
+              <p className="text-xs text-center text-muted-foreground leading-relaxed pt-4 px-2">
                 Ao continuar, você concorda com nossos{" "}
-                <a href="/termos" className="text-primary hover:underline font-medium">
+                <a
+                  href="/termos"
+                  className="text-primary hover:underline font-semibold"
+                >
                   Termos de Uso
                 </a>{" "}
                 e{" "}
-                <a href="/privacidade" className="text-primary hover:underline font-medium">
+                <a
+                  href="/privacidade"
+                  className="text-primary hover:underline font-semibold"
+                >
                   Política de Privacidade
                 </a>
               </p>
@@ -325,7 +330,10 @@ export default function LoginScreen() {
               <div className="text-center pt-2">
                 <p className="text-sm text-muted-foreground">
                   Não tem uma conta?{" "}
-                  <a href="/cadastro" className="text-primary hover:underline font-medium">
+                  <a
+                    href="/cadastro"
+                    className="text-primary hover:underline font-semibold"
+                  >
                     Cadastre-se gratuitamente
                   </a>
                 </p>
