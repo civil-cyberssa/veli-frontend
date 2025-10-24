@@ -147,16 +147,16 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4 lg:p-8">
-      {/* Toggle de tema - fixo no topo direito */}
-      <div className="fixed top-4 right-4 z-50 lg:top-6 lg:right-6">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-3 sm:p-4 md:p-6 lg:p-8">
+      {/* Toggle de tema - responsivo */}
+      <div className="fixed top-3 right-3 z-50 sm:top-4 sm:right-4 lg:top-6 lg:right-6">
         <ModeToggle />
       </div>
 
-      {/* Container principal centralizado */}
-      <div className="w-full max-w-6xl xl:max-w-7xl flex rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden bg-card border border-border/50 backdrop-blur-sm">
-        {/* Seção do carrossel de imagens - lado esquerdo */}
-        <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden">
+      {/* Container principal - ajustes responsivos */}
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl flex flex-col lg:flex-row rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden bg-card border border-border/50 backdrop-blur-sm">
+        {/* Seção do carrossel - oculta em mobile, visível em lg+ */}
+        <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden min-h-[500px] xl:min-h-[600px]">
           {carouselImages.map((image, index) => (
             <img
               key={index}
@@ -171,33 +171,34 @@ export default function LoginScreen() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
         </div>
 
-        {/* Seção do formulário - lado direito */}
-        <div className="flex-1 lg:w-2/5 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-background to-muted/30">
-          <div className="w-full max-w-md space-y-8">
-            {/* Cabeçalho */}
-            <div className="text-center space-y-4">
+        {/* Seção do formulário - totalmente responsiva */}
+        <div className="flex-1 lg:w-1/2 xl:w-2/5 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-gradient-to-br from-background to-muted/30">
+          <div className="w-full max-w-sm space-y-6 sm:space-y-7 md:space-y-8">
+            {/* Cabeçalho - ajustes responsivos */}
+            <div className="text-center space-y-3 sm:space-y-4">
               <img
                 src={
                   resolvedTheme === "light"
                     ? "/logo/logo.png"
                     : "/logo/logo_white.png"
                 }
-                className="w-28 h-auto mx-auto mb-6 sm:w-32 lg:w-36 transition-all"
+                className="w-20 h-auto mx-auto mb-4 sm:w-24 sm:mb-5 md:w-28 md:mb-6 lg:w-32 xl:w-36 transition-all"
                 alt="Logo Veli"
               />
 
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl font-bold text-foreground tracking-tight leading-tight">
                 Bem-vindo de volta!
               </h2>
 
-              <div className="flex items-center justify-center gap-3 pt-2">
+              {/* Avatares e texto - melhor espaçamento */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 pt-1 sm:pt-2">
                 <div className="flex -space-x-2">
                   {publicFigures.map((avatar, index) => (
                     <img
                       key={index}
                       src={avatar}
                       alt={`Usuário ${index + 1}`}
-                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-2 ring-background object-cover transition-transform hover:scale-110 hover:z-10"
+                      className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full ring-2 ring-background object-cover transition-transform hover:scale-110 hover:z-10"
                     />
                   ))}
                 </div>
@@ -207,17 +208,18 @@ export default function LoginScreen() {
               </div>
             </div>
 
-            {/* Formulário */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
+            {/* Formulário - espaçamentos otimizados */}
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              {/* Campo de email */}
+              <div className="space-y-1.5 sm:space-y-2">
                 <Label
                   htmlFor="email"
-                  className="text-sm font-semibold text-foreground"
+                  className="text-xs sm:text-sm font-semibold text-foreground"
                 >
                   E-mail
                 </Label>
                 <div className="relative group">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Mail className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
                     id="email"
                     type="email"
@@ -226,16 +228,17 @@ export default function LoginScreen() {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
                     required
-                    className="pl-11 h-12 bg-muted/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all rounded-xl"
+                    className="pl-10 sm:pl-11 h-11 sm:h-12 text-sm sm:text-base bg-muted/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all rounded-lg sm:rounded-xl"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
+              {/* Campo de senha */}
+              <div className="space-y-1.5 sm:space-y-2">
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="password"
-                    className="text-sm font-semibold text-foreground"
+                    className="text-xs sm:text-sm font-semibold text-foreground"
                   >
                     Senha
                   </Label>
@@ -243,11 +246,11 @@ export default function LoginScreen() {
                     href="/recuperar-senha"
                     className="text-xs sm:text-sm text-primary hover:text-primary/80 font-semibold transition-colors"
                   >
-                    Esqueceu a senha?
+                    Esqueceu?
                   </a>
                 </div>
                 <div className="relative group">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Lock className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -256,26 +259,27 @@ export default function LoginScreen() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                     required
-                    className="pl-11 pr-11 h-12 bg-muted/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all rounded-xl"
+                    className="pl-10 sm:pl-11 pr-10 sm:pr-11 h-11 sm:h-12 text-sm sm:text-base bg-muted/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all rounded-lg sm:rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                    className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
                     aria-label={
                       showPassword ? "Ocultar senha" : "Mostrar senha"
                     }
                   >
                     {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
+                      <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
                     ) : (
-                      <Eye className="w-5 h-5" />
+                      <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 py-1">
+              {/* Checkbox - melhor touch target */}
+              <div className="flex items-center space-x-2 py-0.5 sm:py-1">
                 <Checkbox
                   id="save-credentials"
                   checked={saveCredentials}
@@ -283,34 +287,37 @@ export default function LoginScreen() {
                     setSaveCredentials(checked as boolean)
                   }
                   disabled={isLoading}
+                  className="w-4 h-4 sm:w-5 sm:h-5"
                 />
                 <Label
                   htmlFor="save-credentials"
-                  className="text-sm font-medium cursor-pointer select-none"
+                  className="text-xs sm:text-sm font-medium cursor-pointer select-none leading-tight"
                 >
                   Lembrar minhas credenciais
                 </Label>
               </div>
 
+              {/* Botão de submit - otimizado */}
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-xl"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-lg sm:rounded-xl"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
                     Entrando...
                   </>
                 ) : (
                   <>
-                    <LogIn className="w-5 h-5 mr-2" />
+                    <LogIn className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Entrar na conta
                   </>
                 )}
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground leading-relaxed pt-4 px-2">
+              {/* Links legais - texto menor em mobile */}
+              <p className="text-[10px] sm:text-xs text-center text-muted-foreground leading-relaxed pt-2 sm:pt-4 px-1 sm:px-2">
                 Ao continuar, você concorda com nossos{" "}
                 <a
                   href="/termos"
@@ -327,14 +334,15 @@ export default function LoginScreen() {
                 </a>
               </p>
 
-              <div className="text-center pt-2">
-                <p className="text-sm text-muted-foreground">
+              {/* Link de cadastro */}
+              <div className="text-center pt-1 sm:pt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Não tem uma conta?{" "}
                   <a
                     href="/cadastro"
                     className="text-primary hover:underline font-semibold"
                   >
-                    Cadastre-se gratuitamente
+                    Cadastre-se
                   </a>
                 </p>
               </div>
