@@ -52,17 +52,15 @@ export default function LoginScreen() {
   }, []);
 
   useEffect(() => {
-    const savedCredentials = localStorage.getItem("userCredentials");
+    const savedEmail = localStorage.getItem("savedEmail");
     const hasLoggedBefore = localStorage.getItem("hasLoggedBefore");
 
-    if (savedCredentials) {
+    if (savedEmail) {
       try {
-        const { savedEmail, savedPassword } = JSON.parse(savedCredentials);
-        setEmail(savedEmail || "");
-        setPassword(savedPassword || "");
+        setEmail(savedEmail);
         setSaveCredentials(true);
       } catch (error) {
-        console.error("Erro ao carregar credenciais:", error);
+        console.error("Erro ao carregar email salvo:", error);
       }
     }
 
@@ -72,9 +70,31 @@ export default function LoginScreen() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    // Validação de campos vazios
     if (!email || !password) {
       toast.error("Campos obrigatórios", {
-        description: "Por favor, preencha email e senha.",
+        description: "Por favor, preencha email e senha para continuar.",
+        position: "top-center",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Validação de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Email inválido", {
+        description: "Por favor, insira um endereço de email válido.",
+        position: "top-center",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Validação de senha mínima
+    if (password.length < 6) {
+      toast.error("Senha muito curta", {
+        description: "A senha deve ter no mínimo 6 caracteres.",
         position: "top-center",
         duration: 3000,
       });
@@ -84,16 +104,11 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
+      // Salvar apenas o email (NUNCA a senha por segurança)
       if (saveCredentials) {
-        localStorage.setItem(
-          "userCredentials",
-          JSON.stringify({
-            savedEmail: email,
-            savedPassword: password,
-          })
-        );
+        localStorage.setItem("savedEmail", email);
       } else {
-        localStorage.removeItem("userCredentials");
+        localStorage.removeItem("savedEmail");
       }
 
       const result = await signIn("credentials", {
@@ -103,37 +118,64 @@ export default function LoginScreen() {
       });
 
       if (!result?.ok) {
-        toast.error("Falha na autenticação", {
-          description:
-            "Email ou senha incorretos. Por favor, verifique suas informações.",
+        // Mensagens específicas baseadas no erro
+        const errorMessages: Record<string, { title: string; description: string }> = {
+          INVALID_CREDENTIALS: {
+            title: "Credenciais inválidas",
+            description: "Email ou senha incorretos. Por favor, verifique suas informações e tente novamente.",
+          },
+          USER_NOT_FOUND: {
+            title: "Usuário não encontrado",
+            description: "Não existe uma conta associada a este email. Verifique o email ou cadastre-se.",
+          },
+          SERVER_ERROR: {
+            title: "Erro no servidor",
+            description: "Nossos servidores estão temporariamente indisponíveis. Tente novamente em alguns instantes.",
+          },
+          EMAIL_PASSWORD_REQUIRED: {
+            title: "Campos obrigatórios",
+            description: "Email e senha são necessários para fazer login.",
+          },
+          AUTHENTICATION_FAILED: {
+            title: "Falha na autenticação",
+            description: "Não foi possível autenticar. Verifique suas credenciais e tente novamente.",
+          },
+        };
+
+        const error = result?.error || "AUTHENTICATION_FAILED";
+        const message = errorMessages[error] || errorMessages.AUTHENTICATION_FAILED;
+
+        toast.error(message.title, {
+          description: message.description,
           position: "top-center",
           duration: 5000,
         });
 
-        console.error("Erro de autenticação:", result?.error);
+        console.error("Erro de autenticação:", error);
         setIsLoading(false);
         return;
       }
 
       toast.success("Login realizado com sucesso!", {
-        description: "Você será redirecionado para o sistema.",
+        description: "Redirecionando para o sistema...",
         position: "top-center",
-        duration: 3000,
+        duration: 2000,
       });
 
       if (isFirstLogin) {
         localStorage.setItem("hasLoggedBefore", "true");
-        setTimeout(() => {
-          router.replace("/home");
-        }, 1500);
-      } else {
-        router.replace("/home");
       }
+
+      // Pequeno delay para mostrar o toast de sucesso
+      setTimeout(() => {
+        router.replace("/home");
+      }, 500);
+
     } catch (error) {
       console.error("Erro durante autenticação:", error);
-      toast.error("Erro de sistema", {
+      toast.error("Erro inesperado", {
         description:
-          "Ocorreu um erro durante a autenticação. Por favor, tente novamente.",
+          "Ocorreu um erro inesperado durante a autenticação. Por favor, tente novamente.",
         position: "top-center",
         duration: 5000,
       });
@@ -293,7 +335,7 @@ export default function LoginScreen() {
                   htmlFor="save-credentials"
                   className="text-xs sm:text-sm font-medium cursor-pointer select-none leading-tight"
                 >
-                  Lembrar minhas credenciais
+                  Lembrar meu email
                 </Label>
               </div>
 
