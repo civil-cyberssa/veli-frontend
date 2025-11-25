@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { signOut, useSession } from "next-auth/react"
 import { useTheme } from "next-themes"
-import { useStudentProfile } from "./useStudentProfile"
+import { useStudentProfile } from "@/src/features/profile/hooks/use-student-profile"
 import { useRouter } from "next/navigation"
 
 

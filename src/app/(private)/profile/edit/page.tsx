@@ -1,4 +1,4 @@
-import ProfileEditForm from "@/src/features/profile/profile-edit-form"
+import { ProfileEditForm } from "@/src/features/profile"
 
 export default function ProfileEditPage() {
   return <ProfileEditForm />

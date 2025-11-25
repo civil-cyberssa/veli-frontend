@@ -1,47 +1,6 @@
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
-
-interface Language {
-  id: number
-  name: string
-  lang_icon: string
-  lang_description: string
-}
-
-interface User {
-  id: number
-  username: string
-  email: string
-  first_name: string
-  last_name: string
-  cpf: string
-  date_of_birth: string
-  gender: string
-  state: string
-  city: string
-  country: string
-  phone: string
-  role: string
-  profile_pic_url: string
-}
-
-interface StudentProfile {
-  id: number
-  bio: string
-  languages: Language[]
-}
-
-interface StudentData {
-  user: User
-  student_profile: StudentProfile
-}
-
-interface UseStudentProfileReturn {
-  data: StudentData | undefined
-  loading: boolean
-  error: Error | null
-  mutate: () => void
-}
+import type { StudentData, UseStudentProfileReturn } from '../types'
 
 const fetcher = async (url: string, token: string) => {
   const response = await fetch(url, {

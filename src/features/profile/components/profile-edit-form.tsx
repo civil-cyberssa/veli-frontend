@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useStudentProfile } from "@/features/profile_user/useStudentProfile"
+import { useStudentProfile } from "../hooks/use-student-profile"
+import { formatCPF, formatPhone, formatCEP } from "../utils/format"
+import { fetchAddressByCEP as fetchAddress } from "../utils/viacep"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -71,11 +73,6 @@ export default function ProfileEditForm() {
       const user = studentData.user
       const profile = studentData.student_profile
 
-      // Converte gênero de "Masculino"/"Feminino" para "M"/"F" para o select
-      let genderValue = user.gender || ""
-      if (user.gender === "Masculino") genderValue = "M"
-      if (user.gender === "Feminino") genderValue = "F"
-
       setFormData({
         first_name: user.first_name || "",
         last_name: user.last_name || "",
@@ -83,7 +80,7 @@ export default function ProfileEditForm() {
         username: user.username || "",
         cpf: user.cpf || "",
         date_of_birth: user.date_of_birth || "",
-        gender: genderValue,
+        gender: user.gender || "", // Já vem como M ou F da API
         phone: user.phone || "",
         cep: "",
         country: user.country || "",
@@ -238,11 +235,6 @@ export default function ProfileEditForm() {
       // Criar FormData para enviar arquivo e dados
       const submitData = new FormData()
 
-      // Converte gênero de volta para "Masculino"/"Feminino"
-      let genderToSend = formData.gender
-      if (formData.gender === "M") genderToSend = "Masculino"
-      if (formData.gender === "F") genderToSend = "Feminino"
-
       // ENVIAR TODOS OS CAMPOS - mesmo que estejam vazios
       // Campos do usuário
       submitData.append("first_name", formData.first_name)
@@ -251,8 +243,9 @@ export default function ProfileEditForm() {
       submitData.append("username", formData.username || formData.email.split("@")[0])
       submitData.append("cpf", formData.cpf || "")
       submitData.append("date_of_birth", formData.date_of_birth || "")
-      submitData.append("gender", genderToSend || "")
+      submitData.append("gender", formData.gender || "") // Envia M ou F direto
       submitData.append("phone", formData.phone || "")
+      submitData.append("cep", formData.cep || "") // ✅ CEP AGORA É ENVIADO
       submitData.append("country", formData.country || "")
       submitData.append("state", formData.state || "")
       submitData.append("city", formData.city || "")
@@ -499,14 +492,43 @@ export default function ProfileEditForm() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="M">
-                      <span className="flex items-center gap-2">
-                        Masculino
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4 text-blue-500"
+                        >
+                          <circle cx="10" cy="14" r="7" />
+                          <line x1="14.5" y1="9.5" x2="21" y2="3" />
+                          <line x1="17" y1="3" x2="21" y2="3" />
+                          <line x1="21" y1="3" x2="21" y2="7" />
+                        </svg>
+                        <span>Masculino</span>
+                      </div>
                     </SelectItem>
                     <SelectItem value="F">
-                      <span className="flex items-center gap-2">
-                        Feminino
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4 text-pink-500"
+                        >
+                          <circle cx="12" cy="8" r="7" />
+                          <line x1="12" y1="15" x2="12" y2="23" />
+                          <line x1="8" y1="19" x2="16" y2="19" />
+                        </svg>
+                        <span>Feminino</span>
+                      </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
