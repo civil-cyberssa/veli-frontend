@@ -10,7 +10,31 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Camera, Save, X, Loader2 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  ArrowLeft,
+  Camera,
+  Save,
+  X,
+  Loader2,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  CreditCard,
+  FileText,
+  Globe,
+  Languages,
+  Home,
+  Search,
+} from "lucide-react"
 import { toast } from "sonner"
 
 export default function ProfileEditForm() {
@@ -22,6 +46,7 @@ export default function ProfileEditForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [profileImage, setProfileImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
+  const [loadingCep, setLoadingCep] = useState(false)
 
   // Form data
   const [formData, setFormData] = useState({
@@ -32,6 +57,7 @@ export default function ProfileEditForm() {
     date_of_birth: "",
     gender: "",
     phone: "",
+    cep: "",
     country: "",
     state: "",
     city: "",
@@ -52,6 +78,7 @@ export default function ProfileEditForm() {
         date_of_birth: user.date_of_birth || "",
         gender: user.gender || "",
         phone: user.phone || "",
+        cep: "",
         country: user.country || "",
         state: user.state || "",
         city: user.city || "",
@@ -65,6 +92,93 @@ export default function ProfileEditForm() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  // Formatar CPF
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, "")
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+    }
+    return value
+  }
+
+  // Formatar Telefone
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, "")
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{5})(\d)/, "$1-$2")
+    }
+    return value
+  }
+
+  // Formatar CEP
+  const formatCEP = (value: string) => {
+    const numbers = value.replace(/\D/g, "")
+    if (numbers.length <= 8) {
+      return numbers.replace(/(\d{5})(\d)/, "$1-$2")
+    }
+    return value
+  }
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value)
+    setFormData(prev => ({ ...prev, cpf: formatted }))
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value)
+    setFormData(prev => ({ ...prev, phone: formatted }))
+  }
+
+  const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCEP(e.target.value)
+    setFormData(prev => ({ ...prev, cep: formatted }))
+
+    // Remove formatação para buscar
+    const cleanCEP = formatted.replace(/\D/g, "")
+
+    // Se tiver 8 dígitos, busca no ViaCEP
+    if (cleanCEP.length === 8) {
+      await fetchAddressByCEP(cleanCEP)
+    }
+  }
+
+  const fetchAddressByCEP = async (cep: string) => {
+    setLoadingCep(true)
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      const data = await response.json()
+
+      if (data.erro) {
+        toast.error("CEP não encontrado")
+        return
+      }
+
+      // Preenche automaticamente os campos
+      setFormData(prev => ({
+        ...prev,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+        country: "Brasil",
+      }))
+
+      toast.success("Endereço preenchido automaticamente!")
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error)
+      toast.error("Erro ao buscar CEP")
+    } finally {
+      setLoadingCep(false)
+    }
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,6 +202,7 @@ export default function ProfileEditForm() {
         setPreviewUrl(reader.result as string)
       }
       reader.readAsDataURL(file)
+      toast.success("Imagem carregada com sucesso!")
     }
   }
 
@@ -99,15 +214,26 @@ export default function ProfileEditForm() {
       return
     }
 
+    // Validações
+    if (!formData.first_name || !formData.last_name) {
+      toast.error("Nome e sobrenome são obrigatórios")
+      return
+    }
+
+    if (!formData.email) {
+      toast.error("E-mail é obrigatório")
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       // Criar FormData para enviar arquivo e dados
       const submitData = new FormData()
 
-      // Adicionar dados do formulário
+      // Adicionar dados do formulário (remover cep que não vai para API)
       Object.entries(formData).forEach(([key, value]) => {
-        if (value) {
+        if (value && key !== "cep") {
           submitData.append(key, value)
         }
       })
@@ -132,7 +258,11 @@ export default function ProfileEditForm() {
 
       toast.success("Perfil atualizado com sucesso!")
       await refetch() // Atualiza os dados do perfil
-      router.push("/home")
+
+      // Aguarda um pouco para o usuário ver o toast
+      setTimeout(() => {
+        router.push("/home")
+      }, 1000)
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error)
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar perfil")
@@ -147,8 +277,9 @@ export default function ProfileEditForm() {
 
   if (studentLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground">Carregando suas informações...</p>
       </div>
     )
   }
@@ -158,46 +289,54 @@ export default function ProfileEditForm() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={handleCancel}
-            className="rounded-full"
+            className="rounded-full hover:bg-accent"
+            title="Voltar"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Editar Perfil</h1>
-            <p className="text-muted-foreground">Atualize suas informações pessoais</p>
+          <div className="flex-1">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Editar Perfil</h1>
+            <p className="text-sm text-muted-foreground">
+              Atualize suas informações pessoais e preferências
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Foto de Perfil */}
-          <Card>
+          <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <CardTitle>Foto de Perfil</CardTitle>
+              <div className="flex items-center gap-2">
+                <Camera className="h-5 w-5 text-primary" />
+                <CardTitle>Foto de Perfil</CardTitle>
+              </div>
               <CardDescription>
-                Clique na imagem para alterar sua foto de perfil
+                Escolha uma foto que represente você. Clique na imagem para alterá-la.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center gap-6">
+            <CardContent className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative group">
-                <Avatar className="h-24 w-24 rounded-2xl">
+                <Avatar className="h-28 w-28 rounded-2xl ring-4 ring-background shadow-lg">
                   <AvatarImage src={previewUrl} alt={fullName} />
-                  <AvatarFallback className="rounded-2xl text-2xl">
+                  <AvatarFallback className="rounded-2xl text-2xl bg-primary/10">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  title="Clique para alterar foto"
                 >
-                  <Camera className="h-8 w-8 text-white" />
+                  <Camera className="h-8 w-8 text-white mb-1" />
+                  <span className="text-xs text-white font-medium">Alterar foto</span>
                 </button>
                 <input
                   ref={fileInputRef}
@@ -207,52 +346,74 @@ export default function ProfileEditForm() {
                   className="hidden"
                 />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{fullName}</p>
-                <p className="text-sm text-muted-foreground">{formData.email}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  PNG, JPG ou GIF (max. 5MB)
+              <div className="flex-1 text-center md:text-left">
+                <p className="text-lg font-semibold">{fullName}</p>
+                <p className="text-sm text-muted-foreground flex items-center justify-center md:justify-start gap-1 mt-1">
+                  <Mail className="h-3 w-3" />
+                  {formData.email || "sem email"}
                 </p>
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Formatos aceitos:</strong> PNG, JPG, GIF
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Tamanho máximo:</strong> 5MB
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Informações Pessoais */}
-          <Card>
+          <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <CardTitle>Informações Pessoais</CardTitle>
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                <CardTitle>Informações Pessoais</CardTitle>
+              </div>
               <CardDescription>
-                Suas informações básicas e identificação
+                Dados básicos de identificação. Campos com * são obrigatórios.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="first_name">Primeiro Nome *</Label>
+                  <Label htmlFor="first_name" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Primeiro Nome *
+                  </Label>
                   <Input
                     id="first_name"
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleInputChange}
-                    placeholder="Digite seu primeiro nome"
+                    placeholder="Ex: João"
                     required
+                    className="transition-all focus:scale-[1.02]"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="last_name">Sobrenome *</Label>
+                  <Label htmlFor="last_name" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Sobrenome *
+                  </Label>
                   <Input
                     id="last_name"
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleInputChange}
-                    placeholder="Digite seu sobrenome"
+                    placeholder="Ex: Silva"
                     required
+                    className="transition-all focus:scale-[1.02]"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail *</Label>
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  E-mail *
+                </Label>
                 <Input
                   id="email"
                   name="email"
@@ -261,96 +422,179 @@ export default function ProfileEditForm() {
                   onChange={handleInputChange}
                   placeholder="seu@email.com"
                   required
+                  className="transition-all focus:scale-[1.02]"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Este e-mail será usado para login e notificações
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cpf">CPF</Label>
+                  <Label htmlFor="cpf" className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    CPF
+                  </Label>
                   <Input
                     id="cpf"
                     name="cpf"
                     value={formData.cpf}
-                    onChange={handleInputChange}
+                    onChange={handleCPFChange}
                     placeholder="000.000.000-00"
                     maxLength={14}
+                    className="transition-all focus:scale-[1.02]"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="date_of_birth">Data de Nascimento</Label>
+                  <Label htmlFor="date_of_birth" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Data de Nascimento
+                  </Label>
                   <Input
                     id="date_of_birth"
                     name="date_of_birth"
                     value={formData.date_of_birth}
                     onChange={handleInputChange}
                     placeholder="DD/MM/AAAA"
+                    className="transition-all focus:scale-[1.02]"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gênero</Label>
-                <Input
-                  id="gender"
-                  name="gender"
+                <Label htmlFor="gender" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Gênero
+                </Label>
+                <Select
                   value={formData.gender}
-                  onChange={handleInputChange}
-                  placeholder="Ex: Masculino, Feminino, Outro"
-                />
+                  onValueChange={(value) => handleSelectChange("gender", value)}
+                >
+                  <SelectTrigger className="transition-all focus:scale-[1.02]">
+                    <SelectValue placeholder="Selecione seu gênero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="M">
+                      <span className="flex items-center gap-2">
+                        Masculino
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="F">
+                      <span className="flex items-center gap-2">
+                        Feminino
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Selecione o gênero que melhor representa você
+                </p>
               </div>
             </CardContent>
           </Card>
 
           {/* Contato e Localização */}
-          <Card>
+          <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <CardTitle>Contato e Localização</CardTitle>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" />
+                <CardTitle>Contato e Localização</CardTitle>
+              </div>
               <CardDescription>
-                Informações de contato e endereço
+                Informações de contato e endereço. Use o CEP para preencher automaticamente.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Telefone
+                </Label>
                 <Input
                   id="phone"
                   name="phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={handleInputChange}
+                  onChange={handlePhoneChange}
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
+                  className="transition-all focus:scale-[1.02]"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Inclua o DDD da sua região
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cep" className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  CEP
+                  {loadingCep && <Loader2 className="h-3 w-3 animate-spin ml-2" />}
+                </Label>
+                <Input
+                  id="cep"
+                  name="cep"
+                  value={formData.cep}
+                  onChange={handleCEPChange}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  disabled={loadingCep}
+                  className="transition-all focus:scale-[1.02]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {loadingCep ? (
+                    <span className="flex items-center gap-1 text-primary">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Buscando endereço...
+                    </span>
+                  ) : (
+                    "Digite o CEP para preencher cidade, estado e país automaticamente"
+                  )}
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="country">País</Label>
+                  <Label htmlFor="country" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    País
+                  </Label>
                   <Input
                     id="country"
                     name="country"
                     value={formData.country}
                     onChange={handleInputChange}
                     placeholder="Brasil"
+                    className="transition-all focus:scale-[1.02]"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">Estado</Label>
+                  <Label htmlFor="state" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Estado
+                  </Label>
                   <Input
                     id="state"
                     name="state"
                     value={formData.state}
                     onChange={handleInputChange}
                     placeholder="SP"
+                    maxLength={2}
+                    className="transition-all focus:scale-[1.02] uppercase"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city">Cidade</Label>
+                  <Label htmlFor="city" className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    Cidade
+                  </Label>
                   <Input
                     id="city"
                     name="city"
                     value={formData.city}
                     onChange={handleInputChange}
                     placeholder="São Paulo"
+                    className="transition-all focus:scale-[1.02]"
                   />
                 </div>
               </div>
@@ -358,39 +602,52 @@ export default function ProfileEditForm() {
           </Card>
 
           {/* Bio */}
-          <Card>
+          <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
-              <CardTitle>Sobre Você</CardTitle>
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <CardTitle>Sobre Você</CardTitle>
+              </div>
               <CardDescription>
-                Conte um pouco sobre você
+                Conte um pouco sobre você, seus interesses e objetivos de aprendizado
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">Biografia</Label>
                 <textarea
                   id="bio"
                   name="bio"
                   value={formData.bio}
                   onChange={handleInputChange}
-                  placeholder="Escreva uma breve descrição sobre você..."
-                  className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none"
+                  placeholder="Ex: Sou estudante de idiomas, apaixonado por conhecer novas culturas. Atualmente estou focado em melhorar minha fluência em francês..."
+                  className="flex min-h-[140px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all focus:scale-[1.01]"
                   maxLength={500}
                 />
-                <p className="text-xs text-muted-foreground text-right">
-                  {formData.bio.length}/500 caracteres
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-muted-foreground">
+                    Compartilhe suas motivações e objetivos
+                  </p>
+                  <p className={`text-xs font-medium ${
+                    formData.bio.length > 450 ? "text-destructive" : "text-muted-foreground"
+                  }`}>
+                    {formData.bio.length}/500
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Idiomas */}
           {studentData?.student_profile?.languages && studentData.student_profile.languages.length > 0 && (
-            <Card>
+            <Card className="border-2 hover:border-primary/50 transition-colors">
               <CardHeader>
-                <CardTitle>Idiomas</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Languages className="h-5 w-5 text-primary" />
+                  <CardTitle>Idiomas de Estudo</CardTitle>
+                </div>
                 <CardDescription>
-                  Idiomas que você está estudando
+                  Idiomas que você está atualmente estudando na plataforma
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -399,47 +656,57 @@ export default function ProfileEditForm() {
                     <Badge
                       key={language.id}
                       variant="secondary"
-                      className="px-3 py-1.5 text-sm flex items-center gap-2"
+                      className="px-4 py-2 text-sm flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors cursor-default"
                     >
                       {language.lang_icon && (
                         <img
                           src={language.lang_icon}
                           alt={language.name}
-                          className="h-4 w-4 rounded-sm object-cover"
+                          className="h-5 w-5 rounded-sm object-cover"
                         />
                       )}
-                      {language.name}
+                      <span className="font-medium">{language.name}</span>
                     </Badge>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Para adicionar ou remover idiomas, entre em contato com o suporte
+                </p>
               </CardContent>
             </Card>
           )}
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-4 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar Alterações
-                </>
-              )}
-            </Button>
+          <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-6 pb-4 -mx-4 px-4 md:-mx-6 md:px-6">
+            <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+                className="w-full md:w-auto"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full md:w-auto min-w-[200px] bg-primary hover:bg-primary/90"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando alterações...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar Alterações
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
