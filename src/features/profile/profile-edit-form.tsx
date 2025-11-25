@@ -40,7 +40,7 @@ import { toast } from "sonner"
 export default function ProfileEditForm() {
   const router = useRouter()
   const { data: session } = useSession()
-  const { data: studentData, loading: studentLoading, refetch } = useStudentProfile()
+  const { data: studentData, loading: studentLoading, mutate } = useStudentProfile()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,6 +53,7 @@ export default function ProfileEditForm() {
     first_name: "",
     last_name: "",
     email: "",
+    username: "",
     cpf: "",
     date_of_birth: "",
     gender: "",
@@ -70,19 +71,25 @@ export default function ProfileEditForm() {
       const user = studentData.user
       const profile = studentData.student_profile
 
+      // Converte gênero de "Masculino"/"Feminino" para "M"/"F" para o select
+      let genderValue = user.gender || ""
+      if (user.gender === "Masculino") genderValue = "M"
+      if (user.gender === "Feminino") genderValue = "F"
+
       setFormData({
         first_name: user.first_name || "",
         last_name: user.last_name || "",
         email: user.email || "",
+        username: user.username || "",
         cpf: user.cpf || "",
         date_of_birth: user.date_of_birth || "",
-        gender: user.gender || "",
+        gender: genderValue,
         phone: user.phone || "",
         cep: "",
         country: user.country || "",
         state: user.state || "",
         city: user.city || "",
-        bio: profile.bio || "",
+        bio: profile?.bio || "",
       })
 
       setPreviewUrl(user.profile_pic_url || "")
@@ -231,12 +238,27 @@ export default function ProfileEditForm() {
       // Criar FormData para enviar arquivo e dados
       const submitData = new FormData()
 
-      // Adicionar dados do formulário (remover cep que não vai para API)
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value && key !== "cep") {
-          submitData.append(key, value)
-        }
-      })
+      // Converte gênero de volta para "Masculino"/"Feminino"
+      let genderToSend = formData.gender
+      if (formData.gender === "M") genderToSend = "Masculino"
+      if (formData.gender === "F") genderToSend = "Feminino"
+
+      // ENVIAR TODOS OS CAMPOS - mesmo que estejam vazios
+      // Campos do usuário
+      submitData.append("first_name", formData.first_name)
+      submitData.append("last_name", formData.last_name)
+      submitData.append("email", formData.email)
+      submitData.append("username", formData.username || formData.email.split("@")[0])
+      submitData.append("cpf", formData.cpf || "")
+      submitData.append("date_of_birth", formData.date_of_birth || "")
+      submitData.append("gender", genderToSend || "")
+      submitData.append("phone", formData.phone || "")
+      submitData.append("country", formData.country || "")
+      submitData.append("state", formData.state || "")
+      submitData.append("city", formData.city || "")
+
+      // Campo do perfil
+      submitData.append("bio", formData.bio || "")
 
       // Adicionar imagem se houver
       if (profileImage) {
@@ -256,13 +278,15 @@ export default function ProfileEditForm() {
         throw new Error(errorData.message || "Erro ao atualizar perfil")
       }
 
-      toast.success("Perfil atualizado com sucesso!")
-      await refetch() // Atualiza os dados do perfil
+      const updatedData = await response.json()
 
-      // Aguarda um pouco para o usuário ver o toast
-      setTimeout(() => {
-        router.push("/home")
-      }, 1000)
+      // Atualiza o cache do SWR com os novos dados
+      await mutate(updatedData, false)
+
+      toast.success("Perfil atualizado com sucesso!")
+
+      // Reseta a imagem temporária
+      setProfileImage(null)
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error)
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar perfil")

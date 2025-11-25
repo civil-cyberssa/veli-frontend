@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import useSWR from 'swr'
 
 interface Language {
   id: number
@@ -37,67 +37,48 @@ interface StudentData {
 }
 
 interface UseStudentProfileReturn {
-  data: StudentData | null
+  data: StudentData | undefined
   loading: boolean
   error: Error | null
-  refetch: () => Promise<void>
+  mutate: () => void
+}
+
+const fetcher = async (url: string, token: string) => {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar perfil: ${response.status}`)
+  }
+
+  return response.json()
 }
 
 export function useStudentProfile(): UseStudentProfileReturn {
   const { data: session, status } = useSession()
-  const [data, setData] = useState<StudentData | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<Error | null>(null)
 
-  const fetchStudentProfile = async () => {
-    // Se não há sessão, não faz a requisição
-    if (status !== 'authenticated' || !session) {
-      setLoading(false)
-      return
+  const { data, error, mutate, isLoading } = useSWR<StudentData>(
+    status === 'authenticated' && session?.access
+      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/student/`, session.access]
+      : null,
+    ([url, token]) => fetcher(url, token),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 60000, // 1 minuto
     }
-
-    try {
-      setLoading(true)
-      setError(null)
-
-      // Monta os headers com autenticação
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-
-      // Adiciona o token de autenticação se disponível
-      if (session.access) {
-        headers['Authorization'] = `Bearer ${session.access}`
-      }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/student-portal/student/`, {
-        method: 'GET',
-        headers,
-        credentials: 'include', // Para enviar cookies se necessário
-      })
-
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar perfil: ${response.status}`)
-      }
-
-      const studentData: StudentData = await response.json()
-      setData(studentData)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Erro desconhecido'))
-      console.error('Erro ao buscar perfil do estudante:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchStudentProfile()
-  }, [status, session])
+  )
 
   return {
     data,
-    loading,
-    error,
-    refetch: fetchStudentProfile,
+    loading: isLoading,
+    error: error || null,
+    mutate,
   }
 }
