@@ -9,7 +9,7 @@ const authOptions = {
         password: { label: "password", type: "password" },
       },
       async authorize(credentials) {
-        const response = await fetch("https://api.jogajuntoinstituto.org/student_portal/users/login/", {
+        const response = await fetch("https://veli-backend.onrender.com/student-portal/auth/login/", {
           method: "POST",
           headers: {
             "Content-type": "application/json",
