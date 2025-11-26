@@ -138,15 +138,25 @@ export function ProfileEditForm() {
         }
       }
 
-      // Preenche o formulário com setValue
+      console.log('📋 Preenchendo formulário com dados da API:', {
+        gender: genderValue,
+        cpf_original: user.cpf,
+        cpf_formatado: user.cpf ? formatCPF(user.cpf) : "",
+        phone_original: user.phone,
+        phone_formatado: user.phone ? formatPhone(user.phone) : "",
+        date_original: user.date_of_birth,
+        date_formatada: dateValue
+      })
+
+      // Preenche o formulário com setValue (aplicando máscaras)
       setValue("first_name", user.first_name || "")
       setValue("last_name", user.last_name || "")
       setValue("email", user.email || "")
       setValue("username", user.username || "")
-      setValue("cpf", user.cpf || "")
+      setValue("cpf", user.cpf ? formatCPF(user.cpf) : "")
       setValue("date_of_birth", dateValue)
       setValue("gender", genderValue as "M" | "F" | "")
-      setValue("phone", user.phone || "")
+      setValue("phone", user.phone ? formatPhone(user.phone) : "")
       setValue("cep", "")
       setValue("country", user.country || "")
       setValue("state", user.state || "")
