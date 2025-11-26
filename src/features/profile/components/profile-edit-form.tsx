@@ -39,7 +39,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-export default function ProfileEditForm() {
+export function ProfileEditForm() {
   const router = useRouter()
   const { data: session } = useSession()
   const { data: studentData, loading: studentLoading, mutate } = useStudentProfile()

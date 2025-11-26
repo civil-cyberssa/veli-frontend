@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import ProfileEditForm from '../profile-edit-form'
+import { ProfileEditForm } from '../components/profile-edit-form'
 import { useSession } from 'next-auth/react'
-import { useStudentProfile } from '@/features/profile_user/useStudentProfile'
+import { useStudentProfile } from '../hooks/use-student-profile'
 import { useRouter } from 'next/navigation'
 
 // Mock dos hooks
 vi.mock('next-auth/react')
-vi.mock('@/features/profile_user/useStudentProfile')
+vi.mock('../hooks/use-student-profile')
 vi.mock('next/navigation')
 vi.mock('sonner', () => ({
   toast: {
