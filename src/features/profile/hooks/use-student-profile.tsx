@@ -28,7 +28,7 @@ export function useStudentProfile(): UseStudentProfileReturn {
     status === 'authenticated' && session?.access
       ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/student/`, session.access]
       : null,
-    ([url, token]) => fetcher(url, token),
+    ([url, token]: [string, string]) => fetcher(url, token),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,

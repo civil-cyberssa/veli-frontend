@@ -14,6 +14,10 @@ export type {
   ProfileFormData,
 } from './types'
 
+// Schema and validation
+export { profileFormSchema } from './schemas/profile-schema'
+export type { ProfileFormData as ProfileFormDataSchema } from './schemas/profile-schema'
+
 // Utils
 export { formatCPF, formatPhone, formatCEP } from './utils/format'
 export { fetchAddressByCEP } from './utils/viacep'

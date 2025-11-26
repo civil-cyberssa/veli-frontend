@@ -3,9 +3,12 @@
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useStudentProfile } from "../hooks/use-student-profile"
 import { formatCPF, formatPhone, formatCEP } from "../utils/format"
 import { fetchAddressByCEP } from "../utils/viacep"
+import { profileFormSchema, type ProfileFormData } from "../schemas/profile-schema"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +39,7 @@ import {
   Languages,
   Home,
   Search,
+  AlertCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -45,27 +49,39 @@ export function ProfileEditForm() {
   const { data: studentData, loading: studentLoading, mutate } = useStudentProfile()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [profileImage, setProfileImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [loadingCep, setLoadingCep] = useState(false)
 
-  // Form data
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    username: "",
-    cpf: "",
-    date_of_birth: "",
-    gender: "",
-    phone: "",
-    cep: "",
-    country: "",
-    state: "",
-    city: "",
-    bio: "",
+  // React Hook Form with Zod validation
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      email: "",
+      username: "",
+      cpf: "",
+      date_of_birth: "",
+      gender: "",
+      phone: "",
+      cep: "",
+      country: "",
+      state: "",
+      city: "",
+      bio: "",
+    },
   })
+
+  // Watch form values for display purposes
+  const formData = watch()
 
   // Preenche o formulário quando os dados são carregados
   useEffect(() => {
@@ -96,48 +112,38 @@ export function ProfileEditForm() {
         final: genderValue
       })
 
-      setFormData({
-        first_name: user.first_name || "",
-        last_name: user.last_name || "",
-        email: user.email || "",
-        username: user.username || "",
-        cpf: user.cpf || "",
-        date_of_birth: user.date_of_birth || "",
-        gender: genderValue, // M ou F
-        phone: user.phone || "",
-        cep: "",
-        country: user.country || "",
-        state: user.state || "",
-        city: user.city || "",
-        bio: profile?.bio || "",
-      })
+      // Preenche o formulário com setValue
+      setValue("first_name", user.first_name || "")
+      setValue("last_name", user.last_name || "")
+      setValue("email", user.email || "")
+      setValue("username", user.username || "")
+      setValue("cpf", user.cpf || "")
+      setValue("date_of_birth", user.date_of_birth || "")
+      setValue("gender", genderValue as "M" | "F" | "")
+      setValue("phone", user.phone || "")
+      setValue("cep", "")
+      setValue("country", user.country || "")
+      setValue("state", user.state || "")
+      setValue("city", user.city || "")
+      setValue("bio", profile?.bio || "")
 
       setPreviewUrl(user.profile_pic_url || "")
     }
-  }, [studentData])
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  }, [studentData, setValue])
 
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value)
-    setFormData(prev => ({ ...prev, cpf: formatted }))
+    setValue("cpf", formatted)
   }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value)
-    setFormData(prev => ({ ...prev, phone: formatted }))
+    setValue("phone", formatted)
   }
 
   const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCEP(e.target.value)
-    setFormData(prev => ({ ...prev, cep: formatted }))
+    setValue("cep", formatted)
 
     // Remove formatação para buscar
     const cleanCEP = formatted.replace(/\D/g, "")
@@ -154,12 +160,9 @@ export function ProfileEditForm() {
       const data = await fetchAddressByCEP(cep)
 
       // Preenche automaticamente os campos
-      setFormData(prev => ({
-        ...prev,
-        city: data.localidade || prev.city,
-        state: data.uf || prev.state,
-        country: "Brasil",
-      }))
+      if (data.localidade) setValue("city", data.localidade)
+      if (data.uf) setValue("state", data.uf)
+      setValue("country", "Brasil")
 
       toast.success("Endereço preenchido automaticamente!")
     } catch (error) {
@@ -195,26 +198,11 @@ export function ProfileEditForm() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (data: ProfileFormData) => {
     if (!session?.access) {
       toast.error("Sessão inválida. Por favor, faça login novamente.")
       return
     }
-
-    // Validações
-    if (!formData.first_name || !formData.last_name) {
-      toast.error("Nome e sobrenome são obrigatórios")
-      return
-    }
-
-    if (!formData.email) {
-      toast.error("E-mail é obrigatório")
-      return
-    }
-
-    setIsSubmitting(true)
 
     try {
       // Criar FormData para enviar arquivo e dados
@@ -222,21 +210,21 @@ export function ProfileEditForm() {
 
       // ENVIAR TODOS OS CAMPOS - mesmo que estejam vazios
       // Campos do usuário
-      submitData.append("first_name", formData.first_name)
-      submitData.append("last_name", formData.last_name)
-      submitData.append("email", formData.email)
-      submitData.append("username", formData.username || formData.email.split("@")[0])
-      submitData.append("cpf", formData.cpf || "")
-      submitData.append("date_of_birth", formData.date_of_birth || "")
-      submitData.append("gender", formData.gender || "") // Envia M ou F direto
-      submitData.append("phone", formData.phone || "")
-      submitData.append("cep", formData.cep || "") // ✅ CEP AGORA É ENVIADO
-      submitData.append("country", formData.country || "")
-      submitData.append("state", formData.state || "")
-      submitData.append("city", formData.city || "")
+      submitData.append("first_name", data.first_name)
+      submitData.append("last_name", data.last_name)
+      submitData.append("email", data.email)
+      submitData.append("username", data.username || data.email.split("@")[0])
+      submitData.append("cpf", data.cpf || "")
+      submitData.append("date_of_birth", data.date_of_birth || "")
+      submitData.append("gender", data.gender || "") // Envia M ou F direto
+      submitData.append("phone", data.phone || "")
+      submitData.append("cep", data.cep || "") // ✅ CEP AGORA É ENVIADO
+      submitData.append("country", data.country || "")
+      submitData.append("state", data.state || "")
+      submitData.append("city", data.city || "")
 
       // Campo do perfil
-      submitData.append("bio", formData.bio || "")
+      submitData.append("bio", data.bio || "")
 
       // Adicionar imagem se houver
       if (profileImage) {
@@ -256,10 +244,10 @@ export function ProfileEditForm() {
         throw new Error(errorData.message || "Erro ao atualizar perfil")
       }
 
-      const updatedData = await response.json()
+      await response.json()
 
-      // Atualiza o cache do SWR com os novos dados
-      await mutate(updatedData, false)
+      // Revalida o cache do SWR para buscar dados atualizados
+      mutate()
 
       toast.success("Perfil atualizado com sucesso!")
 
@@ -268,8 +256,6 @@ export function ProfileEditForm() {
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error)
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar perfil")
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -311,7 +297,7 @@ export function ProfileEditForm() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Foto de Perfil */}
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
@@ -386,13 +372,16 @@ export function ProfileEditForm() {
                   </Label>
                   <Input
                     id="first_name"
-                    name="first_name"
-                    value={formData.first_name}
-                    onChange={handleInputChange}
+                    {...register("first_name")}
                     placeholder="Ex: João"
-                    required
-                    className="transition-all focus:scale-[1.02]"
+                    className={`transition-all focus:scale-[1.02] ${errors.first_name ? 'border-destructive' : ''}`}
                   />
+                  {errors.first_name && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.first_name.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="last_name" className="flex items-center gap-2">
@@ -401,13 +390,16 @@ export function ProfileEditForm() {
                   </Label>
                   <Input
                     id="last_name"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleInputChange}
+                    {...register("last_name")}
                     placeholder="Ex: Silva"
-                    required
-                    className="transition-all focus:scale-[1.02]"
+                    className={`transition-all focus:scale-[1.02] ${errors.last_name ? 'border-destructive' : ''}`}
                   />
+                  {errors.last_name && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.last_name.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -418,17 +410,21 @@ export function ProfileEditForm() {
                 </Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
+                  {...register("email")}
                   placeholder="seu@email.com"
-                  required
-                  className="transition-all focus:scale-[1.02]"
+                  className={`transition-all focus:scale-[1.02] ${errors.email ? 'border-destructive' : ''}`}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Este e-mail será usado para login e notificações
-                </p>
+                {errors.email ? (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.email.message}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Este e-mail será usado para login e notificações
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -439,13 +435,18 @@ export function ProfileEditForm() {
                   </Label>
                   <Input
                     id="cpf"
-                    name="cpf"
-                    value={formData.cpf}
+                    {...register("cpf")}
                     onChange={handleCPFChange}
                     placeholder="000.000.000-00"
                     maxLength={14}
-                    className="transition-all focus:scale-[1.02]"
+                    className={`transition-all focus:scale-[1.02] ${errors.cpf ? 'border-destructive' : ''}`}
                   />
+                  {errors.cpf && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.cpf.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date_of_birth" className="flex items-center gap-2">
@@ -454,12 +455,16 @@ export function ProfileEditForm() {
                   </Label>
                   <Input
                     id="date_of_birth"
-                    name="date_of_birth"
-                    value={formData.date_of_birth}
-                    onChange={handleInputChange}
+                    {...register("date_of_birth")}
                     placeholder="DD/MM/AAAA"
-                    className="transition-all focus:scale-[1.02]"
+                    className={`transition-all focus:scale-[1.02] ${errors.date_of_birth ? 'border-destructive' : ''}`}
                   />
+                  {errors.date_of_birth && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.date_of_birth.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -468,58 +473,71 @@ export function ProfileEditForm() {
                   <User className="h-4 w-4" />
                   Gênero
                 </Label>
-                <Select
-                  value={formData.gender || undefined}
-                  onValueChange={(value) => handleSelectChange("gender", value)}
-                >
-                  <SelectTrigger className="transition-all focus:scale-[1.02]">
-                    <SelectValue placeholder="Selecione seu gênero" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="M">
-                      <div className="flex items-center gap-2">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 text-blue-500"
-                        >
-                          <circle cx="10" cy="14" r="7" />
-                          <line x1="14.5" y1="9.5" x2="21" y2="3" />
-                          <line x1="17" y1="3" x2="21" y2="3" />
-                          <line x1="21" y1="3" x2="21" y2="7" />
-                        </svg>
-                        <span>Masculino</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="F">
-                      <div className="flex items-center gap-2">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 text-pink-500"
-                        >
-                          <circle cx="12" cy="8" r="7" />
-                          <line x1="12" y1="15" x2="12" y2="23" />
-                          <line x1="8" y1="19" x2="16" y2="19" />
-                        </svg>
-                        <span>Feminino</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Selecione o gênero que melhor representa você
-                </p>
+                <Controller
+                  name="gender"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className={`transition-all focus:scale-[1.02] ${errors.gender ? 'border-destructive' : ''}`}>
+                        <SelectValue placeholder="Selecione seu gênero" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="M">
+                          <div className="flex items-center gap-2">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4 text-blue-500"
+                            >
+                              <circle cx="10" cy="14" r="7" />
+                              <line x1="14.5" y1="9.5" x2="21" y2="3" />
+                              <line x1="17" y1="3" x2="21" y2="3" />
+                              <line x1="21" y1="3" x2="21" y2="7" />
+                            </svg>
+                            <span>Masculino</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="F">
+                          <div className="flex items-center gap-2">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4 text-pink-500"
+                            >
+                              <circle cx="12" cy="8" r="7" />
+                              <line x1="12" y1="15" x2="12" y2="23" />
+                              <line x1="8" y1="19" x2="16" y2="19" />
+                            </svg>
+                            <span>Feminino</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.gender ? (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.gender.message}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Selecione o gênero que melhor representa você
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -543,17 +561,23 @@ export function ProfileEditForm() {
                 </Label>
                 <Input
                   id="phone"
-                  name="phone"
                   type="tel"
-                  value={formData.phone}
+                  {...register("phone")}
                   onChange={handlePhoneChange}
                   placeholder="(00) 00000-0000"
                   maxLength={15}
-                  className="transition-all focus:scale-[1.02]"
+                  className={`transition-all focus:scale-[1.02] ${errors.phone ? 'border-destructive' : ''}`}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Inclua o DDD da sua região
-                </p>
+                {errors.phone ? (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.phone.message}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Inclua o DDD da sua região
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -564,24 +588,30 @@ export function ProfileEditForm() {
                 </Label>
                 <Input
                   id="cep"
-                  name="cep"
-                  value={formData.cep}
+                  {...register("cep")}
                   onChange={handleCEPChange}
                   placeholder="00000-000"
                   maxLength={9}
                   disabled={loadingCep}
-                  className="transition-all focus:scale-[1.02]"
+                  className={`transition-all focus:scale-[1.02] ${errors.cep ? 'border-destructive' : ''}`}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {loadingCep ? (
-                    <span className="flex items-center gap-1 text-primary">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Buscando endereço...
-                    </span>
-                  ) : (
-                    "Digite o CEP para preencher cidade, estado e país automaticamente"
-                  )}
-                </p>
+                {errors.cep ? (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.cep.message}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {loadingCep ? (
+                      <span className="flex items-center gap-1 text-primary">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Buscando endereço...
+                      </span>
+                    ) : (
+                      "Digite o CEP para preencher cidade, estado e país automaticamente"
+                    )}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -592,12 +622,16 @@ export function ProfileEditForm() {
                   </Label>
                   <Input
                     id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
+                    {...register("country")}
                     placeholder="Brasil"
-                    className="transition-all focus:scale-[1.02]"
+                    className={`transition-all focus:scale-[1.02] ${errors.country ? 'border-destructive' : ''}`}
                   />
+                  {errors.country && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.country.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state" className="flex items-center gap-2">
@@ -606,13 +640,17 @@ export function ProfileEditForm() {
                   </Label>
                   <Input
                     id="state"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
+                    {...register("state")}
                     placeholder="SP"
                     maxLength={2}
-                    className="transition-all focus:scale-[1.02] uppercase"
+                    className={`transition-all focus:scale-[1.02] uppercase ${errors.state ? 'border-destructive' : ''}`}
                   />
+                  {errors.state && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.state.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city" className="flex items-center gap-2">
@@ -621,12 +659,16 @@ export function ProfileEditForm() {
                   </Label>
                   <Input
                     id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
+                    {...register("city")}
                     placeholder="São Paulo"
-                    className="transition-all focus:scale-[1.02]"
+                    className={`transition-all focus:scale-[1.02] ${errors.city ? 'border-destructive' : ''}`}
                   />
+                  {errors.city && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.city.message}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -648,21 +690,26 @@ export function ProfileEditForm() {
                 <Label htmlFor="bio">Biografia</Label>
                 <textarea
                   id="bio"
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
+                  {...register("bio")}
                   placeholder="Ex: Sou estudante de idiomas, apaixonado por conhecer novas culturas. Atualmente estou focado em melhorar minha fluência em francês..."
-                  className="flex min-h-[140px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all focus:scale-[1.01]"
+                  className={`flex min-h-[140px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all focus:scale-[1.01] ${errors.bio ? 'border-destructive' : ''}`}
                   maxLength={500}
                 />
                 <div className="flex justify-between items-center">
-                  <p className="text-xs text-muted-foreground">
-                    Compartilhe suas motivações e objetivos
-                  </p>
+                  {errors.bio ? (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.bio.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Compartilhe suas motivações e objetivos
+                    </p>
+                  )}
                   <p className={`text-xs font-medium ${
-                    formData.bio.length > 450 ? "text-destructive" : "text-muted-foreground"
+                    (formData.bio?.length || 0) > 450 ? "text-destructive" : "text-muted-foreground"
                   }`}>
-                    {formData.bio.length}/500
+                    {formData.bio?.length || 0}/500
                   </p>
                 </div>
               </div>
