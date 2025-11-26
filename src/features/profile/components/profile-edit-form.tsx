@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useStudentProfile } from "../hooks/use-student-profile"
 import { formatCPF, formatPhone, formatCEP } from "../utils/format"
-import { fetchAddressByCEP as fetchAddress } from "../utils/viacep"
+import { fetchAddressByCEP } from "../utils/viacep"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -75,11 +75,26 @@ export function ProfileEditForm() {
 
       // Converte gênero para M ou F (caso venha texto completo da API)
       let genderValue = user.gender || ""
-      if (genderValue.toLowerCase() === "masculino") genderValue = "M"
-      if (genderValue.toLowerCase() === "feminino") genderValue = "F"
 
-      // Debug: verificar valor do gênero
-      console.log('Gender from API:', user.gender, '→ Converted to:', genderValue)
+      // Normaliza removendo espaços e convertendo para lowercase
+      const normalized = genderValue.trim().toLowerCase()
+
+      if (normalized === "masculino" || normalized === "m") {
+        genderValue = "M"
+      } else if (normalized === "feminino" || normalized === "f") {
+        genderValue = "F"
+      } else if (normalized === "") {
+        genderValue = ""
+      } else {
+        // Se não reconhecer, tenta pegar primeira letra maiúscula
+        genderValue = normalized.charAt(0).toUpperCase()
+      }
+
+      console.log('✅ Gender conversion:', {
+        original: user.gender,
+        normalized: normalized,
+        final: genderValue
+      })
 
       setFormData({
         first_name: user.first_name || "",
@@ -110,38 +125,6 @@ export function ProfileEditForm() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  // Formatar CPF
-  const formatCPF = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length <= 11) {
-      return numbers
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-    }
-    return value
-  }
-
-  // Formatar Telefone
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length <= 11) {
-      return numbers
-        .replace(/(\d{2})(\d)/, "($1) $2")
-        .replace(/(\d{5})(\d)/, "$1-$2")
-    }
-    return value
-  }
-
-  // Formatar CEP
-  const formatCEP = (value: string) => {
-    const numbers = value.replace(/\D/g, "")
-    if (numbers.length <= 8) {
-      return numbers.replace(/(\d{5})(\d)/, "$1-$2")
-    }
-    return value
-  }
-
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value)
     setFormData(prev => ({ ...prev, cpf: formatted }))
@@ -161,20 +144,14 @@ export function ProfileEditForm() {
 
     // Se tiver 8 dígitos, busca no ViaCEP
     if (cleanCEP.length === 8) {
-      await fetchAddressByCEP(cleanCEP)
+      await handleFetchAddress(cleanCEP)
     }
   }
 
-  const fetchAddressByCEP = async (cep: string) => {
+  const handleFetchAddress = async (cep: string) => {
     setLoadingCep(true)
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
-      const data = await response.json()
-
-      if (data.erro) {
-        toast.error("CEP não encontrado")
-        return
-      }
+      const data = await fetchAddressByCEP(cep)
 
       // Preenche automaticamente os campos
       setFormData(prev => ({
@@ -187,7 +164,7 @@ export function ProfileEditForm() {
       toast.success("Endereço preenchido automaticamente!")
     } catch (error) {
       console.error("Erro ao buscar CEP:", error)
-      toast.error("Erro ao buscar CEP")
+      toast.error(error instanceof Error ? error.message : "Erro ao buscar CEP")
     } finally {
       setLoadingCep(false)
     }
@@ -489,7 +466,7 @@ export function ProfileEditForm() {
               <div className="space-y-2">
                 <Label htmlFor="gender" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Gênero {formData.gender && `(${formData.gender})`}
+                  Gênero
                 </Label>
                 <Select
                   value={formData.gender || undefined}
