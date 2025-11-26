@@ -78,6 +78,9 @@ export function ProfileEditForm() {
       if (genderValue.toLowerCase() === "masculino") genderValue = "M"
       if (genderValue.toLowerCase() === "feminino") genderValue = "F"
 
+      // Debug: verificar valor do gênero
+      console.log('Gender from API:', user.gender, '→ Converted to:', genderValue)
+
       setFormData({
         first_name: user.first_name || "",
         last_name: user.last_name || "",
@@ -486,10 +489,10 @@ export function ProfileEditForm() {
               <div className="space-y-2">
                 <Label htmlFor="gender" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Gênero
+                  Gênero {formData.gender && `(${formData.gender})`}
                 </Label>
                 <Select
-                  value={formData.gender}
+                  value={formData.gender || undefined}
                   onValueChange={(value) => handleSelectChange("gender", value)}
                 >
                   <SelectTrigger className="transition-all focus:scale-[1.02]">
