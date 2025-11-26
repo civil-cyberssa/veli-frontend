@@ -18,7 +18,8 @@ export type {
 export { profileFormSchema } from './schemas/profile-schema'
 export type { ProfileFormData as ProfileFormDataSchema } from './schemas/profile-schema'
 
-// Utils
-export { formatCPF, formatPhone, formatCEP } from './utils/format'
+// Utils - Formatação
+export { formatCPF, formatPhone, formatCEP, formatDate } from './utils/format'
+export { cleanCPF, cleanPhone, cleanCEP, cleanDate } from './utils/format'
 export { fetchAddressByCEP } from './utils/viacep'
 export type { ViaCEPResponse } from './utils/viacep'

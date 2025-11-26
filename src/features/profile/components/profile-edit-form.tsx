@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useStudentProfile } from "../hooks/use-student-profile"
-import { formatCPF, formatPhone, formatCEP } from "../utils/format"
+import { formatCPF, formatPhone, formatCEP, formatDate, cleanCPF, cleanPhone, cleanCEP, cleanDate } from "../utils/format"
 import { fetchAddressByCEP } from "../utils/viacep"
 import { profileFormSchema, type ProfileFormData } from "../schemas/profile-schema"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -127,13 +127,24 @@ export function ProfileEditForm() {
         final: genderValue
       })
 
+      // Converte data de YYYY-MM-DD para DD/MM/YYYY para exibição
+      let dateValue = ""
+      if (user.date_of_birth) {
+        const dateMatch = user.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        if (dateMatch) {
+          dateValue = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`
+        } else {
+          dateValue = user.date_of_birth
+        }
+      }
+
       // Preenche o formulário com setValue
       setValue("first_name", user.first_name || "")
       setValue("last_name", user.last_name || "")
       setValue("email", user.email || "")
       setValue("username", user.username || "")
       setValue("cpf", user.cpf || "")
-      setValue("date_of_birth", user.date_of_birth || "")
+      setValue("date_of_birth", dateValue)
       setValue("gender", genderValue as "M" | "F" | "")
       setValue("phone", user.phone || "")
       setValue("cep", "")
@@ -154,6 +165,11 @@ export function ProfileEditForm() {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value)
     setValue("phone", formatted)
+  }
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDate(e.target.value)
+    setValue("date_of_birth", formatted)
   }
 
   const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,7 +267,7 @@ export function ProfileEditForm() {
 
   const onSubmit = async (data: ProfileFormData) => {
     console.group('✅ Validação aprovada - Enviando formulário')
-    console.log('Dados validados pelo Zod:')
+    console.log('Dados validados pelo Zod (com formatação):')
     console.table(data)
     console.groupEnd()
 
@@ -261,23 +277,44 @@ export function ProfileEditForm() {
     }
 
     try {
+      // Limpar formatação dos campos antes de enviar
+      const cleanedData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        username: data.username || data.email.split("@")[0],
+        cpf: data.cpf ? cleanCPF(data.cpf) : "",
+        date_of_birth: data.date_of_birth ? cleanDate(data.date_of_birth) : "",
+        gender: data.gender || "",
+        phone: data.phone ? cleanPhone(data.phone) : "",
+        cep: data.cep ? cleanCEP(data.cep) : "",
+        country: data.country || "",
+        state: data.state || "",
+        city: data.city || "",
+        bio: data.bio || "",
+      }
+
+      console.group('📤 Dados limpos enviados para API')
+      console.log('Campos formatados removidos:')
+      console.table(cleanedData)
+      console.groupEnd()
+
       // Criar FormData para enviar arquivo e dados
       const submitData = new FormData()
 
-      // ENVIAR TODOS OS CAMPOS - mesmo que estejam vazios
-      // Campos do usuário
-      submitData.append("first_name", data.first_name)
-      submitData.append("last_name", data.last_name)
-      submitData.append("email", data.email)
-      submitData.append("username", data.username || data.email.split("@")[0])
-      submitData.append("cpf", data.cpf || "")
-      submitData.append("date_of_birth", data.date_of_birth || "")
-      submitData.append("gender", data.gender || "") // Envia M ou F direto
-      submitData.append("phone", data.phone || "")
-      submitData.append("cep", data.cep || "") // ✅ CEP AGORA É ENVIADO
-      submitData.append("country", data.country || "")
-      submitData.append("state", data.state || "")
-      submitData.append("city", data.city || "")
+      // ENVIAR TODOS OS CAMPOS - limpos e sem formatação
+      submitData.append("first_name", cleanedData.first_name)
+      submitData.append("last_name", cleanedData.last_name)
+      submitData.append("email", cleanedData.email)
+      submitData.append("username", cleanedData.username)
+      submitData.append("cpf", cleanedData.cpf)
+      submitData.append("date_of_birth", cleanedData.date_of_birth)
+      submitData.append("gender", cleanedData.gender)
+      submitData.append("phone", cleanedData.phone)
+      submitData.append("cep", cleanedData.cep)
+      submitData.append("country", cleanedData.country)
+      submitData.append("state", cleanedData.state)
+      submitData.append("city", cleanedData.city)
 
       // Campo do perfil
       submitData.append("bio", data.bio || "")
@@ -512,7 +549,9 @@ export function ProfileEditForm() {
                   <Input
                     id="date_of_birth"
                     {...register("date_of_birth")}
+                    onChange={handleDateChange}
                     placeholder="DD/MM/AAAA"
+                    maxLength={10}
                     className={`transition-all focus:scale-[1.02] ${errors.date_of_birth ? 'border-destructive' : ''}`}
                   />
                   {errors.date_of_birth && (
