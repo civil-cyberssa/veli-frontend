@@ -159,7 +159,6 @@ export function ProfileEditForm() {
       setValue("username", user.username || "")
       setValue("cpf", user.cpf ? formatCPF(user.cpf) : "")
       setValue("date_of_birth", dateValue)
-      setValue("gender", genderValue as "M" | "F" | "")
       setValue("phone", user.phone ? formatPhone(user.phone) : "")
       setValue("cep", user.cep ? formatCEP(user.cep) : "")
       setValue("country", user.country || "")
@@ -167,14 +166,23 @@ export function ProfileEditForm() {
       setValue("city", user.city || "")
       setValue("bio", profile?.bio || "")
 
+      // Define gênero por último com shouldValidate e shouldDirty
+      if (genderValue) {
+        setValue("gender", genderValue as "M" | "F", {
+          shouldValidate: true,
+          shouldDirty: true
+        })
+      }
+
       console.log('🔍 Valor do gênero após setValue:', {
         genderSetValue: genderValue,
+        isEmpty: !genderValue,
         genderFormValue: watch("gender")
       })
 
       setPreviewUrl(user.profile_pic_url || "")
     }
-  }, [studentData, setValue])
+  }, [studentData, setValue, watch])
 
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value)
@@ -214,7 +222,9 @@ export function ProfileEditForm() {
       if (data.uf) setValue("state", data.uf)
       setValue("country", "Brasil")
 
-      toast.success("Endereço preenchido automaticamente!")
+      toast.success("Endereço encontrado", {
+        description: `${data.localidade} - ${data.uf}, Brasil`
+      })
     } catch (error) {
       console.error("Erro ao buscar CEP:", error)
       toast.error(error instanceof Error ? error.message : "Erro ao buscar CEP")
@@ -228,13 +238,17 @@ export function ProfileEditForm() {
     if (file) {
       // Validar tamanho (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("A imagem deve ter no máximo 5MB")
+        toast.error("Imagem muito grande", {
+          description: "O tamanho máximo permitido é 5MB"
+        })
         return
       }
 
       // Validar tipo
       if (!file.type.startsWith("image/")) {
-        toast.error("Por favor, selecione uma imagem válida")
+        toast.error("Formato inválido", {
+          description: "Por favor, selecione uma imagem (PNG, JPG ou GIF)"
+        })
         return
       }
 
@@ -244,7 +258,9 @@ export function ProfileEditForm() {
         setPreviewUrl(reader.result as string)
       }
       reader.readAsDataURL(file)
-      toast.success("Imagem carregada com sucesso!")
+      toast.success("Foto atualizada", {
+        description: "Sua foto de perfil foi carregada com sucesso"
+      })
     }
   }
 
@@ -259,8 +275,10 @@ export function ProfileEditForm() {
 
     // Mostra toast com resumo dos erros
     const errorCount = Object.keys(errors).length
-    const firstErrors = Object.entries(errors).slice(0, 3)
-    const errorMessages = firstErrors.map(([field, error]) => {
+    const firstError = Object.entries(errors)[0]
+
+    if (firstError) {
+      const [field, error] = firstError
       const fieldNames: Record<string, string> = {
         first_name: 'Nome',
         last_name: 'Sobrenome',
@@ -275,13 +293,15 @@ export function ProfileEditForm() {
         state: 'Estado',
         city: 'Cidade',
       }
-      return `• ${fieldNames[field] || field}: ${error?.message}`
-    }).join('\n')
 
-    toast.error(
-      `${errorCount} erro${errorCount > 1 ? 's' : ''} de validação encontrado${errorCount > 1 ? 's' : ''}:\n\n${errorMessages}${errorCount > 3 ? '\n\n...e mais ' + (errorCount - 3) + ' erro(s)' : ''}`,
-      { duration: 6000 }
-    )
+      const fieldName = fieldNames[field] || field
+      const errorMessage = error?.message || 'Erro de validação'
+
+      toast.error(`${fieldName}: ${errorMessage}`, {
+        description: errorCount > 1 ? `E mais ${errorCount - 1} erro${errorCount > 2 ? 's' : ''} encontrado${errorCount > 2 ? 's' : ''}` : undefined,
+        duration: 5000
+      })
+    }
   }
 
   const onSubmit = async (data: ProfileFormData) => {
@@ -291,7 +311,9 @@ export function ProfileEditForm() {
     console.groupEnd()
 
     if (!session?.access) {
-      toast.error("Sessão inválida. Por favor, faça login novamente.")
+      toast.error("Sessão expirada", {
+        description: "Por favor, faça login novamente para continuar"
+      })
       return
     }
 
@@ -361,13 +383,20 @@ export function ProfileEditForm() {
       // Revalida o cache do SWR para buscar dados atualizados
       mutate()
 
-      toast.success("Perfil atualizado com sucesso!")
+      toast.success("Perfil atualizado!", {
+        description: "Suas informações foram salvas com sucesso"
+      })
 
       // Reseta a imagem temporária
       setProfileImage(null)
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error)
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar perfil")
+
+      const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar perfil"
+      toast.error("Falha ao salvar", {
+        description: errorMessage,
+        duration: 5000
+      })
     }
   }
 
