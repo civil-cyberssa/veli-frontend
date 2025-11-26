@@ -127,13 +127,15 @@ export function ProfileEditForm() {
         final: genderValue
       })
 
-      // Converte data de YYYY-MM-DD para DD/MM/YYYY para exibição
+      // Converte data para DD/MM/YYYY para exibição (aceita YYYY-MM-DD ou DD/MM/YYYY da API)
       let dateValue = ""
       if (user.date_of_birth) {
-        const dateMatch = user.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-        if (dateMatch) {
-          dateValue = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`
+        // Tenta formato YYYY-MM-DD
+        const isoMatch = user.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        if (isoMatch) {
+          dateValue = `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`
         } else {
+          // Já está em DD/MM/YYYY ou outro formato, usa como está
           dateValue = user.date_of_birth
         }
       }
@@ -144,6 +146,8 @@ export function ProfileEditForm() {
         cpf_formatado: user.cpf ? formatCPF(user.cpf) : "",
         phone_original: user.phone,
         phone_formatado: user.phone ? formatPhone(user.phone) : "",
+        cep_original: user.cep,
+        cep_formatado: user.cep ? formatCEP(user.cep) : "",
         date_original: user.date_of_birth,
         date_formatada: dateValue
       })
@@ -157,11 +161,16 @@ export function ProfileEditForm() {
       setValue("date_of_birth", dateValue)
       setValue("gender", genderValue as "M" | "F" | "")
       setValue("phone", user.phone ? formatPhone(user.phone) : "")
-      setValue("cep", "")
+      setValue("cep", user.cep ? formatCEP(user.cep) : "")
       setValue("country", user.country || "")
       setValue("state", user.state || "")
       setValue("city", user.city || "")
       setValue("bio", profile?.bio || "")
+
+      console.log('🔍 Valor do gênero após setValue:', {
+        genderSetValue: genderValue,
+        genderFormValue: watch("gender")
+      })
 
       setPreviewUrl(user.profile_pic_url || "")
     }

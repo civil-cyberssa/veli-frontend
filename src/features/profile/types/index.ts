@@ -18,6 +18,7 @@ export interface User {
   city: string
   country: string
   phone: string
+  cep: string
   role: string
   profile_pic_url: string
 }
