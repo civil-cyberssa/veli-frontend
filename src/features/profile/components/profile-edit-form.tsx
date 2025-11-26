@@ -60,7 +60,7 @@ export function ProfileEditForm() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -82,6 +82,21 @@ export function ProfileEditForm() {
 
   // Watch form values for display purposes
   const formData = watch()
+  const { errors, isSubmitting } = formState
+
+  // Log de erros de validação do Zod (para debugging)
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.group('🔴 Erros de Validação do Formulário')
+      Object.entries(errors).forEach(([field, error]) => {
+        console.log(`📍 Campo: ${field}`)
+        console.log(`   ❌ Erro: ${error?.message || 'Erro desconhecido'}`)
+        console.log(`   💡 Valor atual: ${formData[field as keyof typeof formData] || '(vazio)'}`)
+        console.log('---')
+      })
+      console.groupEnd()
+    }
+  }, [errors, formData])
 
   // Preenche o formulário quando os dados são carregados
   useEffect(() => {
@@ -198,7 +213,48 @@ export function ProfileEditForm() {
     }
   }
 
+  const onError = (errors: typeof formState.errors) => {
+    console.group('❌ Falha na Validação - Formulário não pode ser enviado')
+    console.log(`Total de erros: ${Object.keys(errors).length}`)
+    console.log('')
+    Object.entries(errors).forEach(([field, error]) => {
+      console.log(`📍 ${field}:`, error?.message)
+    })
+    console.groupEnd()
+
+    // Mostra toast com resumo dos erros
+    const errorCount = Object.keys(errors).length
+    const firstErrors = Object.entries(errors).slice(0, 3)
+    const errorMessages = firstErrors.map(([field, error]) => {
+      const fieldNames: Record<string, string> = {
+        first_name: 'Nome',
+        last_name: 'Sobrenome',
+        email: 'E-mail',
+        cpf: 'CPF',
+        phone: 'Telefone',
+        cep: 'CEP',
+        date_of_birth: 'Data de Nascimento',
+        gender: 'Gênero',
+        bio: 'Biografia',
+        country: 'País',
+        state: 'Estado',
+        city: 'Cidade',
+      }
+      return `• ${fieldNames[field] || field}: ${error?.message}`
+    }).join('\n')
+
+    toast.error(
+      `${errorCount} erro${errorCount > 1 ? 's' : ''} de validação encontrado${errorCount > 1 ? 's' : ''}:\n\n${errorMessages}${errorCount > 3 ? '\n\n...e mais ' + (errorCount - 3) + ' erro(s)' : ''}`,
+      { duration: 6000 }
+    )
+  }
+
   const onSubmit = async (data: ProfileFormData) => {
+    console.group('✅ Validação aprovada - Enviando formulário')
+    console.log('Dados validados pelo Zod:')
+    console.table(data)
+    console.groupEnd()
+
     if (!session?.access) {
       toast.error("Sessão inválida. Por favor, faça login novamente.")
       return
@@ -297,7 +353,7 @@ export function ProfileEditForm() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
           {/* Foto de Perfil */}
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
