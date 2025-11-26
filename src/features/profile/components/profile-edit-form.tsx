@@ -73,6 +73,11 @@ export function ProfileEditForm() {
       const user = studentData.user
       const profile = studentData.student_profile
 
+      // Converte gênero para M ou F (caso venha texto completo da API)
+      let genderValue = user.gender || ""
+      if (genderValue.toLowerCase() === "masculino") genderValue = "M"
+      if (genderValue.toLowerCase() === "feminino") genderValue = "F"
+
       setFormData({
         first_name: user.first_name || "",
         last_name: user.last_name || "",
@@ -80,7 +85,7 @@ export function ProfileEditForm() {
         username: user.username || "",
         cpf: user.cpf || "",
         date_of_birth: user.date_of_birth || "",
-        gender: user.gender || "", // Já vem como M ou F da API
+        gender: genderValue, // M ou F
         phone: user.phone || "",
         cep: "",
         country: user.country || "",
