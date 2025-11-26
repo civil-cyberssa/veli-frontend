@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { useStudentProfile } from '../useStudentProfile'
+
 import { useSession } from 'next-auth/react'
 import { SWRConfig } from 'swr'
+import { useStudentProfile } from '@/src/features/profile'
 
 // Mock do useSession
 vi.mock('next-auth/react')
