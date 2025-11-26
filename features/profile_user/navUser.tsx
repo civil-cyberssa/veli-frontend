@@ -1,25 +1,26 @@
 "use client"
 
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles, Moon, Sun } from "lucide-react"
+import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles, Moon, Sun, User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuGroup, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  useSidebar 
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar
 } from "@/components/ui/sidebar"
 import { signOut, useSession } from "next-auth/react"
 import { useTheme } from "next-themes"
-import { useStudentProfile } from "./useStudentProfile"
+import { useStudentProfile } from "@/src/features/profile/hooks/use-student-profile"
+import { useRouter } from "next/navigation"
 
 
 export function NavUser() {
@@ -27,15 +28,20 @@ export function NavUser() {
   const { data: session, status } = useSession()
   const { setTheme, theme } = useTheme()
   const { data: studentData, loading: studentLoading } = useStudentProfile()
+  const router = useRouter()
 
   const handleLogout = async () => {
-    await signOut({ 
+    await signOut({
       callbackUrl: "/auth"
     })
   }
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
+  }
+
+  const handleProfileEdit = () => {
+    router.push("/profile/edit")
   }
 
   // Verifica se está carregando
@@ -117,24 +123,9 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <Bell />
-                Notifications
+              <DropdownMenuItem onClick={handleProfileEdit}>
+                <User />
+                Editar Perfil
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleTheme}>
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

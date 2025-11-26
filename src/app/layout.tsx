@@ -36,7 +36,23 @@ export default function RootLayout({
             {children}
           </ThemeProvider>
         </NextAuthSessionProvider>
-        <Toaster />
+        <Toaster
+          position="top-right"
+          expand={false}
+          richColors
+          closeButton
+          duration={4000}
+          toastOptions={{
+            style: {
+              padding: '16px',
+              gap: '12px',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: '500',
+            },
+            className: 'backdrop-blur-sm',
+          }}
+        />
       </body>
     </html>
   );
