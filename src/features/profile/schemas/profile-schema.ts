@@ -35,58 +35,55 @@ function isValidCPF(cpf: string): boolean {
 
 // Schema de validação do formulário de perfil
 export const profileFormSchema = z.object({
-  // Campos obrigatórios
+  // Campos obrigatórios (apenas os que o usuário DEVE preencher)
   first_name: z
     .string()
+    .min(1, 'Nome é obrigatório')
     .min(2, 'Nome deve ter pelo menos 2 caracteres')
     .max(50, 'Nome deve ter no máximo 50 caracteres')
     .regex(/^[A-Za-zÀ-ÿ\s]+$/, 'Nome deve conter apenas letras'),
 
   last_name: z
     .string()
+    .min(1, 'Sobrenome é obrigatório')
     .min(2, 'Sobrenome deve ter pelo menos 2 caracteres')
     .max(50, 'Sobrenome deve ter no máximo 50 caracteres')
     .regex(/^[A-Za-zÀ-ÿ\s]+$/, 'Sobrenome deve conter apenas letras'),
 
   email: z
     .string()
+    .min(1, 'E-mail é obrigatório')
     .email('E-mail inválido')
-    .min(5, 'E-mail muito curto')
     .max(100, 'E-mail muito longo')
     .toLowerCase(),
 
-  // Campos opcionais com validação
-  username: z
-    .string()
-    .min(3, 'Nome de usuário deve ter pelo menos 3 caracteres')
-    .max(30, 'Nome de usuário deve ter no máximo 30 caracteres')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Nome de usuário deve conter apenas letras, números, _ e -')
-    .optional()
-    .or(z.literal('')),
+  // Username é auto-gerado, não precisa validação
+  username: z.string().optional().or(z.literal('')),
 
+  // Campos opcionais - validam apenas se tiverem conteúdo
   cpf: z
     .string()
     .optional()
+    .or(z.literal(''))
     .refine(
       (val) => {
-        if (!val || val === '') return true
+        // Se vazio, não valida
+        if (!val || val.trim() === '') return true
+        // Se preenchido, valida CPF
         return isValidCPF(val)
       },
       { message: 'CPF inválido' }
-    )
-    .or(z.literal('')),
+    ),
 
   date_of_birth: z
     .string()
     .optional()
+    .or(z.literal(''))
     .refine(
       (val) => {
-        if (!val || val === '') return true
-        // Valida formato YYYY-MM-DD ou DD/MM/YYYY
+        if (!val || val.trim() === '') return true
         const dateRegex = /^\d{4}-\d{2}-\d{2}$|^\d{2}\/\d{2}\/\d{4}$/
         if (!dateRegex.test(val)) return false
-
-        // Valida se é uma data válida
         const date = new Date(val.includes('-') ? val : val.split('/').reverse().join('-'))
         return !isNaN(date.getTime())
       },
@@ -94,74 +91,102 @@ export const profileFormSchema = z.object({
     )
     .refine(
       (val) => {
-        if (!val || val === '') return true
+        if (!val || val.trim() === '') return true
         const date = new Date(val.includes('-') ? val : val.split('/').reverse().join('-'))
         const today = new Date()
         const age = today.getFullYear() - date.getFullYear()
         return age >= 5 && age <= 120
       },
       { message: 'Idade deve estar entre 5 e 120 anos' }
-    )
-    .or(z.literal('')),
+    ),
 
   gender: z
-    .enum(['M', 'F'], {
-      message: 'Selecione um gênero válido',
-    })
+    .string()
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .refine(
+      (val) => {
+        // Se vazio, aceita
+        if (!val || val.trim() === '') return true
+        // Se preenchido, deve ser M ou F
+        return val === 'M' || val === 'F'
+      },
+      { message: 'Gênero deve ser Masculino ou Feminino' }
+    ),
 
   phone: z
     .string()
     .optional()
+    .or(z.literal(''))
     .refine(
       (val) => {
-        if (!val || val === '') return true
+        if (!val || val.trim() === '') return true
         const cleanPhone = val.replace(/\D/g, '')
-        // Telefone brasileiro: 10 ou 11 dígitos (com DDD)
         return cleanPhone.length >= 10 && cleanPhone.length <= 11
       },
       { message: 'Telefone inválido. Use o formato: (00) 00000-0000' }
-    )
-    .or(z.literal('')),
+    ),
 
   cep: z
     .string()
     .optional()
+    .or(z.literal(''))
     .refine(
       (val) => {
-        if (!val || val === '') return true
+        if (!val || val.trim() === '') return true
         const cleanCEP = val.replace(/\D/g, '')
         return cleanCEP.length === 8
       },
       { message: 'CEP inválido. Use o formato: 00000-000' }
-    )
-    .or(z.literal('')),
+    ),
 
   country: z
     .string()
-    .max(50, 'País deve ter no máximo 50 caracteres')
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .refine(
+      (val) => {
+        if (!val || val.trim() === '') return true
+        return val.length <= 50
+      },
+      { message: 'País deve ter no máximo 50 caracteres' }
+    ),
 
   state: z
     .string()
-    .max(2, 'Estado deve ter 2 caracteres')
-    .regex(/^[A-Z]{0,2}$/, 'Estado deve conter apenas letras maiúsculas')
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .refine(
+      (val) => {
+        if (!val || val.trim() === '') return true
+        return /^[A-Z]{2}$/.test(val)
+      },
+      { message: 'Estado deve ter 2 letras maiúsculas (ex: SP)' }
+    ),
 
   city: z
     .string()
-    .max(50, 'Cidade deve ter no máximo 50 caracteres')
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .refine(
+      (val) => {
+        if (!val || val.trim() === '') return true
+        return val.length <= 50
+      },
+      { message: 'Cidade deve ter no máximo 50 caracteres' }
+    ),
 
   bio: z
     .string()
-    .max(500, 'Biografia deve ter no máximo 500 caracteres')
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .refine(
+      (val) => {
+        if (!val || val.trim() === '') return true
+        return val.length <= 500
+      },
+      { message: 'Biografia deve ter no máximo 500 caracteres' }
+    ),
 })
 
 // Tipo inferido do schema
