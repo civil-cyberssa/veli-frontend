@@ -1,6 +1,7 @@
 // Location autocomplete using free public APIs
 // - IBGE API for Brazilian states and cities (official government data)
 // - REST Countries API for countries (free, no API key required)
+// All data is in PT-BR format with proper locale sorting
 
 export interface Country {
   code: string
@@ -25,9 +26,17 @@ const cache = {
 }
 
 /**
+ * Remove acentos para busca mais flexível
+ */
+function removeAccents(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+/**
  * Busca países usando REST Countries API
  * API: https://restcountries.com/
  * Totalmente gratuita, sem API key
+ * Retorna nomes em PT-BR com ordenação alfabética correta
  */
 export async function searchCountries(
   namePrefix: string,
@@ -49,21 +58,27 @@ export async function searchCountries(
           code: country.cca2,
           name: country.name.translations?.por?.common || country.name.common,
         }))
-        .sort((a: Country, b: Country) => a.name.localeCompare(b.name))
+        // Ordenação alfabética PT-BR (respeita acentuação)
+        .sort((a: Country, b: Country) => a.name.localeCompare(b.name, 'pt-BR'))
     }
 
-    // Filtra pelo nome
-    const search = namePrefix.toLowerCase()
+    // Busca flexível: ignora acentos e maiúsculas
+    const searchNormalized = removeAccents(namePrefix.toLowerCase())
     return cache.countries
-      .filter(country => country.name.toLowerCase().includes(search))
+      .filter(country => {
+        const nameNormalized = removeAccents(country.name.toLowerCase())
+        return nameNormalized.includes(searchNormalized)
+      })
       .slice(0, 10)
   } catch (error) {
     console.error('Error fetching countries:', error)
 
     // Fallback para lista básica em caso de erro
-    return FALLBACK_COUNTRIES.filter(country =>
-      country.name.toLowerCase().includes(namePrefix.toLowerCase())
-    ).slice(0, 10)
+    const searchNormalized = removeAccents(namePrefix.toLowerCase())
+    return FALLBACK_COUNTRIES.filter(country => {
+      const nameNormalized = removeAccents(country.name.toLowerCase())
+      return nameNormalized.includes(searchNormalized)
+    }).slice(0, 10)
   }
 }
 
@@ -71,6 +86,7 @@ export async function searchCountries(
  * Busca estados usando IBGE API
  * API: https://servicodados.ibge.gov.br/api/
  * Totalmente gratuita, oficial do governo brasileiro
+ * Dados já vêm ordenados em PT-BR pela API
  */
 export async function searchRegions(
   countryCode: string,
@@ -100,21 +116,27 @@ export async function searchRegions(
       return cache.states
     }
 
-    // Filtra por nome ou sigla
-    const search = namePrefix.toLowerCase()
-    return cache.states.filter(state =>
-      state.name.toLowerCase().includes(search) ||
-      state.code.toLowerCase().includes(search)
-    )
+    // Busca flexível: ignora acentos e maiúsculas (permite "sao" encontrar "São Paulo")
+    const searchNormalized = removeAccents(namePrefix.toLowerCase())
+    return cache.states.filter(state => {
+      const nameNormalized = removeAccents(state.name.toLowerCase())
+      const codeNormalized = state.code.toLowerCase()
+      return nameNormalized.includes(searchNormalized) || codeNormalized.includes(searchNormalized)
+    })
   } catch (error) {
     console.error('Error fetching states:', error)
 
     // Fallback para lista básica em caso de erro
-    return FALLBACK_STATES.filter(state =>
-      !namePrefix ||
-      state.name.toLowerCase().includes(namePrefix.toLowerCase()) ||
-      state.code.toLowerCase().includes(namePrefix.toLowerCase())
-    )
+    if (!namePrefix || namePrefix.length < 1) {
+      return FALLBACK_STATES
+    }
+
+    const searchNormalized = removeAccents(namePrefix.toLowerCase())
+    return FALLBACK_STATES.filter(state => {
+      const nameNormalized = removeAccents(state.name.toLowerCase())
+      const codeNormalized = state.code.toLowerCase()
+      return nameNormalized.includes(searchNormalized) || codeNormalized.includes(searchNormalized)
+    })
   }
 }
 
@@ -122,6 +144,7 @@ export async function searchRegions(
  * Busca cidades usando IBGE API
  * API: https://servicodados.ibge.gov.br/api/
  * Retorna TODAS as 5.570 cidades brasileiras
+ * Dados já vêm ordenados em PT-BR pela API
  */
 export async function searchCities(
   namePrefix: string,
@@ -163,12 +186,15 @@ export async function searchCities(
       cache.cities.set(cacheKey, cities)
     }
 
-    // Filtra pelo nome
-    const search = namePrefix.toLowerCase()
+    // Busca flexível: ignora acentos e maiúsculas (permite "sao jose" encontrar "São José")
+    const searchNormalized = removeAccents(namePrefix.toLowerCase())
     const cities = cache.cities.get(cacheKey) || []
 
     return cities
-      .filter(city => city.name.toLowerCase().includes(search))
+      .filter(city => {
+        const nameNormalized = removeAccents(city.name.toLowerCase())
+        return nameNormalized.includes(searchNormalized)
+      })
       .slice(0, 15)
   } catch (error) {
     console.error('Error fetching cities:', error)
@@ -192,28 +218,47 @@ const STATES_ID_MAP: Record<string, string> = {
 
 /**
  * Lista de países (fallback em caso de erro na API)
+ * Nomes em português brasileiro, ordenados alfabeticamente
  */
 const FALLBACK_COUNTRIES: Country[] = [
-  { code: 'BR', name: 'Brasil' },
-  { code: 'PT', name: 'Portugal' },
-  { code: 'US', name: 'Estados Unidos' },
-  { code: 'AR', name: 'Argentina' },
-  { code: 'UY', name: 'Uruguai' },
-  { code: 'PY', name: 'Paraguai' },
-  { code: 'CL', name: 'Chile' },
-  { code: 'CO', name: 'Colômbia' },
-  { code: 'PE', name: 'Peru' },
-  { code: 'VE', name: 'Venezuela' },
-  { code: 'BO', name: 'Bolívia' },
-  { code: 'EC', name: 'Equador' },
-  { code: 'MX', name: 'México' },
-  { code: 'ES', name: 'Espanha' },
-  { code: 'FR', name: 'França' },
-  { code: 'IT', name: 'Itália' },
+  { code: 'ZA', name: 'África do Sul' },
   { code: 'DE', name: 'Alemanha' },
-  { code: 'GB', name: 'Reino Unido' },
-  { code: 'CA', name: 'Canadá' },
+  { code: 'AO', name: 'Angola' },
+  { code: 'AR', name: 'Argentina' },
   { code: 'AU', name: 'Austrália' },
+  { code: 'BE', name: 'Bélgica' },
+  { code: 'BO', name: 'Bolívia' },
+  { code: 'BR', name: 'Brasil' },
+  { code: 'CA', name: 'Canadá' },
+  { code: 'CV', name: 'Cabo Verde' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'CN', name: 'China' },
+  { code: 'CO', name: 'Colômbia' },
+  { code: 'KR', name: 'Coreia do Sul' },
+  { code: 'CR', name: 'Costa Rica' },
+  { code: 'CU', name: 'Cuba' },
+  { code: 'EC', name: 'Equador' },
+  { code: 'ES', name: 'Espanha' },
+  { code: 'US', name: 'Estados Unidos' },
+  { code: 'FR', name: 'França' },
+  { code: 'GW', name: 'Guiné-Bissau' },
+  { code: 'NL', name: 'Holanda' },
+  { code: 'IN', name: 'Índia' },
+  { code: 'IE', name: 'Irlanda' },
+  { code: 'IT', name: 'Itália' },
+  { code: 'JP', name: 'Japão' },
+  { code: 'MX', name: 'México' },
+  { code: 'MZ', name: 'Moçambique' },
+  { code: 'NZ', name: 'Nova Zelândia' },
+  { code: 'PY', name: 'Paraguai' },
+  { code: 'PE', name: 'Peru' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'GB', name: 'Reino Unido' },
+  { code: 'ST', name: 'São Tomé e Príncipe' },
+  { code: 'CH', name: 'Suíça' },
+  { code: 'TL', name: 'Timor-Leste' },
+  { code: 'UY', name: 'Uruguai' },
+  { code: 'VE', name: 'Venezuela' },
 ]
 
 /**
