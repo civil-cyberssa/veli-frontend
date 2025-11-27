@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useStudentProfile } from "../hooks/use-student-profile"
 import { formatCPF, formatPhone, formatCEP, formatDate, cleanCPF, cleanPhone, cleanCEP, cleanDate } from "../utils/format"
