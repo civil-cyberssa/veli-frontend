@@ -137,18 +137,15 @@ export function ProfileEditForm() {
       setValue("city", user.city || "")
       setValue("bio", profile?.bio || "")
 
-      // Define gênero por último com shouldValidate e shouldDirty
-      if (genderValue) {
-        setValue("gender", genderValue as "M" | "F", {
-          shouldValidate: true,
-          shouldDirty: true
-        })
-      }
-
+      // Define gênero (sempre define, mesmo se vazio)
+      setValue("gender", genderValue, {
+        shouldValidate: true,
+        shouldDirty: false
+      })
 
       setPreviewUrl(user.profile_pic_url || "")
     }
-  }, [studentData, setValue, watch])
+  }, [studentData, setValue])
 
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value)
