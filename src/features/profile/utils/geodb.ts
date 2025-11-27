@@ -1,171 +1,67 @@
-// GeoDB Cities API integration for location autocomplete
-// API Documentation: https://rapidapi.com/wirefreethought/api/geodb-cities
+// Location autocomplete using local data
+// Uses static lists to avoid API rate limits and provide instant results
 
-const GEODB_API_URL = 'https://wft-geo-db.p.rapidapi.com/v1/geo'
-const GEODB_API_KEY = process.env.NEXT_PUBLIC_GEODB_API_KEY || ''
-const GEODB_API_HOST = 'wft-geo-db.p.rapidapi.com'
-
-interface GeoDBCountry {
+export interface Country {
   code: string
   name: string
-  wikiDataId: string
 }
 
-interface GeoDBRegion {
-  id: string
+export interface State {
+  code: string
   name: string
-  countryCode: string
-  isoCode: string
 }
 
-interface GeoDBCity {
-  id: number
+export interface City {
   name: string
-  country: string
-  countryCode: string
-  region: string
-  regionCode: string
-}
-
-interface GeoDBResponse<T> {
-  data: T[]
-  metadata?: {
-    currentOffset: number
-    totalCount: number
-  }
+  state: string
 }
 
 /**
- * Busca países por nome
- * @param namePrefix Prefixo do nome do país para buscar
- * @param languageCode Código do idioma (ex: 'pt' para português)
- * @returns Lista de países encontrados
+ * Lista de países em português (principais países)
  */
-export async function searchCountries(
-  namePrefix: string,
-  languageCode: string = 'pt'
-): Promise<GeoDBCountry[]> {
-  if (!namePrefix || namePrefix.length < 2) {
-    return []
-  }
-
-  try {
-    const url = new URL(`${GEODB_API_URL}/countries`)
-    url.searchParams.append('namePrefix', namePrefix)
-    url.searchParams.append('languageCode', languageCode)
-    url.searchParams.append('limit', '10')
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': GEODB_API_KEY,
-        'X-RapidAPI-Host': GEODB_API_HOST,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Erro ao buscar países: ${response.statusText}`)
-    }
-
-    const data: GeoDBResponse<GeoDBCountry> = await response.json()
-    return data.data || []
-  } catch (error) {
-    console.error('Erro ao buscar países:', error)
-    return []
-  }
-}
+export const COUNTRIES: Country[] = [
+  { code: 'BR', name: 'Brasil' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'US', name: 'Estados Unidos' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'UY', name: 'Uruguai' },
+  { code: 'PY', name: 'Paraguai' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'CO', name: 'Colômbia' },
+  { code: 'PE', name: 'Peru' },
+  { code: 'VE', name: 'Venezuela' },
+  { code: 'BO', name: 'Bolívia' },
+  { code: 'EC', name: 'Equador' },
+  { code: 'MX', name: 'México' },
+  { code: 'ES', name: 'Espanha' },
+  { code: 'FR', name: 'França' },
+  { code: 'IT', name: 'Itália' },
+  { code: 'DE', name: 'Alemanha' },
+  { code: 'GB', name: 'Reino Unido' },
+  { code: 'CA', name: 'Canadá' },
+  { code: 'AU', name: 'Austrália' },
+  { code: 'NZ', name: 'Nova Zelândia' },
+  { code: 'JP', name: 'Japão' },
+  { code: 'CN', name: 'China' },
+  { code: 'KR', name: 'Coreia do Sul' },
+  { code: 'IN', name: 'Índia' },
+  { code: 'ZA', name: 'África do Sul' },
+  { code: 'EG', name: 'Egito' },
+  { code: 'NG', name: 'Nigéria' },
+  { code: 'KE', name: 'Quênia' },
+  { code: 'AO', name: 'Angola' },
+  { code: 'MZ', name: 'Moçambique' },
+  { code: 'CV', name: 'Cabo Verde' },
+  { code: 'GW', name: 'Guiné-Bissau' },
+  { code: 'ST', name: 'São Tomé e Príncipe' },
+  { code: 'TL', name: 'Timor-Leste' },
+  { code: 'MO', name: 'Macau' },
+]
 
 /**
- * Busca regiões/estados de um país
- * @param countryCode Código ISO do país (ex: 'BR' para Brasil)
- * @param namePrefix Prefixo do nome da região para buscar
- * @returns Lista de regiões encontradas
+ * Lista de estados brasileiros
  */
-export async function searchRegions(
-  countryCode: string,
-  namePrefix?: string
-): Promise<GeoDBRegion[]> {
-  if (!countryCode) {
-    return []
-  }
-
-  try {
-    const url = new URL(`${GEODB_API_URL}/countries/${countryCode}/regions`)
-    if (namePrefix && namePrefix.length >= 2) {
-      url.searchParams.append('namePrefix', namePrefix)
-    }
-    url.searchParams.append('limit', '30')
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': GEODB_API_KEY,
-        'X-RapidAPI-Host': GEODB_API_HOST,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Erro ao buscar regiões: ${response.statusText}`)
-    }
-
-    const data: GeoDBResponse<GeoDBRegion> = await response.json()
-    return data.data || []
-  } catch (error) {
-    console.error('Erro ao buscar regiões:', error)
-    return []
-  }
-}
-
-/**
- * Busca cidades por nome
- * @param namePrefix Prefixo do nome da cidade para buscar
- * @param countryCode Código ISO do país (opcional, ex: 'BR')
- * @param regionCode Código da região/estado (opcional)
- * @returns Lista de cidades encontradas
- */
-export async function searchCities(
-  namePrefix: string,
-  countryCode?: string,
-  regionCode?: string
-): Promise<GeoDBCity[]> {
-  if (!namePrefix || namePrefix.length < 2) {
-    return []
-  }
-
-  try {
-    const url = new URL(`${GEODB_API_URL}/cities`)
-    url.searchParams.append('namePrefix', namePrefix)
-    url.searchParams.append('limit', '10')
-    url.searchParams.append('languageCode', 'pt')
-
-    if (countryCode) {
-      url.searchParams.append('countryIds', countryCode)
-    }
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': GEODB_API_KEY,
-        'X-RapidAPI-Host': GEODB_API_HOST,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Erro ao buscar cidades: ${response.statusText}`)
-    }
-
-    const data: GeoDBResponse<GeoDBCity> = await response.json()
-    return data.data || []
-  } catch (error) {
-    console.error('Erro ao buscar cidades:', error)
-    return []
-  }
-}
-
-/**
- * Lista de estados brasileiros (fallback caso a API não esteja disponível)
- */
-export const BRAZILIAN_STATES = [
+export const BRAZILIAN_STATES: State[] = [
   { code: 'AC', name: 'Acre' },
   { code: 'AL', name: 'Alagoas' },
   { code: 'AP', name: 'Amapá' },
@@ -194,3 +90,208 @@ export const BRAZILIAN_STATES = [
   { code: 'SE', name: 'Sergipe' },
   { code: 'TO', name: 'Tocantins' },
 ]
+
+/**
+ * Lista de principais cidades brasileiras por estado
+ */
+export const BRAZILIAN_CITIES: City[] = [
+  // São Paulo
+  { name: 'São Paulo', state: 'SP' },
+  { name: 'Campinas', state: 'SP' },
+  { name: 'Guarulhos', state: 'SP' },
+  { name: 'São Bernardo do Campo', state: 'SP' },
+  { name: 'Santo André', state: 'SP' },
+  { name: 'Osasco', state: 'SP' },
+  { name: 'Ribeirão Preto', state: 'SP' },
+  { name: 'Sorocaba', state: 'SP' },
+  { name: 'São José dos Campos', state: 'SP' },
+  { name: 'Santos', state: 'SP' },
+
+  // Rio de Janeiro
+  { name: 'Rio de Janeiro', state: 'RJ' },
+  { name: 'Niterói', state: 'RJ' },
+  { name: 'Duque de Caxias', state: 'RJ' },
+  { name: 'Nova Iguaçu', state: 'RJ' },
+  { name: 'São Gonçalo', state: 'RJ' },
+  { name: 'Campos dos Goytacazes', state: 'RJ' },
+  { name: 'Petrópolis', state: 'RJ' },
+
+  // Minas Gerais
+  { name: 'Belo Horizonte', state: 'MG' },
+  { name: 'Uberlândia', state: 'MG' },
+  { name: 'Contagem', state: 'MG' },
+  { name: 'Juiz de Fora', state: 'MG' },
+  { name: 'Betim', state: 'MG' },
+  { name: 'Montes Claros', state: 'MG' },
+
+  // Bahia
+  { name: 'Salvador', state: 'BA' },
+  { name: 'Feira de Santana', state: 'BA' },
+  { name: 'Vitória da Conquista', state: 'BA' },
+  { name: 'Camaçari', state: 'BA' },
+  { name: 'Ilhéus', state: 'BA' },
+
+  // Paraná
+  { name: 'Curitiba', state: 'PR' },
+  { name: 'Londrina', state: 'PR' },
+  { name: 'Maringá', state: 'PR' },
+  { name: 'Ponta Grossa', state: 'PR' },
+  { name: 'Cascavel', state: 'PR' },
+  { name: 'Foz do Iguaçu', state: 'PR' },
+
+  // Rio Grande do Sul
+  { name: 'Porto Alegre', state: 'RS' },
+  { name: 'Caxias do Sul', state: 'RS' },
+  { name: 'Pelotas', state: 'RS' },
+  { name: 'Canoas', state: 'RS' },
+  { name: 'Santa Maria', state: 'RS' },
+
+  // Pernambuco
+  { name: 'Recife', state: 'PE' },
+  { name: 'Jaboatão dos Guararapes', state: 'PE' },
+  { name: 'Olinda', state: 'PE' },
+  { name: 'Caruaru', state: 'PE' },
+
+  // Ceará
+  { name: 'Fortaleza', state: 'CE' },
+  { name: 'Caucaia', state: 'CE' },
+  { name: 'Juazeiro do Norte', state: 'CE' },
+  { name: 'Sobral', state: 'CE' },
+
+  // Pará
+  { name: 'Belém', state: 'PA' },
+  { name: 'Ananindeua', state: 'PA' },
+  { name: 'Santarém', state: 'PA' },
+
+  // Santa Catarina
+  { name: 'Florianópolis', state: 'SC' },
+  { name: 'Joinville', state: 'SC' },
+  { name: 'Blumenau', state: 'SC' },
+  { name: 'São José', state: 'SC' },
+
+  // Goiás
+  { name: 'Goiânia', state: 'GO' },
+  { name: 'Aparecida de Goiânia', state: 'GO' },
+  { name: 'Anápolis', state: 'GO' },
+
+  // Maranhão
+  { name: 'São Luís', state: 'MA' },
+  { name: 'Imperatriz', state: 'MA' },
+
+  // Espírito Santo
+  { name: 'Vitória', state: 'ES' },
+  { name: 'Vila Velha', state: 'ES' },
+  { name: 'Serra', state: 'ES' },
+  { name: 'Cariacica', state: 'ES' },
+
+  // Paraíba
+  { name: 'João Pessoa', state: 'PB' },
+  { name: 'Campina Grande', state: 'PB' },
+
+  // Amazonas
+  { name: 'Manaus', state: 'AM' },
+
+  // Rio Grande do Norte
+  { name: 'Natal', state: 'RN' },
+  { name: 'Mossoró', state: 'RN' },
+
+  // Mato Grosso
+  { name: 'Cuiabá', state: 'MT' },
+  { name: 'Várzea Grande', state: 'MT' },
+
+  // Mato Grosso do Sul
+  { name: 'Campo Grande', state: 'MS' },
+  { name: 'Dourados', state: 'MS' },
+
+  // Alagoas
+  { name: 'Maceió', state: 'AL' },
+
+  // Piauí
+  { name: 'Teresina', state: 'PI' },
+
+  // Distrito Federal
+  { name: 'Brasília', state: 'DF' },
+
+  // Sergipe
+  { name: 'Aracaju', state: 'SE' },
+
+  // Rondônia
+  { name: 'Porto Velho', state: 'RO' },
+
+  // Tocantins
+  { name: 'Palmas', state: 'TO' },
+
+  // Acre
+  { name: 'Rio Branco', state: 'AC' },
+
+  // Amapá
+  { name: 'Macapá', state: 'AP' },
+
+  // Roraima
+  { name: 'Boa Vista', state: 'RR' },
+]
+
+/**
+ * Busca países por nome (local)
+ */
+export async function searchCountries(
+  namePrefix: string,
+  languageCode: string = 'pt'
+): Promise<Country[]> {
+  if (!namePrefix || namePrefix.length < 2) {
+    return []
+  }
+
+  const search = namePrefix.toLowerCase()
+  return COUNTRIES.filter(country =>
+    country.name.toLowerCase().includes(search)
+  ).slice(0, 10)
+}
+
+/**
+ * Busca estados (local)
+ */
+export async function searchRegions(
+  countryCode: string,
+  namePrefix?: string
+): Promise<State[]> {
+  if (countryCode !== 'BR') {
+    return []
+  }
+
+  if (!namePrefix || namePrefix.length < 1) {
+    return BRAZILIAN_STATES
+  }
+
+  const search = namePrefix.toLowerCase()
+  return BRAZILIAN_STATES.filter(state =>
+    state.name.toLowerCase().includes(search) ||
+    state.code.toLowerCase().includes(search)
+  )
+}
+
+/**
+ * Busca cidades (local)
+ */
+export async function searchCities(
+  namePrefix: string,
+  countryCode?: string,
+  stateCode?: string
+): Promise<City[]> {
+  if (!namePrefix || namePrefix.length < 2) {
+    return []
+  }
+
+  const search = namePrefix.toLowerCase()
+  let cities = BRAZILIAN_CITIES
+
+  // Filtra por estado se fornecido
+  if (stateCode) {
+    cities = cities.filter(city => city.state === stateCode.toUpperCase())
+  }
+
+  // Filtra por nome
+  return cities
+    .filter(city => city.name.toLowerCase().includes(search))
+    .slice(0, 10)
+}

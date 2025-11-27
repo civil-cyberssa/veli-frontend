@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Loader2 } from "lucide-react"
-import { searchCountries, searchCities, BRAZILIAN_STATES } from "../utils/geodb"
+import { searchCountries, searchCities, searchRegions } from "../utils/geodb"
 import { useDebounce } from "../hooks/use-debounce"
 
 interface LocationAutocompleteProps {
@@ -30,10 +30,10 @@ export function LocationAutocomplete({
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const debouncedValue = useDebounce(value, 300)
+  const debouncedValue = useDebounce(value, 200)
 
   const fetchSuggestions = useCallback(async (searchValue: string) => {
-    if (!searchValue || searchValue.length < 2) {
+    if (!searchValue || (type !== "state" && searchValue.length < 2)) {
       setSuggestions([])
       return
     }
@@ -45,16 +45,8 @@ export function LocationAutocomplete({
         const countries = await searchCountries(searchValue)
         setSuggestions(countries.map((c) => c.name))
       } else if (type === "state") {
-        // Para estados brasileiros, usa lista local primeiro
-        if (countryCode === "BR") {
-          const filtered = BRAZILIAN_STATES
-            .filter((state) =>
-              state.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-              state.code.toLowerCase().includes(searchValue.toLowerCase())
-            )
-            .map((state) => state.code)
-          setSuggestions(filtered)
-        }
+        const states = await searchRegions(countryCode, searchValue)
+        setSuggestions(states.map((s) => s.code))
       } else if (type === "city") {
         const cities = await searchCities(searchValue, countryCode)
         setSuggestions(cities.map((c) => c.name))
