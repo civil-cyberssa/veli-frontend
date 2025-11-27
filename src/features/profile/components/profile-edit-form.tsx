@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useForm, Controller } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useStudentProfile } from "../hooks/use-student-profile"
 import { formatCPF, formatPhone, formatCEP, formatDate, cleanCPF, cleanPhone, cleanCEP, cleanDate } from "../utils/format"
@@ -15,13 +15,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   ArrowLeft,
   Camera,
@@ -61,6 +54,7 @@ export function ProfileEditForm() {
     setValue,
     watch,
     formState,
+    reset,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -83,7 +77,6 @@ export function ProfileEditForm() {
   // Watch form values for display purposes
   const formData = watch()
   const { errors, isSubmitting } = formState
-
 
   // Preenche o formulário quando os dados são carregados
   useEffect(() => {
@@ -108,7 +101,6 @@ export function ProfileEditForm() {
         genderValue = normalized.charAt(0).toUpperCase()
       }
 
-
       // Converte data para DD/MM/YYYY para exibição (aceita YYYY-MM-DD ou DD/MM/YYYY da API)
       let dateValue = ""
       if (user.date_of_birth) {
@@ -122,30 +114,27 @@ export function ProfileEditForm() {
         }
       }
 
-
-      // Preenche o formulário com setValue (aplicando máscaras)
-      setValue("first_name", user.first_name || "")
-      setValue("last_name", user.last_name || "")
-      setValue("email", user.email || "")
-      setValue("username", user.username || "")
-      setValue("cpf", user.cpf ? formatCPF(user.cpf) : "")
-      setValue("date_of_birth", dateValue)
-      setValue("phone", user.phone ? formatPhone(user.phone) : "")
-      setValue("cep", user.cep ? formatCEP(user.cep) : "")
-      setValue("country", user.country || "")
-      setValue("state", user.state || "")
-      setValue("city", user.city || "")
-      setValue("bio", profile?.bio || "")
-
-      // Define gênero (sempre define, mesmo se vazio)
-      setValue("gender", genderValue, {
-        shouldValidate: true,
-        shouldDirty: false
+      // Usa reset para preencher todos os campos de uma vez
+      // Isso garante que o defaultValue seja atualizado corretamente
+      reset({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        username: user.username || "",
+        cpf: user.cpf ? formatCPF(user.cpf) : "",
+        date_of_birth: dateValue,
+        gender: genderValue,
+        phone: user.phone ? formatPhone(user.phone) : "",
+        cep: user.cep ? formatCEP(user.cep) : "",
+        country: user.country || "",
+        state: user.state || "",
+        city: user.city || "",
+        bio: profile?.bio || "",
       })
 
       setPreviewUrl(user.profile_pic_url || "")
     }
-  }, [studentData, setValue])
+  }, [studentData, reset])
 
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value)
@@ -558,61 +547,15 @@ export function ProfileEditForm() {
                   <User className="h-4 w-4" />
                   Gênero
                 </Label>
-                <Controller
-                  name="gender"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || undefined}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger className={`transition-all focus:scale-[1.02] ${errors.gender ? 'border-destructive' : ''}`}>
-                        <SelectValue placeholder="Selecione seu gênero" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="M">
-                          <div className="flex items-center gap-2">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4 text-blue-500"
-                            >
-                              <circle cx="10" cy="14" r="7" />
-                              <line x1="14.5" y1="9.5" x2="21" y2="3" />
-                              <line x1="17" y1="3" x2="21" y2="3" />
-                              <line x1="21" y1="3" x2="21" y2="7" />
-                            </svg>
-                            <span>Masculino</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="F">
-                          <div className="flex items-center gap-2">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4 text-pink-500"
-                            >
-                              <circle cx="12" cy="8" r="7" />
-                              <line x1="12" y1="15" x2="12" y2="23" />
-                              <line x1="8" y1="19" x2="16" y2="19" />
-                            </svg>
-                            <span>Feminino</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
+                <select
+                  id="gender"
+                  {...register("gender")}
+                  className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all focus:scale-[1.02] ${errors.gender ? 'border-destructive' : ''}`}
+                >
+                  <option value="">Selecione seu gênero</option>
+                  <option value="M">♂ Masculino</option>
+                  <option value="F">♀ Feminino</option>
+                </select>
                 {errors.gender ? (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
