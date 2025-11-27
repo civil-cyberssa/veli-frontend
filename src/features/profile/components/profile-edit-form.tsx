@@ -35,6 +35,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { toast } from "sonner"
+import { LocationAutocomplete } from "./location-autocomplete"
 
 export function ProfileEditForm() {
   const router = useRouter()
@@ -648,16 +649,28 @@ export function ProfileEditForm() {
                     <Globe className="h-4 w-4" />
                     País
                   </Label>
-                  <Input
-                    id="country"
-                    {...register("country")}
-                    placeholder="Brasil"
-                    className={`transition-all focus:scale-[1.02] ${errors.country ? 'border-destructive' : ''}`}
+                  <Controller
+                    name="country"
+                    control={control}
+                    render={({ field }) => (
+                      <LocationAutocomplete
+                        type="country"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Digite para buscar países"
+                        className={`transition-all focus:scale-[1.02] ${errors.country ? 'border-destructive' : ''}`}
+                        maxLength={50}
+                      />
+                    )}
                   />
-                  {errors.country && (
+                  {errors.country ? (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.country.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Autocomplete disponível - digite para buscar
                     </p>
                   )}
                 </div>
@@ -666,17 +679,29 @@ export function ProfileEditForm() {
                     <MapPin className="h-4 w-4" />
                     Estado
                   </Label>
-                  <Input
-                    id="state"
-                    {...register("state")}
-                    placeholder="SP"
-                    maxLength={2}
-                    className={`transition-all focus:scale-[1.02] uppercase ${errors.state ? 'border-destructive' : ''}`}
+                  <Controller
+                    name="state"
+                    control={control}
+                    render={({ field }) => (
+                      <LocationAutocomplete
+                        type="state"
+                        value={field.value || ""}
+                        onChange={(value) => field.onChange(value.toUpperCase())}
+                        placeholder="Digite ou selecione o estado"
+                        className={`transition-all focus:scale-[1.02] uppercase ${errors.state ? 'border-destructive' : ''}`}
+                        maxLength={2}
+                        countryCode="BR"
+                      />
+                    )}
                   />
-                  {errors.state && (
+                  {errors.state ? (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.state.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Sigla do estado (ex: SP, RJ, MG)
                     </p>
                   )}
                 </div>
@@ -685,16 +710,29 @@ export function ProfileEditForm() {
                     <Home className="h-4 w-4" />
                     Cidade
                   </Label>
-                  <Input
-                    id="city"
-                    {...register("city")}
-                    placeholder="São Paulo"
-                    className={`transition-all focus:scale-[1.02] ${errors.city ? 'border-destructive' : ''}`}
+                  <Controller
+                    name="city"
+                    control={control}
+                    render={({ field }) => (
+                      <LocationAutocomplete
+                        type="city"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Digite para buscar cidades"
+                        className={`transition-all focus:scale-[1.02] ${errors.city ? 'border-destructive' : ''}`}
+                        maxLength={50}
+                        countryCode="BR"
+                      />
+                    )}
                   />
-                  {errors.city && (
+                  {errors.city ? (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.city.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Autocomplete disponível - digite para buscar
                     </p>
                   )}
                 </div>
