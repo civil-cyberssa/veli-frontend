@@ -25,6 +25,7 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={`${poppins.variable} antialiased`}
+        suppressHydrationWarning
       >
         <NextAuthSessionProvider>
           <ThemeProvider

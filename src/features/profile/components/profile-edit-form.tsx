@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useForm, Controller } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useStudentProfile } from "../hooks/use-student-profile"
 import { formatCPF, formatPhone, formatCEP, formatDate, cleanCPF, cleanPhone, cleanCEP, cleanDate } from "../utils/format"
@@ -15,13 +15,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   ArrowLeft,
   Camera,
@@ -42,6 +35,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { toast } from "sonner"
+import { LocationAutocomplete } from "./location-autocomplete"
 
 export function ProfileEditForm() {
   const router = useRouter()
@@ -61,6 +55,7 @@ export function ProfileEditForm() {
     setValue,
     watch,
     formState,
+    reset,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -83,20 +78,6 @@ export function ProfileEditForm() {
   // Watch form values for display purposes
   const formData = watch()
   const { errors, isSubmitting } = formState
-
-  // Log de erros de validação do Zod (para debugging)
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.group('🔴 Erros de Validação do Formulário')
-      Object.entries(errors).forEach(([field, error]) => {
-        console.log(`📍 Campo: ${field}`)
-        console.log(`   ❌ Erro: ${error?.message || 'Erro desconhecido'}`)
-        console.log(`   💡 Valor atual: ${formData[field as keyof typeof formData] || '(vazio)'}`)
-        console.log('---')
-      })
-      console.groupEnd()
-    }
-  }, [errors, formData])
 
   // Preenche o formulário quando os dados são carregados
   useEffect(() => {
@@ -121,12 +102,6 @@ export function ProfileEditForm() {
         genderValue = normalized.charAt(0).toUpperCase()
       }
 
-      console.log('✅ Gender conversion:', {
-        original: user.gender,
-        normalized: normalized,
-        final: genderValue
-      })
-
       // Converte data para DD/MM/YYYY para exibição (aceita YYYY-MM-DD ou DD/MM/YYYY da API)
       let dateValue = ""
       if (user.date_of_birth) {
@@ -140,49 +115,27 @@ export function ProfileEditForm() {
         }
       }
 
-      console.log('📋 Preenchendo formulário com dados da API:', {
+      // Usa reset para preencher todos os campos de uma vez
+      // Isso garante que o defaultValue seja atualizado corretamente
+      reset({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        username: user.username || "",
+        cpf: user.cpf ? formatCPF(user.cpf) : "",
+        date_of_birth: dateValue,
         gender: genderValue,
-        cpf_original: user.cpf,
-        cpf_formatado: user.cpf ? formatCPF(user.cpf) : "",
-        phone_original: user.phone,
-        phone_formatado: user.phone ? formatPhone(user.phone) : "",
-        cep_original: user.cep,
-        cep_formatado: user.cep ? formatCEP(user.cep) : "",
-        date_original: user.date_of_birth,
-        date_formatada: dateValue
-      })
-
-      // Preenche o formulário com setValue (aplicando máscaras)
-      setValue("first_name", user.first_name || "")
-      setValue("last_name", user.last_name || "")
-      setValue("email", user.email || "")
-      setValue("username", user.username || "")
-      setValue("cpf", user.cpf ? formatCPF(user.cpf) : "")
-      setValue("date_of_birth", dateValue)
-      setValue("phone", user.phone ? formatPhone(user.phone) : "")
-      setValue("cep", user.cep ? formatCEP(user.cep) : "")
-      setValue("country", user.country || "")
-      setValue("state", user.state || "")
-      setValue("city", user.city || "")
-      setValue("bio", profile?.bio || "")
-
-      // Define gênero por último com shouldValidate e shouldDirty
-      if (genderValue) {
-        setValue("gender", genderValue as "M" | "F", {
-          shouldValidate: true,
-          shouldDirty: true
-        })
-      }
-
-      console.log('🔍 Valor do gênero após setValue:', {
-        genderSetValue: genderValue,
-        isEmpty: !genderValue,
-        genderFormValue: watch("gender")
+        phone: user.phone ? formatPhone(user.phone) : "",
+        cep: user.cep ? formatCEP(user.cep) : "",
+        country: user.country || "",
+        state: user.state || "",
+        city: user.city || "",
+        bio: profile?.bio || "",
       })
 
       setPreviewUrl(user.profile_pic_url || "")
     }
-  }, [studentData, setValue, watch])
+  }, [studentData, reset])
 
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value)
@@ -226,7 +179,6 @@ export function ProfileEditForm() {
         description: `${data.localidade} - ${data.uf}, Brasil`
       })
     } catch (error) {
-      console.error("Erro ao buscar CEP:", error)
       toast.error(error instanceof Error ? error.message : "Erro ao buscar CEP")
     } finally {
       setLoadingCep(false)
@@ -265,14 +217,6 @@ export function ProfileEditForm() {
   }
 
   const onError = (errors: typeof formState.errors) => {
-    console.group('❌ Falha na Validação - Formulário não pode ser enviado')
-    console.log(`Total de erros: ${Object.keys(errors).length}`)
-    console.log('')
-    Object.entries(errors).forEach(([field, error]) => {
-      console.log(`📍 ${field}:`, error?.message)
-    })
-    console.groupEnd()
-
     // Mostra toast com resumo dos erros
     const errorCount = Object.keys(errors).length
     const firstError = Object.entries(errors)[0]
@@ -305,11 +249,6 @@ export function ProfileEditForm() {
   }
 
   const onSubmit = async (data: ProfileFormData) => {
-    console.group('✅ Validação aprovada - Enviando formulário')
-    console.log('Dados validados pelo Zod (com formatação):')
-    console.table(data)
-    console.groupEnd()
-
     if (!session?.access) {
       toast.error("Sessão expirada", {
         description: "Por favor, faça login novamente para continuar"
@@ -334,11 +273,6 @@ export function ProfileEditForm() {
         city: data.city || "",
         bio: data.bio || "",
       }
-
-      console.group('📤 Dados limpos enviados para API')
-      console.log('Campos formatados removidos:')
-      console.table(cleanedData)
-      console.groupEnd()
 
       // Criar FormData para enviar arquivo e dados
       const submitData = new FormData()
@@ -390,8 +324,6 @@ export function ProfileEditForm() {
       // Reseta a imagem temporária
       setProfileImage(null)
     } catch (error) {
-      console.error("Erro ao atualizar perfil:", error)
-
       const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar perfil"
       toast.error("Falha ao salvar", {
         description: errorMessage,
@@ -616,61 +548,15 @@ export function ProfileEditForm() {
                   <User className="h-4 w-4" />
                   Gênero
                 </Label>
-                <Controller
-                  name="gender"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || undefined}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger className={`transition-all focus:scale-[1.02] ${errors.gender ? 'border-destructive' : ''}`}>
-                        <SelectValue placeholder="Selecione seu gênero" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="M">
-                          <div className="flex items-center gap-2">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4 text-blue-500"
-                            >
-                              <circle cx="10" cy="14" r="7" />
-                              <line x1="14.5" y1="9.5" x2="21" y2="3" />
-                              <line x1="17" y1="3" x2="21" y2="3" />
-                              <line x1="21" y1="3" x2="21" y2="7" />
-                            </svg>
-                            <span>Masculino</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="F">
-                          <div className="flex items-center gap-2">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4 text-pink-500"
-                            >
-                              <circle cx="12" cy="8" r="7" />
-                              <line x1="12" y1="15" x2="12" y2="23" />
-                              <line x1="8" y1="19" x2="16" y2="19" />
-                            </svg>
-                            <span>Feminino</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
+                <select
+                  id="gender"
+                  {...register("gender")}
+                  className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all focus:scale-[1.02] ${errors.gender ? 'border-destructive' : ''}`}
+                >
+                  <option value="">Selecione seu gênero</option>
+                  <option value="M">♂ Masculino</option>
+                  <option value="F">♀ Feminino</option>
+                </select>
                 {errors.gender ? (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
@@ -763,16 +649,28 @@ export function ProfileEditForm() {
                     <Globe className="h-4 w-4" />
                     País
                   </Label>
-                  <Input
-                    id="country"
-                    {...register("country")}
-                    placeholder="Brasil"
-                    className={`transition-all focus:scale-[1.02] ${errors.country ? 'border-destructive' : ''}`}
+                  <Controller
+                    name="country"
+                    control={control}
+                    render={({ field }) => (
+                      <LocationAutocomplete
+                        type="country"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Digite para buscar países"
+                        className={`transition-all focus:scale-[1.02] ${errors.country ? 'border-destructive' : ''}`}
+                        maxLength={50}
+                      />
+                    )}
                   />
-                  {errors.country && (
+                  {errors.country ? (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.country.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Autocomplete disponível - digite para buscar
                     </p>
                   )}
                 </div>
@@ -781,17 +679,29 @@ export function ProfileEditForm() {
                     <MapPin className="h-4 w-4" />
                     Estado
                   </Label>
-                  <Input
-                    id="state"
-                    {...register("state")}
-                    placeholder="SP"
-                    maxLength={2}
-                    className={`transition-all focus:scale-[1.02] uppercase ${errors.state ? 'border-destructive' : ''}`}
+                  <Controller
+                    name="state"
+                    control={control}
+                    render={({ field }) => (
+                      <LocationAutocomplete
+                        type="state"
+                        value={field.value || ""}
+                        onChange={(value) => field.onChange(value.toUpperCase())}
+                        placeholder="Digite ou selecione o estado"
+                        className={`transition-all focus:scale-[1.02] uppercase ${errors.state ? 'border-destructive' : ''}`}
+                        maxLength={2}
+                        countryCode="BR"
+                      />
+                    )}
                   />
-                  {errors.state && (
+                  {errors.state ? (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.state.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Sigla do estado (ex: SP, RJ, MG)
                     </p>
                   )}
                 </div>
@@ -800,16 +710,29 @@ export function ProfileEditForm() {
                     <Home className="h-4 w-4" />
                     Cidade
                   </Label>
-                  <Input
-                    id="city"
-                    {...register("city")}
-                    placeholder="São Paulo"
-                    className={`transition-all focus:scale-[1.02] ${errors.city ? 'border-destructive' : ''}`}
+                  <Controller
+                    name="city"
+                    control={control}
+                    render={({ field }) => (
+                      <LocationAutocomplete
+                        type="city"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Digite para buscar cidades"
+                        className={`transition-all focus:scale-[1.02] ${errors.city ? 'border-destructive' : ''}`}
+                        maxLength={50}
+                        countryCode="BR"
+                      />
+                    )}
                   />
-                  {errors.city && (
+                  {errors.city ? (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.city.message}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Autocomplete disponível - digite para buscar
                     </p>
                   )}
                 </div>

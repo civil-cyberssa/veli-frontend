@@ -63,25 +63,18 @@ export const profileFormSchema = z.object({
   // Campos opcionais - validam apenas se tiverem conteúdo
   cpf: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
-      (val) => {
-        // Se vazio, não valida
-        if (!val || val.trim() === '') return true
-        // Se preenchido, valida CPF
-        return isValidCPF(val)
-      },
+      (val) => val === '' || isValidCPF(val),
       { message: 'CPF inválido' }
     ),
 
   date_of_birth: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
       (val) => {
-        if (!val || val.trim() === '') return true
+        if (val === '') return true
         const dateRegex = /^\d{4}-\d{2}-\d{2}$|^\d{2}\/\d{2}\/\d{4}$/
         if (!dateRegex.test(val)) return false
         const date = new Date(val.includes('-') ? val : val.split('/').reverse().join('-'))
@@ -91,7 +84,7 @@ export const profileFormSchema = z.object({
     )
     .refine(
       (val) => {
-        if (!val || val.trim() === '') return true
+        if (val === '') return true
         const date = new Date(val.includes('-') ? val : val.split('/').reverse().join('-'))
         const today = new Date()
         const age = today.getFullYear() - date.getFullYear()
@@ -102,25 +95,18 @@ export const profileFormSchema = z.object({
 
   gender: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
-      (val) => {
-        // Se vazio, aceita
-        if (!val || val.trim() === '') return true
-        // Se preenchido, deve ser M ou F
-        return val === 'M' || val === 'F'
-      },
+      (val) => val === '' || val === 'M' || val === 'F',
       { message: 'Gênero deve ser Masculino ou Feminino' }
     ),
 
   phone: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
       (val) => {
-        if (!val || val.trim() === '') return true
+        if (val === '') return true
         const cleanPhone = val.replace(/\D/g, '')
         return cleanPhone.length >= 10 && cleanPhone.length <= 11
       },
@@ -129,11 +115,10 @@ export const profileFormSchema = z.object({
 
   cep: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
       (val) => {
-        if (!val || val.trim() === '') return true
+        if (val === '') return true
         const cleanCEP = val.replace(/\D/g, '')
         return cleanCEP.length === 8
       },
@@ -142,49 +127,33 @@ export const profileFormSchema = z.object({
 
   country: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
-      (val) => {
-        if (!val || val.trim() === '') return true
-        return val.length <= 50
-      },
+      (val) => val === '' || val.length <= 50,
       { message: 'País deve ter no máximo 50 caracteres' }
     ),
 
   state: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
-      (val) => {
-        if (!val || val.trim() === '') return true
-        return /^[A-Z]{2}$/.test(val)
-      },
+      (val) => val === '' || /^[A-Z]{2}$/.test(val),
       { message: 'Estado deve ter 2 letras maiúsculas (ex: SP)' }
     ),
 
   city: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
-      (val) => {
-        if (!val || val.trim() === '') return true
-        return val.length <= 50
-      },
+      (val) => val === '' || val.length <= 50,
       { message: 'Cidade deve ter no máximo 50 caracteres' }
     ),
 
   bio: z
     .string()
-    .optional()
-    .or(z.literal(''))
+    .transform((val) => val?.trim() || '')
     .refine(
-      (val) => {
-        if (!val || val.trim() === '') return true
-        return val.length <= 500
-      },
+      (val) => val === '' || val.length <= 500,
       { message: 'Biografia deve ter no máximo 500 caracteres' }
     ),
 })
