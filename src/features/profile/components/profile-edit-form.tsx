@@ -84,19 +84,6 @@ export function ProfileEditForm() {
   const formData = watch()
   const { errors, isSubmitting } = formState
 
-  // Log de erros de validação do Zod (para debugging)
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.group('🔴 Erros de Validação do Formulário')
-      Object.entries(errors).forEach(([field, error]) => {
-        console.log(`📍 Campo: ${field}`)
-        console.log(`   ❌ Erro: ${error?.message || 'Erro desconhecido'}`)
-        console.log(`   💡 Valor atual: ${formData[field as keyof typeof formData] || '(vazio)'}`)
-        console.log('---')
-      })
-      console.groupEnd()
-    }
-  }, [errors, formData])
 
   // Preenche o formulário quando os dados são carregados
   useEffect(() => {
@@ -121,11 +108,6 @@ export function ProfileEditForm() {
         genderValue = normalized.charAt(0).toUpperCase()
       }
 
-      console.log('✅ Gender conversion:', {
-        original: user.gender,
-        normalized: normalized,
-        final: genderValue
-      })
 
       // Converte data para DD/MM/YYYY para exibição (aceita YYYY-MM-DD ou DD/MM/YYYY da API)
       let dateValue = ""
@@ -140,17 +122,6 @@ export function ProfileEditForm() {
         }
       }
 
-      console.log('📋 Preenchendo formulário com dados da API:', {
-        gender: genderValue,
-        cpf_original: user.cpf,
-        cpf_formatado: user.cpf ? formatCPF(user.cpf) : "",
-        phone_original: user.phone,
-        phone_formatado: user.phone ? formatPhone(user.phone) : "",
-        cep_original: user.cep,
-        cep_formatado: user.cep ? formatCEP(user.cep) : "",
-        date_original: user.date_of_birth,
-        date_formatada: dateValue
-      })
 
       // Preenche o formulário com setValue (aplicando máscaras)
       setValue("first_name", user.first_name || "")
@@ -174,11 +145,6 @@ export function ProfileEditForm() {
         })
       }
 
-      console.log('🔍 Valor do gênero após setValue:', {
-        genderSetValue: genderValue,
-        isEmpty: !genderValue,
-        genderFormValue: watch("gender")
-      })
 
       setPreviewUrl(user.profile_pic_url || "")
     }
@@ -226,7 +192,6 @@ export function ProfileEditForm() {
         description: `${data.localidade} - ${data.uf}, Brasil`
       })
     } catch (error) {
-      console.error("Erro ao buscar CEP:", error)
       toast.error(error instanceof Error ? error.message : "Erro ao buscar CEP")
     } finally {
       setLoadingCep(false)
@@ -265,14 +230,6 @@ export function ProfileEditForm() {
   }
 
   const onError = (errors: typeof formState.errors) => {
-    console.group('❌ Falha na Validação - Formulário não pode ser enviado')
-    console.log(`Total de erros: ${Object.keys(errors).length}`)
-    console.log('')
-    Object.entries(errors).forEach(([field, error]) => {
-      console.log(`📍 ${field}:`, error?.message)
-    })
-    console.groupEnd()
-
     // Mostra toast com resumo dos erros
     const errorCount = Object.keys(errors).length
     const firstError = Object.entries(errors)[0]
@@ -305,11 +262,6 @@ export function ProfileEditForm() {
   }
 
   const onSubmit = async (data: ProfileFormData) => {
-    console.group('✅ Validação aprovada - Enviando formulário')
-    console.log('Dados validados pelo Zod (com formatação):')
-    console.table(data)
-    console.groupEnd()
-
     if (!session?.access) {
       toast.error("Sessão expirada", {
         description: "Por favor, faça login novamente para continuar"
@@ -334,11 +286,6 @@ export function ProfileEditForm() {
         city: data.city || "",
         bio: data.bio || "",
       }
-
-      console.group('📤 Dados limpos enviados para API')
-      console.log('Campos formatados removidos:')
-      console.table(cleanedData)
-      console.groupEnd()
 
       // Criar FormData para enviar arquivo e dados
       const submitData = new FormData()
@@ -390,8 +337,6 @@ export function ProfileEditForm() {
       // Reseta a imagem temporária
       setProfileImage(null)
     } catch (error) {
-      console.error("Erro ao atualizar perfil:", error)
-
       const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar perfil"
       toast.error("Falha ao salvar", {
         description: errorMessage,
