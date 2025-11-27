@@ -87,7 +87,29 @@ export function LocationAutocomplete({
     // Delay para permitir clique na sugestão
     setTimeout(() => {
       setShowSuggestions(false)
+
+      // Auto-correção: se o valor digitado não está exatamente nas sugestões, limpa
+      // Isso força o usuário a selecionar da lista
+      if (value && suggestions.length > 0) {
+        const exactMatch = suggestions.find(s => s.toLowerCase() === value.toLowerCase())
+        if (!exactMatch && type !== 'state') {
+          // Para países e cidades, força seleção exata
+          // Estados permitem digitação livre (SP, RJ, etc)
+          const closestMatch = suggestions[0]
+          if (closestMatch) {
+            onChange(closestMatch)
+          }
+        }
+      }
     }, 200)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Permite selecionar primeira sugestão com Enter
+    if (e.key === 'Enter' && suggestions.length > 0) {
+      e.preventDefault()
+      handleSuggestionClick(suggestions[0])
+    }
   }
 
   return (
@@ -98,6 +120,7 @@ export function LocationAutocomplete({
           onChange={handleInputChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           className={className}
@@ -112,17 +135,21 @@ export function LocationAutocomplete({
       </div>
 
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          <div className="px-3 py-1.5 text-xs text-muted-foreground border-b bg-muted/50">
+            {suggestions.length} {suggestions.length === 1 ? 'resultado' : 'resultados'} - Pressione Enter ou clique para selecionar
+          </div>
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
               type="button"
-              className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors flex items-center gap-2"
               onMouseDown={(e) => {
                 e.preventDefault()
                 handleSuggestionClick(suggestion)
               }}
             >
+              <span className="text-primary">→</span>
               {suggestion}
             </button>
           ))}

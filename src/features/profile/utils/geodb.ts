@@ -33,6 +33,22 @@ function removeAccents(str: string): string {
 }
 
 /**
+ * Mapa de traduções personalizadas para países em PT-BR
+ * Garante nomes corretos mesmo quando a API retorna traduções incorretas
+ */
+const COUNTRY_NAME_OVERRIDES: Record<string, string> = {
+  'BR': 'Brasil',
+  'US': 'Estados Unidos',
+  'GB': 'Reino Unido',
+  'NL': 'Holanda',
+  'CH': 'Suíça',
+  'KR': 'Coreia do Sul',
+  'ZA': 'África do Sul',
+  'NZ': 'Nova Zelândia',
+  'AE': 'Emirados Árabes Unidos',
+}
+
+/**
  * Busca países usando REST Countries API
  * API: https://restcountries.com/
  * Totalmente gratuita, sem API key
@@ -54,10 +70,14 @@ export async function searchCountries(
 
       const data = await response.json()
       cache.countries = data
-        .map((country: any) => ({
-          code: country.cca2,
-          name: country.name.translations?.por?.common || country.name.common,
-        }))
+        .map((country: any) => {
+          const code = country.cca2
+          // Usa override se existir, senão pega tradução PT ou nome em inglês
+          const name = COUNTRY_NAME_OVERRIDES[code] ||
+                      country.name.translations?.por?.common ||
+                      country.name.common
+          return { code, name }
+        })
         // Ordenação alfabética PT-BR (respeita acentuação)
         .sort((a: Country, b: Country) => a.name.localeCompare(b.name, 'pt-BR'))
     }
@@ -178,10 +198,16 @@ export async function searchCities(
       if (!response.ok) throw new Error('Failed to fetch cities')
 
       const data = await response.json()
-      const cities = data.map((city: any) => ({
-        name: city.nome,
-        state: city.microrregiao.mesorregiao.UF.sigla,
-      }))
+      const cities = data
+        .filter((city: any) => {
+          // Validação defensiva: verifica se a estrutura existe
+          return city?.nome &&
+                 city?.microrregiao?.mesorregiao?.UF?.sigla
+        })
+        .map((city: any) => ({
+          name: city.nome,
+          state: city.microrregiao.mesorregiao.UF.sigla,
+        }))
 
       cache.cities.set(cacheKey, cities)
     }
