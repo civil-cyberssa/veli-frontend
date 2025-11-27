@@ -1,5 +1,6 @@
-// Location autocomplete using local data
-// Uses static lists to avoid API rate limits and provide instant results
+// Location autocomplete using free public APIs
+// - IBGE API for Brazilian states and cities (official government data)
+// - REST Countries API for countries (free, no API key required)
 
 export interface Country {
   code: string
@@ -16,10 +17,183 @@ export interface City {
   state: string
 }
 
+// Cache para evitar chamadas repetidas
+const cache = {
+  countries: null as Country[] | null,
+  states: null as State[] | null,
+  cities: new Map<string, City[]>(),
+}
+
 /**
- * Lista de países em português (principais países)
+ * Busca países usando REST Countries API
+ * API: https://restcountries.com/
+ * Totalmente gratuita, sem API key
  */
-export const COUNTRIES: Country[] = [
+export async function searchCountries(
+  namePrefix: string,
+  languageCode: string = 'pt'
+): Promise<Country[]> {
+  if (!namePrefix || namePrefix.length < 2) {
+    return []
+  }
+
+  try {
+    // Carrega todos os países uma vez e mantém em cache
+    if (!cache.countries) {
+      const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2')
+      if (!response.ok) throw new Error('Failed to fetch countries')
+
+      const data = await response.json()
+      cache.countries = data
+        .map((country: any) => ({
+          code: country.cca2,
+          name: country.name.translations?.por?.common || country.name.common,
+        }))
+        .sort((a: Country, b: Country) => a.name.localeCompare(b.name))
+    }
+
+    // Filtra pelo nome
+    const search = namePrefix.toLowerCase()
+    return cache.countries
+      .filter(country => country.name.toLowerCase().includes(search))
+      .slice(0, 10)
+  } catch (error) {
+    console.error('Error fetching countries:', error)
+
+    // Fallback para lista básica em caso de erro
+    return FALLBACK_COUNTRIES.filter(country =>
+      country.name.toLowerCase().includes(namePrefix.toLowerCase())
+    ).slice(0, 10)
+  }
+}
+
+/**
+ * Busca estados usando IBGE API
+ * API: https://servicodados.ibge.gov.br/api/
+ * Totalmente gratuita, oficial do governo brasileiro
+ */
+export async function searchRegions(
+  countryCode: string,
+  namePrefix?: string
+): Promise<State[]> {
+  if (countryCode !== 'BR') {
+    return []
+  }
+
+  try {
+    // Carrega todos os estados uma vez e mantém em cache
+    if (!cache.states) {
+      const response = await fetch(
+        'https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome'
+      )
+      if (!response.ok) throw new Error('Failed to fetch states')
+
+      const data = await response.json()
+      cache.states = data.map((state: any) => ({
+        code: state.sigla,
+        name: state.nome,
+      }))
+    }
+
+    // Se não tem filtro, retorna todos
+    if (!namePrefix || namePrefix.length < 1) {
+      return cache.states
+    }
+
+    // Filtra por nome ou sigla
+    const search = namePrefix.toLowerCase()
+    return cache.states.filter(state =>
+      state.name.toLowerCase().includes(search) ||
+      state.code.toLowerCase().includes(search)
+    )
+  } catch (error) {
+    console.error('Error fetching states:', error)
+
+    // Fallback para lista básica em caso de erro
+    return FALLBACK_STATES.filter(state =>
+      !namePrefix ||
+      state.name.toLowerCase().includes(namePrefix.toLowerCase()) ||
+      state.code.toLowerCase().includes(namePrefix.toLowerCase())
+    )
+  }
+}
+
+/**
+ * Busca cidades usando IBGE API
+ * API: https://servicodados.ibge.gov.br/api/
+ * Retorna TODAS as 5.570 cidades brasileiras
+ */
+export async function searchCities(
+  namePrefix: string,
+  countryCode?: string,
+  stateCode?: string
+): Promise<City[]> {
+  if (!namePrefix || namePrefix.length < 2) {
+    return []
+  }
+
+  if (countryCode && countryCode !== 'BR') {
+    return []
+  }
+
+  try {
+    const cacheKey = stateCode || 'all'
+
+    // Verifica se já tem em cache
+    if (!cache.cities.has(cacheKey)) {
+      let url = 'https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome'
+
+      // Se tem estado específico, filtra pela UF
+      if (stateCode) {
+        const stateId = STATES_ID_MAP[stateCode.toUpperCase()]
+        if (stateId) {
+          url = `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateId}/municipios?orderBy=nome`
+        }
+      }
+
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Failed to fetch cities')
+
+      const data = await response.json()
+      const cities = data.map((city: any) => ({
+        name: city.nome,
+        state: city.microrregiao.mesorregiao.UF.sigla,
+      }))
+
+      cache.cities.set(cacheKey, cities)
+    }
+
+    // Filtra pelo nome
+    const search = namePrefix.toLowerCase()
+    const cities = cache.cities.get(cacheKey) || []
+
+    return cities
+      .filter(city => city.name.toLowerCase().includes(search))
+      .slice(0, 15)
+  } catch (error) {
+    console.error('Error fetching cities:', error)
+
+    // Em caso de erro, retorna array vazio
+    return []
+  }
+}
+
+/**
+ * Mapa de siglas de estados para IDs do IBGE
+ */
+const STATES_ID_MAP: Record<string, string> = {
+  'AC': '12', 'AL': '27', 'AP': '16', 'AM': '13', 'BA': '29',
+  'CE': '23', 'DF': '53', 'ES': '32', 'GO': '52', 'MA': '21',
+  'MT': '51', 'MS': '50', 'MG': '31', 'PA': '15', 'PB': '25',
+  'PR': '41', 'PE': '26', 'PI': '22', 'RJ': '33', 'RN': '24',
+  'RS': '43', 'RO': '11', 'RR': '14', 'SC': '42', 'SP': '35',
+  'SE': '28', 'TO': '17',
+}
+
+/**
+ * Lista de países (fallback em caso de erro na API)
+ */
+const FALLBACK_COUNTRIES: Country[] = [
   { code: 'BR', name: 'Brasil' },
   { code: 'PT', name: 'Portugal' },
   { code: 'US', name: 'Estados Unidos' },
@@ -40,28 +214,12 @@ export const COUNTRIES: Country[] = [
   { code: 'GB', name: 'Reino Unido' },
   { code: 'CA', name: 'Canadá' },
   { code: 'AU', name: 'Austrália' },
-  { code: 'NZ', name: 'Nova Zelândia' },
-  { code: 'JP', name: 'Japão' },
-  { code: 'CN', name: 'China' },
-  { code: 'KR', name: 'Coreia do Sul' },
-  { code: 'IN', name: 'Índia' },
-  { code: 'ZA', name: 'África do Sul' },
-  { code: 'EG', name: 'Egito' },
-  { code: 'NG', name: 'Nigéria' },
-  { code: 'KE', name: 'Quênia' },
-  { code: 'AO', name: 'Angola' },
-  { code: 'MZ', name: 'Moçambique' },
-  { code: 'CV', name: 'Cabo Verde' },
-  { code: 'GW', name: 'Guiné-Bissau' },
-  { code: 'ST', name: 'São Tomé e Príncipe' },
-  { code: 'TL', name: 'Timor-Leste' },
-  { code: 'MO', name: 'Macau' },
 ]
 
 /**
- * Lista de estados brasileiros
+ * Lista de estados brasileiros (fallback em caso de erro na API)
  */
-export const BRAZILIAN_STATES: State[] = [
+const FALLBACK_STATES: State[] = [
   { code: 'AC', name: 'Acre' },
   { code: 'AL', name: 'Alagoas' },
   { code: 'AP', name: 'Amapá' },
@@ -90,208 +248,3 @@ export const BRAZILIAN_STATES: State[] = [
   { code: 'SE', name: 'Sergipe' },
   { code: 'TO', name: 'Tocantins' },
 ]
-
-/**
- * Lista de principais cidades brasileiras por estado
- */
-export const BRAZILIAN_CITIES: City[] = [
-  // São Paulo
-  { name: 'São Paulo', state: 'SP' },
-  { name: 'Campinas', state: 'SP' },
-  { name: 'Guarulhos', state: 'SP' },
-  { name: 'São Bernardo do Campo', state: 'SP' },
-  { name: 'Santo André', state: 'SP' },
-  { name: 'Osasco', state: 'SP' },
-  { name: 'Ribeirão Preto', state: 'SP' },
-  { name: 'Sorocaba', state: 'SP' },
-  { name: 'São José dos Campos', state: 'SP' },
-  { name: 'Santos', state: 'SP' },
-
-  // Rio de Janeiro
-  { name: 'Rio de Janeiro', state: 'RJ' },
-  { name: 'Niterói', state: 'RJ' },
-  { name: 'Duque de Caxias', state: 'RJ' },
-  { name: 'Nova Iguaçu', state: 'RJ' },
-  { name: 'São Gonçalo', state: 'RJ' },
-  { name: 'Campos dos Goytacazes', state: 'RJ' },
-  { name: 'Petrópolis', state: 'RJ' },
-
-  // Minas Gerais
-  { name: 'Belo Horizonte', state: 'MG' },
-  { name: 'Uberlândia', state: 'MG' },
-  { name: 'Contagem', state: 'MG' },
-  { name: 'Juiz de Fora', state: 'MG' },
-  { name: 'Betim', state: 'MG' },
-  { name: 'Montes Claros', state: 'MG' },
-
-  // Bahia
-  { name: 'Salvador', state: 'BA' },
-  { name: 'Feira de Santana', state: 'BA' },
-  { name: 'Vitória da Conquista', state: 'BA' },
-  { name: 'Camaçari', state: 'BA' },
-  { name: 'Ilhéus', state: 'BA' },
-
-  // Paraná
-  { name: 'Curitiba', state: 'PR' },
-  { name: 'Londrina', state: 'PR' },
-  { name: 'Maringá', state: 'PR' },
-  { name: 'Ponta Grossa', state: 'PR' },
-  { name: 'Cascavel', state: 'PR' },
-  { name: 'Foz do Iguaçu', state: 'PR' },
-
-  // Rio Grande do Sul
-  { name: 'Porto Alegre', state: 'RS' },
-  { name: 'Caxias do Sul', state: 'RS' },
-  { name: 'Pelotas', state: 'RS' },
-  { name: 'Canoas', state: 'RS' },
-  { name: 'Santa Maria', state: 'RS' },
-
-  // Pernambuco
-  { name: 'Recife', state: 'PE' },
-  { name: 'Jaboatão dos Guararapes', state: 'PE' },
-  { name: 'Olinda', state: 'PE' },
-  { name: 'Caruaru', state: 'PE' },
-
-  // Ceará
-  { name: 'Fortaleza', state: 'CE' },
-  { name: 'Caucaia', state: 'CE' },
-  { name: 'Juazeiro do Norte', state: 'CE' },
-  { name: 'Sobral', state: 'CE' },
-
-  // Pará
-  { name: 'Belém', state: 'PA' },
-  { name: 'Ananindeua', state: 'PA' },
-  { name: 'Santarém', state: 'PA' },
-
-  // Santa Catarina
-  { name: 'Florianópolis', state: 'SC' },
-  { name: 'Joinville', state: 'SC' },
-  { name: 'Blumenau', state: 'SC' },
-  { name: 'São José', state: 'SC' },
-
-  // Goiás
-  { name: 'Goiânia', state: 'GO' },
-  { name: 'Aparecida de Goiânia', state: 'GO' },
-  { name: 'Anápolis', state: 'GO' },
-
-  // Maranhão
-  { name: 'São Luís', state: 'MA' },
-  { name: 'Imperatriz', state: 'MA' },
-
-  // Espírito Santo
-  { name: 'Vitória', state: 'ES' },
-  { name: 'Vila Velha', state: 'ES' },
-  { name: 'Serra', state: 'ES' },
-  { name: 'Cariacica', state: 'ES' },
-
-  // Paraíba
-  { name: 'João Pessoa', state: 'PB' },
-  { name: 'Campina Grande', state: 'PB' },
-
-  // Amazonas
-  { name: 'Manaus', state: 'AM' },
-
-  // Rio Grande do Norte
-  { name: 'Natal', state: 'RN' },
-  { name: 'Mossoró', state: 'RN' },
-
-  // Mato Grosso
-  { name: 'Cuiabá', state: 'MT' },
-  { name: 'Várzea Grande', state: 'MT' },
-
-  // Mato Grosso do Sul
-  { name: 'Campo Grande', state: 'MS' },
-  { name: 'Dourados', state: 'MS' },
-
-  // Alagoas
-  { name: 'Maceió', state: 'AL' },
-
-  // Piauí
-  { name: 'Teresina', state: 'PI' },
-
-  // Distrito Federal
-  { name: 'Brasília', state: 'DF' },
-
-  // Sergipe
-  { name: 'Aracaju', state: 'SE' },
-
-  // Rondônia
-  { name: 'Porto Velho', state: 'RO' },
-
-  // Tocantins
-  { name: 'Palmas', state: 'TO' },
-
-  // Acre
-  { name: 'Rio Branco', state: 'AC' },
-
-  // Amapá
-  { name: 'Macapá', state: 'AP' },
-
-  // Roraima
-  { name: 'Boa Vista', state: 'RR' },
-]
-
-/**
- * Busca países por nome (local)
- */
-export async function searchCountries(
-  namePrefix: string,
-  languageCode: string = 'pt'
-): Promise<Country[]> {
-  if (!namePrefix || namePrefix.length < 2) {
-    return []
-  }
-
-  const search = namePrefix.toLowerCase()
-  return COUNTRIES.filter(country =>
-    country.name.toLowerCase().includes(search)
-  ).slice(0, 10)
-}
-
-/**
- * Busca estados (local)
- */
-export async function searchRegions(
-  countryCode: string,
-  namePrefix?: string
-): Promise<State[]> {
-  if (countryCode !== 'BR') {
-    return []
-  }
-
-  if (!namePrefix || namePrefix.length < 1) {
-    return BRAZILIAN_STATES
-  }
-
-  const search = namePrefix.toLowerCase()
-  return BRAZILIAN_STATES.filter(state =>
-    state.name.toLowerCase().includes(search) ||
-    state.code.toLowerCase().includes(search)
-  )
-}
-
-/**
- * Busca cidades (local)
- */
-export async function searchCities(
-  namePrefix: string,
-  countryCode?: string,
-  stateCode?: string
-): Promise<City[]> {
-  if (!namePrefix || namePrefix.length < 2) {
-    return []
-  }
-
-  const search = namePrefix.toLowerCase()
-  let cities = BRAZILIAN_CITIES
-
-  // Filtra por estado se fornecido
-  if (stateCode) {
-    cities = cities.filter(city => city.state === stateCode.toUpperCase())
-  }
-
-  // Filtra por nome
-  return cities
-    .filter(city => city.name.toLowerCase().includes(search))
-    .slice(0, 10)
-}
