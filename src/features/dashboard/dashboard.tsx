@@ -7,8 +7,25 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { WelcomeCard } from "./components/map"
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useSubscriptions } from "./hooks/useSubscription"
+
 export default function Dashboard() {
-  // Dados de exemplo
+  const { 
+    data: subscriptions, 
+    loading, 
+    error, 
+    selectedSubscription, 
+    setSelectedSubscription 
+  } = useSubscriptions()
+
+  // Dados de exemplo (após integração, virão da API baseado no selectedId)
   const nextClass = {
     date: "Quarta, 27 Set",
     time: "18:00",
@@ -27,8 +44,74 @@ export default function Dashboard() {
     levels: ["A1", "A2", "B1", "B2", "C1", "C2"],
   }
 
+  // Data atual formatada
+  const currentDate = new Date().toLocaleDateString('pt-BR', { 
+    day: '2-digit', 
+    month: 'short' 
+  }).replace('.', '')
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-destructive">Erro ao carregar inscrições: {error.message}</p>
+      </div>
+    )
+  }
+
+  if (!subscriptions || subscriptions.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-muted-foreground">Nenhuma inscrição encontrada</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header com data e seletor de curso */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          <span>{currentDate}</span>
+        </div>
+        
+        {subscriptions.length > 1 && (
+          <Select
+            value={selectedSubscription?.id.toString()}
+            onValueChange={(value) => {
+              const subscription = subscriptions.find(s => s.id === parseInt(value))
+              if (subscription) setSelectedSubscription(subscription)
+            }}
+          >
+            <SelectTrigger className="w-[240px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {subscriptions.map((subscription) => (
+                <SelectItem key={subscription.id} value={subscription.id.toString()}>
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={subscription.course_icon} 
+                      alt={subscription.course_name}
+                      className="h-4 w-4 rounded-full object-cover"
+                    />
+                    <span>{subscription.course_name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
       {/* Card de boas-vindas com mapa */}
       <WelcomeCard />
 
