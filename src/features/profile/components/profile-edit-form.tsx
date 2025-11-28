@@ -85,7 +85,7 @@ export function ProfileEditForm() {
       const user = studentData.user
       const profile = studentData.student_profile
 
-      // Converte gênero para M ou F (caso venha texto completo da API)
+      // Converte gênero para o código apropriado (caso venha texto completo da API)
       let genderValue = user.gender || ""
 
       // Normaliza removendo espaços e convertendo para lowercase
@@ -95,6 +95,12 @@ export function ProfileEditForm() {
         genderValue = "M"
       } else if (normalized === "feminino" || normalized === "f") {
         genderValue = "F"
+      } else if (normalized === "não-binário" || normalized === "nao-binario" || normalized === "não binário" || normalized === "nao binario" || normalized === "n") {
+        genderValue = "N"
+      } else if (normalized === "outro" || normalized === "o") {
+        genderValue = "O"
+      } else if (normalized === "prefiro não dizer" || normalized === "prefiro nao dizer" || normalized === "u") {
+        genderValue = "U"
       } else if (normalized === "") {
         genderValue = ""
       } else {
@@ -556,6 +562,9 @@ export function ProfileEditForm() {
                   <option value="">Selecione seu gênero</option>
                   <option value="M">♂ Masculino</option>
                   <option value="F">♀ Feminino</option>
+                  <option value="N">⚧ Não-binário</option>
+                  <option value="O">◯ Outro</option>
+                  <option value="U">🔒 Prefiro não dizer</option>
                 </select>
                 {errors.gender ? (
                   <p className="text-xs text-destructive flex items-center gap-1">
@@ -663,14 +672,10 @@ export function ProfileEditForm() {
                       />
                     )}
                   />
-                  {errors.country ? (
+                  {errors.country && (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.country.message}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Autocomplete disponível - digite para buscar
                     </p>
                   )}
                 </div>
@@ -725,14 +730,10 @@ export function ProfileEditForm() {
                       />
                     )}
                   />
-                  {errors.city ? (
+                  {errors.city && (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.city.message}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Autocomplete disponível - digite para buscar
                     </p>
                   )}
                 </div>
