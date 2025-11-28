@@ -21,7 +21,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { NavUser } from "@/features/profile_user/navUser"
+import { NavUser } from "./nav-user"
 
 // This is sample data.
 const data = {
