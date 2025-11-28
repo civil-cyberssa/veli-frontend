@@ -23,6 +23,8 @@ export interface UseSubscriptionsReturn {
   selectedSubscription: Subscription | null
   setSelectedSubscription: (subscription: Subscription | null) => void
   selectedId: number | null
+  hasSelectedCourse: boolean
+  markCourseAsSelected: () => void
 }
 
 const fetcher = async (url: string, token: string) => {
@@ -45,6 +47,7 @@ const fetcher = async (url: string, token: string) => {
 export function useSubscriptions(): UseSubscriptionsReturn {
   const { data: session, status } = useSession()
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null)
+  const [hasSelectedCourse, setHasSelectedCourse] = useState(false)
 
   const { data, error, mutate, isLoading } = useSWR<Subscription[]>(
     status === 'authenticated' && session?.access
@@ -58,12 +61,57 @@ export function useSubscriptions(): UseSubscriptionsReturn {
     }
   )
 
+  // Inicializa a seleção baseado no localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('courseSelectionCompleted')
+      if (stored === 'true') {
+        setHasSelectedCourse(true)
+      }
+    }
+  }, [])
+
   // Seleciona automaticamente o primeiro curso quando os dados são carregados
+  // APENAS se houver 1 curso ou se já foi feita a seleção inicial
   useEffect(() => {
     if (data && data.length > 0 && !selectedSubscription) {
-      setSelectedSubscription(data[0])
+      // Se houver apenas 1 curso, seleciona automaticamente e marca como selecionado
+      if (data.length === 1) {
+        setSelectedSubscription(data[0])
+        setHasSelectedCourse(true)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('courseSelectionCompleted', 'true')
+        }
+      }
+      // Se já foi feita a seleção inicial anteriormente, carrega o último curso selecionado
+      else if (hasSelectedCourse) {
+        const lastSelectedId = typeof window !== 'undefined'
+          ? localStorage.getItem('lastSelectedCourseId')
+          : null
+
+        if (lastSelectedId) {
+          const lastCourse = data.find(s => s.id === parseInt(lastSelectedId))
+          setSelectedSubscription(lastCourse || data[0])
+        } else {
+          setSelectedSubscription(data[0])
+        }
+      }
     }
-  }, [data, selectedSubscription])
+  }, [data, selectedSubscription, hasSelectedCourse])
+
+  // Atualiza o localStorage quando o curso selecionado muda
+  useEffect(() => {
+    if (selectedSubscription && typeof window !== 'undefined') {
+      localStorage.setItem('lastSelectedCourseId', selectedSubscription.id.toString())
+    }
+  }, [selectedSubscription])
+
+  const markCourseAsSelected = () => {
+    setHasSelectedCourse(true)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('courseSelectionCompleted', 'true')
+    }
+  }
 
   return {
     data,
@@ -73,5 +121,7 @@ export function useSubscriptions(): UseSubscriptionsReturn {
     selectedSubscription,
     setSelectedSubscription,
     selectedId: selectedSubscription?.id || null,
+    hasSelectedCourse,
+    markCourseAsSelected,
   }
 }
