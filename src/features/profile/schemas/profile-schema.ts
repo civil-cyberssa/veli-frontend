@@ -1,38 +1,5 @@
 import { z } from 'zod'
 
-// Função auxiliar para validar CPF
-function isValidCPF(cpf: string): boolean {
-  const cleanCPF = cpf.replace(/\D/g, '')
-
-  if (cleanCPF.length !== 11) return false
-
-  // Verifica se todos os dígitos são iguais
-  if (/^(\d)\1{10}$/.test(cleanCPF)) return false
-
-  // Validação dos dígitos verificadores
-  let sum = 0
-  let remainder: number
-
-  for (let i = 1; i <= 9; i++) {
-    sum += parseInt(cleanCPF.substring(i - 1, i)) * (11 - i)
-  }
-
-  remainder = (sum * 10) % 11
-  if (remainder === 10 || remainder === 11) remainder = 0
-  if (remainder !== parseInt(cleanCPF.substring(9, 10))) return false
-
-  sum = 0
-  for (let i = 1; i <= 10; i++) {
-    sum += parseInt(cleanCPF.substring(i - 1, i)) * (12 - i)
-  }
-
-  remainder = (sum * 10) % 11
-  if (remainder === 10 || remainder === 11) remainder = 0
-  if (remainder !== parseInt(cleanCPF.substring(10, 11))) return false
-
-  return true
-}
-
 // Schema de validação do formulário de perfil
 export const profileFormSchema = z.object({
   // Campos obrigatórios (apenas os que o usuário DEVE preencher)
@@ -63,11 +30,8 @@ export const profileFormSchema = z.object({
   // Campos opcionais - validam apenas se tiverem conteúdo
   cpf: z
     .string()
-    .transform((val) => val?.trim() || '')
-    .refine(
-      (val) => val === '' || isValidCPF(val),
-      { message: 'CPF inválido' }
-    ),
+    .optional()
+    .or(z.literal('')),
 
   date_of_birth: z
     .string()
@@ -97,8 +61,8 @@ export const profileFormSchema = z.object({
     .string()
     .transform((val) => val?.trim() || '')
     .refine(
-      (val) => val === '' || val === 'M' || val === 'F',
-      { message: 'Gênero deve ser Masculino ou Feminino' }
+      (val) => val === '' || ['M', 'F', 'N', 'O', 'U'].includes(val),
+      { message: 'Gênero inválido' }
     ),
 
   phone: z
