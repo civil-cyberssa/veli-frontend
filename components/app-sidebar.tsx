@@ -2,44 +2,63 @@
 
 import * as React from "react"
 import {
-  LayoutDashboard,
-  Settings,
+  AudioWaveform,
+  Frame,
+  SquareTerminal,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
+import { NavProjects } from "@/components/nav-projects"
+import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { NavUser } from "./nav-user"
 
-const navItems = [
-  {
-    title: "Dashboard",
-    url: "/home",
-    icon: LayoutDashboard,
-    isActive: true,
-  },
-  {
-    title: "Configurações",
-    url: "#",
-    icon: Settings,
-    items: [
-      {
-        title: "Editar Perfil",
-        url: "/profile/edit",
-      },
-    ],
-  },
-]
+const data = {
+  teams: [
+    {
+      name: "Área do Aluno",
+      logo: AudioWaveform,
+      plan: "Portal do Estudante",
+    },
+  ],
+  navMain: [
+    {
+      title: "Área do Aluno",
+      url: "#",
+      icon: SquareTerminal,
+      isActive: true,
+      items: [
+        {
+          title: "Dashboard",
+          url: "/home",
+        },
+      ],
+    },
+  ],
+  projects: [
+    {
+      name: "Configurações",
+      url: "/profile/edit",
+      icon: Frame,
+    },
+  ],
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <TeamSwitcher teams={data.teams} />
+      </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain items={data.navMain} />
+        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
