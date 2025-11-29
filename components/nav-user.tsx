@@ -1,6 +1,7 @@
 "use client"
 
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles, Moon, Sun } from "lucide-react"
+import { ChevronsUpDown, LogOut, Moon, Sun, UserCog } from "lucide-react"
+import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
   DropdownMenu, 
@@ -106,24 +107,11 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <Bell />
-                Notifications
+              <DropdownMenuItem asChild>
+                <Link href="/profile/edit" className="cursor-pointer">
+                  <UserCog />
+                  Editar Perfil
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleTheme}>
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
