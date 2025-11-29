@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import {
-  Home,
-  User,
+  LayoutDashboard,
+  Settings,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -17,15 +17,15 @@ import { NavUser } from "./nav-user"
 
 const navItems = [
   {
-    title: "Home",
+    title: "Dashboard",
     url: "/home",
-    icon: Home,
+    icon: LayoutDashboard,
     isActive: true,
   },
   {
-    title: "Perfil",
+    title: "Configurações",
     url: "#",
-    icon: User,
+    icon: Settings,
     items: [
       {
         title: "Editar Perfil",
