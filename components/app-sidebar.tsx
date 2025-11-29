@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import {
   AudioWaveform,
   SquareTerminal,
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 import { NavUser } from "./nav-user"
 
-const data = {
+const baseNavData = {
   teams: [
     {
       name: "Área do Aluno",
@@ -30,7 +31,6 @@ const data = {
       title: "Área do Aluno",
       url: "#",
       icon: SquareTerminal,
-      isActive: true,
       items: [
         {
           title: "Dashboard",
@@ -42,13 +42,32 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname()
+
+  // Calcula dinamicamente o isActive baseado na rota atual
+  const navMainWithActiveState = React.useMemo(() => {
+    return baseNavData.navMain.map((item) => {
+      // Verifica se algum sub-item está ativo
+      const hasActiveSubItem = item.items?.some((subItem) => pathname === subItem.url)
+
+      return {
+        ...item,
+        isActive: hasActiveSubItem || false,
+        items: item.items?.map((subItem) => ({
+          ...subItem,
+          isActive: pathname === subItem.url,
+        })),
+      }
+    })
+  }, [pathname])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={baseNavData.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMainWithActiveState} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
