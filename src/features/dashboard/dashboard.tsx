@@ -1,9 +1,8 @@
 "use client"
 
-import { Calendar, Clock, TrendingUp, ArrowRight, Play } from "lucide-react"
+import { Calendar, Clock, ArrowRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { WelcomeCard } from "./components/map"
 
@@ -31,18 +30,6 @@ export default function Dashboard() {
     loading: loadingNextClass,
     error: errorNextClass
   } = useNextLiveClass(selectedSubscription?.id || null)
-
-  const dailyActivity = {
-    type: "Exercício: Listening",
-    duration: "10-12 min",
-    title: 'Pratique com o diálogo "No restaurante" e responda às perguntas.',
-  }
-
-  const level = {
-    current: "B1",
-    progress: 65,
-    levels: ["A1", "A2", "B1", "B2", "C1", "C2"],
-  }
 
   // Data atual formatada
   const currentDate = new Date().toLocaleDateString('pt-BR', {
@@ -152,10 +139,8 @@ export default function Dashboard() {
       {/* Welcome Card */}
       <WelcomeCard />
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Próxima Aula - Destaque maior */}
-        <Card className="lg:col-span-2 border-border/50 overflow-hidden">
+      {/* Próxima Aula ao Vivo */}
+      <Card className="border-border/50 overflow-hidden">
           <div className="p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -224,76 +209,6 @@ export default function Dashboard() {
             )}
           </div>
         </Card>
-
-        {/* Meu Nível */}
-        <Card className="border-border/50">
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-              <h3 className="font-semibold">Meu Nível</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-baseline">
-                {level.levels.map((lvl) => (
-                  <div
-                    key={lvl}
-                    className={`text-xs font-medium transition-colors ${
-                      lvl === level.current
-                        ? "text-primary text-sm"
-                        : lvl < level.current
-                        ? "text-muted-foreground"
-                        : "text-muted-foreground/40"
-                    }`}
-                  >
-                    {lvl}
-                  </div>
-                ))}
-              </div>
-
-              <Progress value={level.progress} className="h-2" />
-
-              <div className="pt-2">
-                <p className="text-xs text-muted-foreground mb-1">Progresso atual</p>
-                <p className="text-2xl font-bold">{level.progress}%</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Atividade do Dia - Full Width */}
-      <Card className="border-border/50 bg-gradient-to-br from-primary/5 to-transparent">
-        <div className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Play className="h-4 w-4 text-primary" />
-                </div>
-                <h3 className="font-semibold">Atividade do Dia</h3>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="secondary">{dailyActivity.type}</Badge>
-                  <span className="text-xs text-muted-foreground">• {dailyActivity.duration}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{dailyActivity.title}</p>
-              </div>
-            </div>
-
-            <div className="flex-shrink-0">
-              <Button size="lg" className="w-full lg:w-auto">
-                Começar agora
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Card>
     </div>
   )
 }
