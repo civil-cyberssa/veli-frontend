@@ -76,14 +76,24 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header com data e seletor de curso */}
+      {/* Header com seletor de curso */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
           <span>{currentDate}</span>
         </div>
-        
-        {subscriptions.length > 1 && (
+
+        {/* Sempre mostra o curso selecionado */}
+        {subscriptions.length === 1 && selectedSubscription ? (
+          <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
+            <img
+              src={selectedSubscription.course_icon}
+              alt={selectedSubscription.course_name}
+              className="h-5 w-5 rounded-full object-cover"
+            />
+            <span className="text-sm font-medium">{selectedSubscription.course_name}</span>
+          </div>
+        ) : subscriptions.length > 1 && (
           <Select
             value={selectedSubscription?.id.toString()}
             onValueChange={(value) => {
@@ -98,8 +108,8 @@ export default function Dashboard() {
               {subscriptions.map((subscription) => (
                 <SelectItem key={subscription.id} value={subscription.id.toString()}>
                   <div className="flex items-center gap-2">
-                    <img 
-                      src={subscription.course_icon} 
+                    <img
+                      src={subscription.course_icon}
                       alt={subscription.course_name}
                       className="h-4 w-4 rounded-full object-cover"
                     />
