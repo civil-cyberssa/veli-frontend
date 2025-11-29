@@ -121,13 +121,17 @@ export default function LoginScreen() {
         duration: 3000,
       });
 
+      // Limpar seleção de curso anterior ao fazer login
+      localStorage.removeItem("courseSelectionCompleted");
+      localStorage.removeItem("lastSelectedCourseId");
+
       if (isFirstLogin) {
         localStorage.setItem("hasLoggedBefore", "true");
         setTimeout(() => {
-          router.replace("/home");
+          router.replace("/course-selection");
         }, 1500);
       } else {
-        router.replace("/home");
+        router.replace("/course-selection");
       }
     } catch (error) {
       console.error("Erro durante autenticação:", error);
