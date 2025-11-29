@@ -1,3 +1,6 @@
+"use client"
+
+import { usePathname } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -14,7 +17,22 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 
+// Mapeamento de rotas para breadcrumbs
+const routeBreadcrumbs: Record<string, { parent?: { label: string; href: string }, current: string }> = {
+  "/home": {
+    parent: { label: "Área do aluno", href: "#" },
+    current: "Dashboard"
+  },
+  "/profile/edit": {
+    parent: { label: "Perfil", href: "#" },
+    current: "Editar"
+  },
+}
+
 export default function Layout({children}: {children: React.ReactNode}) {
+  const pathname = usePathname()
+  const breadcrumb = routeBreadcrumbs[pathname] || routeBreadcrumbs["/home"]
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -28,14 +46,18 @@ export default function Layout({children}: {children: React.ReactNode}) {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Area do aluno
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                {breadcrumb.parent && (
+                  <>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink href={breadcrumb.parent.href}>
+                        {breadcrumb.parent.label}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                  </>
+                )}
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbPage>{breadcrumb.current}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
