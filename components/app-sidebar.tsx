@@ -3,16 +3,10 @@
 import * as React from "react"
 import {
   AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  Settings2,
   SquareTerminal,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
@@ -23,85 +17,26 @@ import {
 } from "@/components/ui/sidebar"
 import { NavUser } from "./nav-user"
 
-// This is sample data.
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   teams: [
     {
-      name: "Area do aluno",
+      name: "Área do Aluno",
       logo: AudioWaveform,
-      plan: "Plano atual: Pro",
-    },
-    {
-      name: "Area do professor",
-      logo: Command,
-      plan: "Contrato ativo",
+      plan: "Portal do Estudante",
     },
   ],
   navMain: [
     {
-      title: "Area do aluno",
+      title: "Área do Aluno",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
-          title: "Home",
-          url: "#",
-        },
-        {
-          title: "Minhas aulas",
-          url: "#",
-        },
-        {
-          title: "Cursos",
-          url: "#",
+          title: "Dashboard",
+          url: "/home",
         },
       ],
-    },
-    {
-      title: "Atividades",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Enviar atividade",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Conteúdos livres",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Pagamentos",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "Meus pagamentos",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Configurações",
-      url: "#",
-      icon: Frame,
     },
   ],
 }
@@ -114,7 +49,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
