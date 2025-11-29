@@ -31,13 +31,6 @@ export default function Dashboard() {
     error: errorNextClass
   } = useNextLiveClass(selectedSubscription?.id || null)
 
-  // Data atual formatada
-  const currentDate = new Date().toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short'
-  }).replace('.', '')
-
-  // Formata a data e hora da próxima aula
   const formatNextClassDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
     const formattedDate = date.toLocaleDateString('pt-BR', {
@@ -84,14 +77,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="pb-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {currentDate}
-          </p>
         </div>
 
         {/* Seletor de curso */}
