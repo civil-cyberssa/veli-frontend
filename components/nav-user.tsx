@@ -59,13 +59,15 @@ export function NavUser() {
     return null
   }
 
-  const firstName = session.first_name || ""
-  const lastName = session.last_name || ""
-  const email = session.email || ""
-  const profilePic = session.profile_pic || ""
-  
-  const fullName = `${firstName} ${lastName}`.trim() || "Usuário"
-  const initials = (firstName?.[0] || "") + (lastName?.[0] || "") || "U"
+  const fullName = session.student_full_name || "Usuário"
+  const profilePic = session.profile_pic_url || ""
+  const role = session.role || ""
+
+  // Extrai as iniciais do nome completo
+  const nameParts = fullName.split(" ")
+  const initials = nameParts.length >= 2
+    ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+    : fullName.substring(0, 2).toUpperCase()
 
   return (
     <SidebarMenu>
@@ -82,7 +84,7 @@ export function NavUser() {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{fullName}</span>
-                <span className="truncate text-xs">{email}</span>
+                <span className="truncate text-xs capitalize">{role}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -101,7 +103,7 @@ export function NavUser() {
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{fullName}</span>
-                  <span className="truncate text-xs">{email}</span>
+                  <span className="truncate text-xs capitalize">{role}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
