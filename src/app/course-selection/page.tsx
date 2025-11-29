@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Loader2, GraduationCap } from "lucide-react"
+import { CheckCircle2, Loader2, ArrowRight, LogOut } from "lucide-react"
 import { useSubscriptions, Subscription } from "@/src/features/dashboard/hooks/useSubscription"
 
 export default function CourseSelectionPage() {
@@ -30,10 +29,7 @@ export default function CourseSelectionPage() {
   }, [status, router])
 
   useEffect(() => {
-    // Animação de entrada
-    const timer = setTimeout(() => {
-      setIsAnimating(false)
-    }, 300)
+    const timer = setTimeout(() => setIsAnimating(false), 100)
     return () => clearTimeout(timer)
   }, [])
 
@@ -41,12 +37,8 @@ export default function CourseSelectionPage() {
     if (selectedCourse) {
       setSelectedSubscription(selectedCourse)
       markCourseAsSelected()
-
-      // Animação de saída antes de redirecionar
       setIsAnimating(true)
-      setTimeout(() => {
-        router.push("/home")
-      }, 400)
+      setTimeout(() => router.push("/home"), 300)
     }
   }
 
@@ -56,10 +48,10 @@ export default function CourseSelectionPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Carregando seus cursos...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground">Carregando...</p>
         </div>
       </div>
     )
@@ -67,10 +59,10 @@ export default function CourseSelectionPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="text-center space-y-4">
-          <p className="text-destructive">Erro ao carregar cursos: {error.message}</p>
-          <Button onClick={() => router.push("/home")}>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4 max-w-md">
+          <p className="text-sm text-destructive">{error.message}</p>
+          <Button onClick={() => router.push("/home")} variant="outline">
             Ir para Home
           </Button>
         </div>
@@ -80,10 +72,10 @@ export default function CourseSelectionPage() {
 
   if (!subscriptions || subscriptions.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Nenhum curso encontrado</p>
-          <Button onClick={() => router.push("/home")}>
+          <p className="text-sm text-muted-foreground">Nenhum curso encontrado</p>
+          <Button onClick={() => router.push("/home")} variant="outline">
             Ir para Home
           </Button>
         </div>
@@ -91,8 +83,8 @@ export default function CourseSelectionPage() {
     )
   }
 
-  // Se houver apenas 1 curso, seleciona automaticamente e redireciona
-  if (subscriptions.length === 1) {
+  // Auto-seleciona se houver apenas 1 curso
+  if (subscriptions.length === 1 && !selectedCourse) {
     setSelectedSubscription(subscriptions[0])
     markCourseAsSelected()
     router.push("/home")
@@ -100,120 +92,157 @@ export default function CourseSelectionPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
-      <div
-        className={`w-full max-w-3xl space-y-8 transition-all duration-500 ${
-          isAnimating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
-        }`}
-      >
-        {/* Header com animação */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
-            <GraduationCap className="h-10 w-10 text-primary" />
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="border-b border-border/40 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <span className="text-primary font-bold text-sm">V</span>
+            </div>
+            <span className="font-semibold text-sm">Veli</span>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Bem-vindo!
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Você está inscrito em múltiplos cursos. Selecione o curso que deseja acessar:
-          </p>
-        </div>
 
-        {/* Grid de cursos com animação escalonada */}
-        <div className="grid gap-4">
-          {subscriptions.map((subscription, index) => (
-            <Card
-              key={subscription.id}
-              className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
-                selectedCourse?.id === subscription.id
-                  ? "border-primary ring-2 ring-primary/30 shadow-md"
-                  : "border-border hover:border-primary/50"
-              }`}
-              style={{
-                transitionDelay: `${index * 100}ms`,
-                opacity: isAnimating ? 0 : 1,
-                transform: isAnimating ? "translateX(-20px)" : "translateX(0)"
-              }}
-              onClick={() => setSelectedCourse(subscription)}
-            >
-              <CardContent className="flex items-center gap-6 p-6">
-                {/* Ícone do curso */}
-                <div className="relative flex-shrink-0">
-                  <div className={`w-20 h-20 rounded-2xl overflow-hidden transition-all duration-300 ${
-                    selectedCourse?.id === subscription.id ? "ring-4 ring-primary/20" : ""
-                  }`}>
-                    <img
-                      src={subscription.course_icon}
-                      alt={subscription.course_name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {selectedCourse?.id === subscription.id && (
-                    <div className="absolute -right-2 -top-2 animate-in zoom-in-50">
-                      <CheckCircle2 className="h-8 w-8 text-primary fill-background drop-shadow-lg" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Informações do curso */}
-                <div className="flex-1 space-y-2">
-                  <h3 className="text-2xl font-bold">{subscription.course_name}</h3>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium">Turma:</span> {subscription.student_class_name}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        subscription.status === 'active'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                      }`}>
-                        {subscription.status === 'active' ? 'Ativo' : subscription.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Indicador visual de seleção */}
-                <div className={`w-1 h-16 rounded-full transition-all duration-300 ${
-                  selectedCourse?.id === subscription.id
-                    ? "bg-primary"
-                    : "bg-transparent"
-                }`} />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Botão de continuar */}
-        <div className="flex justify-center pt-6">
           <Button
-            size="lg"
-            onClick={handleConfirm}
-            disabled={!selectedCourse}
-            className="min-w-[240px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="text-muted-foreground hover:text-foreground"
           >
-            {selectedCourse ? (
-              <>
-                Continuar com {selectedCourse.course_name}
-                <CheckCircle2 className="ml-2 h-5 w-5" />
-              </>
-            ) : (
-              "Selecione um curso"
-            )}
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
           </Button>
         </div>
+      </header>
 
-        {/* Link para voltar (opcional) */}
-        <div className="text-center pt-2">
-          <button
-            onClick={handleLogout}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
-          >
-            Fazer logout
-          </button>
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div
+          className={`w-full max-w-2xl space-y-8 transition-all duration-500 ease-out ${
+            isAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+          }`}
+        >
+          {/* Title Section */}
+          <div className="space-y-3 text-center">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              Escolha seu curso
+            </h1>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
+              Selecione o curso que deseja acessar para continuar
+            </p>
+          </div>
+
+          {/* Courses Grid */}
+          <div className="space-y-3">
+            {subscriptions.map((subscription, index) => {
+              const isSelected = selectedCourse?.id === subscription.id
+
+              return (
+                <button
+                  key={subscription.id}
+                  onClick={() => setSelectedCourse(subscription)}
+                  className={`
+                    w-full group relative
+                    transition-all duration-200 ease-out
+                    ${isAnimating ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}
+                  `}
+                  style={{ transitionDelay: `${index * 50}ms` }}
+                >
+                  <div
+                    className={`
+                      relative flex items-center gap-4 p-4 rounded-xl border
+                      transition-all duration-200
+                      ${isSelected
+                        ? 'bg-primary/5 border-primary shadow-sm'
+                        : 'bg-card border-border/50 hover:border-border hover:bg-muted/30'
+                      }
+                    `}
+                  >
+                    {/* Course Icon */}
+                    <div className="relative flex-shrink-0">
+                      <div className={`
+                        w-14 h-14 rounded-lg overflow-hidden ring-offset-2
+                        transition-all duration-200
+                        ${isSelected ? 'ring-2 ring-primary' : 'ring-0'}
+                      `}>
+                        <img
+                          src={subscription.course_icon}
+                          alt={subscription.course_name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Check indicator */}
+                      {isSelected && (
+                        <div className="absolute -top-1 -right-1 animate-in zoom-in-50 duration-200">
+                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Course Info */}
+                    <div className="flex-1 text-left min-w-0">
+                      <h3 className={`
+                        font-semibold text-base sm:text-lg truncate
+                        transition-colors duration-200
+                        ${isSelected ? 'text-foreground' : 'text-foreground/90'}
+                      `}>
+                        {subscription.course_name}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                        {subscription.student_class_name}
+                      </p>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="flex-shrink-0">
+                      {subscription.status === 'active' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          Ativo
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Arrow indicator */}
+                    <ArrowRight className={`
+                      h-5 w-5 flex-shrink-0 transition-all duration-200
+                      ${isSelected
+                        ? 'text-primary translate-x-0 opacity-100'
+                        : 'text-muted-foreground -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                      }
+                    `} />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* CTA Button */}
+          <div className="flex justify-center pt-4">
+            <Button
+              size="lg"
+              onClick={handleConfirm}
+              disabled={!selectedCourse}
+              className="min-w-[200px] h-11 font-medium shadow-sm"
+            >
+              Continuar
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-center">
+          <p className="text-xs text-muted-foreground">
+            © 2024 Veli. Todos os direitos reservados.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }
