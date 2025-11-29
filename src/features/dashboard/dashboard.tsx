@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useSubscriptions } from "./hooks/useSubscription"
-import { useNextAsyncLesson } from "./hooks/useNextAsyncLesson"
 
 export default function Dashboard() {
   const {
@@ -25,9 +24,6 @@ export default function Dashboard() {
     selectedSubscription,
     setSelectedSubscription
   } = useSubscriptions()
-
-  // Hook para refetch do next-async ao mudar curso
-  const { refetch: refetchNextAsync } = useNextAsyncLesson()
 
   // Dados de exemplo (após integração, virão da API baseado no selectedId)
   const nextClass = {
@@ -104,8 +100,10 @@ export default function Dashboard() {
               const subscription = subscriptions.find(s => s.id === parseInt(value))
               if (subscription) {
                 setSelectedSubscription(subscription)
-                // Força refetch do next-async com o novo curso
-                setTimeout(() => refetchNextAsync(), 100)
+                // Recarrega toda a aplicação ao mudar de curso
+                setTimeout(() => {
+                  window.location.reload()
+                }, 100)
               }
             }}
           >

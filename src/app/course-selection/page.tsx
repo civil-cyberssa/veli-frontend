@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Loader2, GraduationCap } from "lucide-react"
@@ -9,6 +10,7 @@ import { useSubscriptions, Subscription } from "@/src/features/dashboard/hooks/u
 
 export default function CourseSelectionPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const {
     data: subscriptions,
     loading,
@@ -19,6 +21,13 @@ export default function CourseSelectionPage() {
 
   const [selectedCourse, setSelectedCourse] = useState<Subscription | null>(null)
   const [isAnimating, setIsAnimating] = useState(true)
+
+  // Verifica autenticação
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth")
+    }
+  }, [status, router])
 
   useEffect(() => {
     // Animação de entrada
@@ -41,9 +50,13 @@ export default function CourseSelectionPage() {
     }
   }
 
-  if (loading) {
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/auth" })
+  }
+
+  if (status === "loading" || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
           <p className="text-muted-foreground">Carregando seus cursos...</p>
@@ -54,7 +67,7 @@ export default function CourseSelectionPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
         <div className="text-center space-y-4">
           <p className="text-destructive">Erro ao carregar cursos: {error.message}</p>
           <Button onClick={() => router.push("/home")}>
@@ -67,7 +80,7 @@ export default function CourseSelectionPage() {
 
   if (!subscriptions || subscriptions.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
         <div className="text-center space-y-4">
           <p className="text-muted-foreground">Nenhum curso encontrado</p>
           <Button onClick={() => router.push("/home")}>
@@ -194,7 +207,7 @@ export default function CourseSelectionPage() {
         {/* Link para voltar (opcional) */}
         <div className="text-center pt-2">
           <button
-            onClick={() => router.push("/auth")}
+            onClick={handleLogout}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
           >
             Fazer logout
