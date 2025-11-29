@@ -1,7 +1,7 @@
 "use client"
 
 import { Calendar, Clock, TrendingUp, ArrowRight, Play, BookOpen, Star } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -43,12 +43,6 @@ export default function Dashboard() {
     progress: 65,
     levels: ["A1", "A2", "B1", "B2", "C1", "C2"],
   }
-
-  const stats = [
-    { label: "Aulas concluídas", value: "24", icon: BookOpen, color: "text-blue-600 dark:text-blue-400" },
-    { label: "Sequência", value: "7 dias", icon: Star, color: "text-amber-600 dark:text-amber-400" },
-    { label: "Nível atual", value: level.current, icon: TrendingUp, color: "text-green-600 dark:text-green-400" },
-  ]
 
   // Data atual formatada
   const currentDate = new Date().toLocaleDateString('pt-BR', {
@@ -131,25 +125,6 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
         )}
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {stats.map((stat, index) => (
-          <Card key={index} className="border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                </div>
-                <div className={`p-2.5 rounded-lg bg-muted/50 ${stat.color}`}>
-                  <stat.icon className="h-5 w-5" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
       </div>
 
       {/* Welcome Card */}

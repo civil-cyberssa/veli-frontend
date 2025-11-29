@@ -13,7 +13,7 @@ export function WelcomeCard() {
   const { data: session } = useSession()
   const { data: nextLesson, isLoading } = useNextAsyncLesson()
 
-  const firstName = session?.first_name || "aluno"
+  const firstName = session?.user?.name || "aluno"
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     day: 'numeric',
     month: 'short'

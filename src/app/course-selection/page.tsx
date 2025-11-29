@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Loader2, ArrowRight, LogOut } from "lucide-react"
+import { CheckCircle2, Loader2, ArrowRight, LogOut, GraduationCap, Sparkles } from "lucide-react"
 import { useSubscriptions, Subscription } from "@/src/features/dashboard/hooks/useSubscription"
 
 export default function CourseSelectionPage() {
@@ -20,6 +20,7 @@ export default function CourseSelectionPage() {
 
   const [selectedCourse, setSelectedCourse] = useState<Subscription | null>(null)
   const [isAnimating, setIsAnimating] = useState(true)
+  const [isConfirming, setIsConfirming] = useState(false)
 
   // Verifica autenticação
   useEffect(() => {
@@ -33,12 +34,15 @@ export default function CourseSelectionPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedCourse) {
+      setIsConfirming(true)
       setSelectedSubscription(selectedCourse)
       markCourseAsSelected()
-      setIsAnimating(true)
-      setTimeout(() => router.push("/home"), 300)
+      
+      // Animação de transição suave
+      await new Promise(resolve => setTimeout(resolve, 400))
+      router.push("/home")
     }
   }
 
@@ -48,10 +52,18 @@ export default function CourseSelectionPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+              <GraduationCap className="h-8 w-8 text-primary" />
+            </div>
+            <Loader2 className="h-6 w-6 animate-spin absolute -bottom-1 -right-1 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Carregando seus cursos</p>
+            <p className="text-xs text-muted-foreground">Aguarde um momento...</p>
+          </div>
         </div>
       </div>
     )
@@ -59,10 +71,16 @@ export default function CourseSelectionPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4 max-w-md">
-          <p className="text-sm text-destructive">{error.message}</p>
-          <Button onClick={() => router.push("/home")} variant="outline">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Ops! Algo deu errado</h2>
+            <p className="text-sm text-muted-foreground">{error.message}</p>
+          </div>
+          <Button onClick={() => router.push("/home")} className="w-full sm:w-auto">
             Ir para Home
           </Button>
         </div>
@@ -72,10 +90,18 @@ export default function CourseSelectionPage() {
 
   if (!subscriptions || subscriptions.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <p className="text-sm text-muted-foreground">Nenhum curso encontrado</p>
-          <Button onClick={() => router.push("/home")} variant="outline">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto">
+            <GraduationCap className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Nenhum curso disponível</h2>
+            <p className="text-sm text-muted-foreground">
+              Você ainda não possui cursos ativos. Entre em contato com o suporte para mais informações.
+            </p>
+          </div>
+          <Button onClick={() => router.push("/home")} variant="outline" className="w-full sm:w-auto">
             Ir para Home
           </Button>
         </div>
@@ -92,25 +118,28 @@ export default function CourseSelectionPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border/40 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-bold text-sm">V</span>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header com blur */}
+      <header className="sticky top-0 z-50 border-b border-border/40 backdrop-blur-xl bg-background/80 supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
+              <span className="text-primary-foreground font-bold text-base">V</span>
             </div>
-            <span className="font-semibold text-sm">Veli</span>
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm leading-none">Veli</span>
+              <span className="text-[10px] text-muted-foreground leading-none mt-0.5">Plataforma de Ensino</span>
+            </div>
           </div>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut className="h-4 w-4 mr-2" />
-            Sair
+            <span className="hidden sm:inline">Sair</span>
           </Button>
         </div>
       </header>
@@ -118,22 +147,31 @@ export default function CourseSelectionPage() {
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div
-          className={`w-full max-w-2xl space-y-8 transition-all duration-500 ease-out ${
-            isAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+          className={`w-full max-w-3xl space-y-10 transition-all duration-700 ease-out ${
+            isAnimating ? "opacity-0 translate-y-8" : "opacity-100 translate-y-0"
           }`}
         >
-          {/* Title Section */}
-          <div className="space-y-3 text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          {/* Title Section com gradiente */}
+          <div className="space-y-4 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium text-primary">Bem-vindo de volta!</span>
+            </div>
+            
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
               Escolha seu curso
             </h1>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
-              Selecione o curso que deseja acessar para continuar
+            
+            <p className="text-muted-foreground text-base sm:text-lg max-w-lg mx-auto leading-relaxed">
+              {subscriptions.length === 1 
+                ? "Você possui 1 curso ativo. Selecione para continuar."
+                : `Você possui ${subscriptions.length} cursos ativos. Selecione um para continuar.`
+              }
             </p>
           </div>
 
-          {/* Courses Grid */}
-          <div className="space-y-3">
+          {/* Courses Grid com melhor espaçamento */}
+          <div className="space-y-4">
             {subscriptions.map((subscription, index) => {
               const isSelected = selectedCourse?.id === subscription.id
 
@@ -141,29 +179,39 @@ export default function CourseSelectionPage() {
                 <button
                   key={subscription.id}
                   onClick={() => setSelectedCourse(subscription)}
+                  disabled={isConfirming}
                   className={`
                     w-full group relative
-                    transition-all duration-200 ease-out
-                    ${isAnimating ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}
+                    transition-all duration-300 ease-out
+                    ${isAnimating ? 'opacity-0 translate-x-8' : 'opacity-100 translate-x-0'}
+                    ${isConfirming && !isSelected ? 'opacity-40' : ''}
                   `}
-                  style={{ transitionDelay: `${index * 50}ms` }}
+                  style={{ transitionDelay: `${index * 80}ms` }}
                 >
                   <div
                     className={`
-                      relative flex items-center gap-4 p-4 rounded-xl border
-                      transition-all duration-200
+                      relative flex items-center gap-5 p-5 rounded-2xl border-2
+                      transition-all duration-300 ease-out
                       ${isSelected
-                        ? 'bg-primary/5 border-primary shadow-sm'
-                        : 'bg-card border-border/50 hover:border-border hover:bg-muted/30'
+                        ? 'bg-primary/5 border-primary shadow-lg shadow-primary/10 scale-[1.02]'
+                        : 'bg-card/50 border-border/60 hover:border-border hover:bg-card hover:shadow-md hover:scale-[1.01]'
                       }
                     `}
                   >
-                    {/* Course Icon */}
-                    <div className="relative flex-shrink-0">
+                    {/* Gradient overlay sutil quando selecionado */}
+                    {isSelected && (
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+                    )}
+
+                    {/* Course Icon melhorado */}
+                    <div className="relative flex-shrink-0 z-10">
                       <div className={`
-                        w-14 h-14 rounded-lg overflow-hidden ring-offset-2
-                        transition-all duration-200
-                        ${isSelected ? 'ring-2 ring-primary' : 'ring-0'}
+                        w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden
+                        transition-all duration-300 ease-out
+                        ${isSelected 
+                          ? 'ring-4 ring-primary/30 shadow-lg shadow-primary/20' 
+                          : 'ring-2 ring-border/50 group-hover:ring-border'
+                        }
                       `}>
                         <img
                           src={subscription.course_icon}
@@ -172,46 +220,50 @@ export default function CourseSelectionPage() {
                         />
                       </div>
 
-                      {/* Check indicator */}
+                      {/* Check indicator melhorado */}
                       {isSelected && (
-                        <div className="absolute -top-1 -right-1 animate-in zoom-in-50 duration-200">
-                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />
+                        <div className="absolute -top-2 -right-2 animate-in zoom-in-75 duration-300">
+                          <div className="w-7 h-7 rounded-full bg-primary shadow-lg shadow-primary/30 flex items-center justify-center ring-4 ring-background">
+                            <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Course Info */}
-                    <div className="flex-1 text-left min-w-0">
+                    {/* Course Info melhorado */}
+                    <div className="flex-1 text-left min-w-0 z-10">
                       <h3 className={`
-                        font-semibold text-base sm:text-lg truncate
+                        font-bold text-lg sm:text-xl mb-1 truncate
                         transition-colors duration-200
-                        ${isSelected ? 'text-foreground' : 'text-foreground/90'}
+                        ${isSelected ? 'text-foreground' : 'text-foreground/90 group-hover:text-foreground'}
                       `}>
                         {subscription.course_name}
                       </h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                      <p className="text-sm text-muted-foreground truncate flex items-center gap-2">
+                        <GraduationCap className="h-3.5 w-3.5 flex-shrink-0" />
                         {subscription.student_class_name}
                       </p>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className="flex-shrink-0">
+                    {/* Status Badge melhorado */}
+                    <div className="flex-shrink-0 z-10">
                       {subscription.status === 'active' && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/30 shadow-sm">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          </span>
                           Ativo
                         </span>
                       )}
                     </div>
 
-                    {/* Arrow indicator */}
+                    {/* Arrow indicator melhorado */}
                     <ArrowRight className={`
-                      h-5 w-5 flex-shrink-0 transition-all duration-200
+                      h-6 w-6 flex-shrink-0 transition-all duration-300 ease-out z-10
                       ${isSelected
-                        ? 'text-primary translate-x-0 opacity-100'
-                        : 'text-muted-foreground -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                        ? 'text-primary translate-x-0 opacity-100 scale-110'
+                        : 'text-muted-foreground/50 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 group-hover:text-muted-foreground'
                       }
                     `} />
                   </div>
@@ -220,27 +272,56 @@ export default function CourseSelectionPage() {
             })}
           </div>
 
-          {/* CTA Button */}
-          <div className="flex justify-center pt-4">
+          {/* CTA Button melhorado */}
+          <div className="flex flex-col items-center gap-4 pt-6">
             <Button
               size="lg"
               onClick={handleConfirm}
-              disabled={!selectedCourse}
-              className="min-w-[200px] h-11 font-medium shadow-sm"
+              disabled={!selectedCourse || isConfirming}
+              className={`
+                min-w-[240px] h-12 font-semibold shadow-lg text-base
+                transition-all duration-300 ease-out
+                ${selectedCourse 
+                  ? 'shadow-primary/20 hover:shadow-primary/30 hover:scale-105' 
+                  : 'opacity-50'
+                }
+              `}
             >
-              Continuar
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {isConfirming ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                <>
+                  Continuar para o curso
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
             </Button>
+            
+            {!selectedCourse && (
+              <p className="text-xs text-muted-foreground animate-in fade-in duration-500">
+                Selecione um curso acima para continuar
+              </p>
+            )}
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-center">
-          <p className="text-xs text-muted-foreground">
-            © 2024 Veli. Todos os direitos reservados.
-          </p>
+      {/* Footer melhorado */}
+      <footer className="border-t border-border/40 backdrop-blur-sm bg-background/50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground">
+              © 2024 Veli. Todos os direitos reservados.
+            </p>
+            <div className="flex items-center gap-6 text-xs text-muted-foreground">
+              <a href="#" className="hover:text-foreground transition-colors">Termos de Uso</a>
+              <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
+              <a href="#" className="hover:text-foreground transition-colors">Suporte</a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
