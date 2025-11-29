@@ -1,6 +1,7 @@
 "use client"
 
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles, Moon, Sun } from "lucide-react"
+import { ChevronsUpDown, LogOut, Moon, Sun, UserCog } from "lucide-react"
+import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
   DropdownMenu, 
@@ -58,13 +59,15 @@ export function NavUser() {
     return null
   }
 
-  const firstName = session.first_name || ""
-  const lastName = session.last_name || ""
-  const email = session.email || ""
-  const profilePic = session.profile_pic || ""
-  
-  const fullName = `${firstName} ${lastName}`.trim() || "Usuário"
-  const initials = (firstName?.[0] || "") + (lastName?.[0] || "") || "U"
+  const fullName = session.student_full_name || "Usuário"
+  const profilePic = session.profile_pic_url || ""
+  const role = session.role || ""
+
+  // Extrai as iniciais do nome completo
+  const nameParts = fullName.split(" ")
+  const initials = nameParts.length >= 2
+    ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+    : fullName.substring(0, 2).toUpperCase()
 
   return (
     <SidebarMenu>
@@ -81,7 +84,7 @@ export function NavUser() {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{fullName}</span>
-                <span className="truncate text-xs">{email}</span>
+                <span className="truncate text-xs capitalize">{role}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -100,30 +103,17 @@ export function NavUser() {
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{fullName}</span>
-                  <span className="truncate text-xs">{email}</span>
+                  <span className="truncate text-xs capitalize">{role}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <Bell />
-                Notifications
+              <DropdownMenuItem asChild>
+                <Link href="/profile/edit" className="cursor-pointer">
+                  <UserCog />
+                  Editar Perfil
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleTheme}>
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
