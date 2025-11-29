@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { WelcomeCard } from "./components/map"
+import { NextAsyncLessonCard } from "./components/next-async-lesson-card"
 
 import {
   Select,
@@ -129,8 +130,13 @@ export default function Dashboard() {
       {/* Welcome Card */}
       <WelcomeCard />
 
-      {/* Próxima Aula ao Vivo */}
-      <Card className="border-border/50 overflow-hidden">
+      {/* Grid com aulas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Próxima Aula (Gravada) */}
+        <NextAsyncLessonCard />
+
+        {/* Próxima Aula ao Vivo */}
+        <Card className="border-border/50 overflow-hidden">
           <div className="p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -199,6 +205,7 @@ export default function Dashboard() {
             )}
           </div>
         </Card>
+      </div>
     </div>
   )
 }
