@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Loader2, ArrowRight, LogOut, GraduationCap, Sparkles } from "lucide-react"
+import { CheckCircle2, Loader2, ArrowRight, LogOut, GraduationCap } from "lucide-react"
 import { useSubscriptions, Subscription } from "@/src/features/dashboard/hooks/useSubscription"
 
 export default function CourseSelectionPage() {
@@ -154,7 +154,6 @@ export default function CourseSelectionPage() {
           {/* Title Section com gradiente */}
           <div className="space-y-4 text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-2">
-              <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-xs font-medium text-primary">Bem-vindo de volta!</span>
             </div>
             

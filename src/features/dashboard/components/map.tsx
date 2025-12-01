@@ -54,7 +54,7 @@ export function WelcomeCard() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-semibold">Olá, {firstName} 👋</h2>
+            <h2 className="text-2xl font-semibold">Olá, {firstName}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Continue de onde parou
             </p>
