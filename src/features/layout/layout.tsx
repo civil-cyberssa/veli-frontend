@@ -31,39 +31,53 @@ const routeBreadcrumbs: Record<string, { parent?: { label: string; href: string 
 
 export default function Layout({children}: {children: React.ReactNode}) {
   const pathname = usePathname()
-  const breadcrumb = routeBreadcrumbs[pathname] || routeBreadcrumbs["/home"]
+
+  // Detecta se é uma rota de aulas
+  const isLessonRoute = pathname.startsWith('/aulas/')
+
+  // Para rotas de aulas, não mostra breadcrumb
+  let breadcrumb = routeBreadcrumbs[pathname] || routeBreadcrumbs["/home"]
+
+  if (isLessonRoute) {
+    breadcrumb = {
+      parent: { label: "Cursos", href: "/home" },
+      current: "Aula"
+    }
+  }
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                {breadcrumb.parent && (
-                  <>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink href={breadcrumb.parent.href}>
-                        {breadcrumb.parent.label}
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                  </>
-                )}
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{breadcrumb.current}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 px-6">
+        {!isLessonRoute && (
+          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2 px-4">
+              <SidebarTrigger className="-ml-1" />
+              <Separator
+                orientation="vertical"
+                className="mr-2 data-[orientation=vertical]:h-4"
+              />
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {breadcrumb.parent && (
+                    <>
+                      <BreadcrumbItem className="hidden md:block">
+                        <BreadcrumbLink href={breadcrumb.parent.href}>
+                          {breadcrumb.parent.label}
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator className="hidden md:block" />
+                    </>
+                  )}
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{breadcrumb.current}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </header>
+        )}
+        <div className={isLessonRoute ? "flex flex-1 flex-col" : "flex flex-1 flex-col gap-4 px-6"}>
           {children}
         </div>
       </SidebarInset>
