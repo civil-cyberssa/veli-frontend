@@ -10,6 +10,7 @@ import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgres
 import { LessonRating } from '@/src/features/lessons/components/lesson-rating'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
+import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { PlayCircle, Calendar, CheckCircle2, Circle } from 'lucide-react'
 
 export default function LessonPage() {
@@ -94,27 +95,32 @@ export default function LessonPage() {
           {/* Coluna principal: Vídeo + Conteúdo adicional */}
           <div className={`space-y-4 ${sidebarCollapsed ? '' : 'lg:col-span-3'}`}>
             {/* Vídeo */}
-            <Card className="border-border/50 overflow-hidden animate-scale-in animate-delay-100">
-              <div className="relative aspect-video bg-black">
-                {lesson.content_url ? (
-                  <video
-                    controls
-                    className="w-full h-full"
-                    src={lesson.content_url}
-                    poster=""
-                  >
-                    Seu navegador não suporta o elemento de vídeo.
-                  </video>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center space-y-3">
-                      <PlayCircle className="h-16 w-16 text-muted-foreground/40 mx-auto" />
-                      <p className="text-sm text-muted-foreground">Vídeo não disponível</p>
+            <div className="animate-scale-in animate-delay-100">
+              {lesson.content_url ? (
+                <VideoPlayer
+                  url={lesson.content_url}
+                  onProgress={(progress) => {
+                    // TODO: Salvar progresso da aula
+                    console.log('Progress:', progress)
+                  }}
+                  onEnded={() => {
+                    // TODO: Marcar aula como concluída
+                    console.log('Video ended')
+                  }}
+                />
+              ) : (
+                <Card className="border-border/50 overflow-hidden">
+                  <div className="relative aspect-video bg-black">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center space-y-3">
+                        <PlayCircle className="h-16 w-16 text-muted-foreground/40 mx-auto" />
+                        <p className="text-sm text-muted-foreground">Vídeo não disponível</p>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            </Card>
+                </Card>
+              )}
+            </div>
 
             {/* Rating */}
             <div className="animate-slide-up animate-delay-200">
