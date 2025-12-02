@@ -102,21 +102,42 @@ function ModuleItem({
   onToggle: () => void
   onSelectLesson?: (lessonId: number) => void
 }) {
+  // Verificar se este módulo contém a aula atual
+  const isCurrentModule = module.lessons.some((l) => l.lesson_id === currentLessonId)
+
   return (
-    <div className="border-b border-border/50 last:border-b-0">
+    <div className={cn(
+      "border-b border-border/50 last:border-b-0 transition-all",
+      isCurrentModule && "bg-primary/5 border-l-2 border-l-primary"
+    )}>
       {/* Header do módulo */}
       <button
         onClick={onToggle}
-        className="w-full px-4 py-3.5 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+        className={cn(
+          "w-full px-4 py-4 flex items-center gap-3 transition-all",
+          isCurrentModule
+            ? "hover:bg-primary/10"
+            : "hover:bg-muted/30"
+        )}
       >
         {/* Número do módulo */}
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center text-sm font-semibold">
+        <div className={cn(
+          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
+          isCurrentModule
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground"
+        )}>
           {index + 1}
         </div>
 
         {/* Info do módulo */}
         <div className="flex-1 text-left">
-          <h4 className="text-sm font-medium leading-tight">{module.module_name}</h4>
+          <h4 className={cn(
+            "text-sm font-medium leading-tight",
+            isCurrentModule && "text-primary"
+          )}>
+            {module.module_name}
+          </h4>
           <p className="text-xs text-muted-foreground mt-0.5">
             {module.lessons.length} aulas • {module.total_duration}
           </p>
@@ -125,15 +146,19 @@ function ModuleItem({
         {/* Chevron */}
         <ChevronDown
           className={cn(
-            "h-4 w-4 text-muted-foreground transition-transform",
-            isExpanded && "rotate-180"
+            "h-4 w-4 transition-all",
+            isExpanded && "rotate-180",
+            isCurrentModule ? "text-primary" : "text-muted-foreground"
           )}
         />
       </button>
 
       {/* Lista de aulas (expansível) */}
       {isExpanded && (
-        <div className="bg-background">
+        <div className={cn(
+          "bg-background border-t border-border/30 animate-in fade-in-0 slide-in-from-top-2 duration-200",
+          isCurrentModule && "bg-primary/5"
+        )}>
           {module.lessons.map((lesson, lessonIndex) => {
             const isCurrentLesson = lesson.lesson_id === currentLessonId
             // Duração estimada: varia entre 5-15 minutos
@@ -144,37 +169,42 @@ function ModuleItem({
                 key={lesson.lesson_id}
                 onClick={() => onSelectLesson?.(lesson.lesson_id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors border-l-2",
+                  "w-full flex items-center gap-3 px-4 py-3 transition-all border-l-2",
                   isCurrentLesson
-                    ? "bg-primary/10 border-l-primary text-primary"
-                    : "border-l-transparent text-foreground"
+                    ? "bg-primary/15 border-l-primary hover:bg-primary/20"
+                    : "border-l-transparent hover:bg-muted/30"
                 )}
               >
                 {/* Ícone de status */}
                 <div className="flex-shrink-0">
                   {lesson.watched ? (
-                    <div className="w-4 h-4 rounded-sm border border-green-500 bg-green-500/10 flex items-center justify-center">
-                      <CheckCircle2 className="h-3 w-3 text-green-500" />
+                    <div className="w-5 h-5 rounded-md border-2 border-green-500 bg-green-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500 fill-green-500" />
                     </div>
                   ) : isCurrentLesson ? (
-                    <PlayCircle className="h-4 w-4 text-primary" />
+                    <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center">
+                      <PlayCircle className="h-3.5 w-3.5 text-primary fill-primary" />
+                    </div>
                   ) : (
-                    <div className="w-4 h-4 rounded-sm border border-muted-foreground/30 flex items-center justify-center">
-                      <PlayCircle className="h-3 w-3 text-muted-foreground/50" />
+                    <div className="w-5 h-5 rounded-md border-2 border-muted-foreground/30 flex items-center justify-center hover:border-muted-foreground/50 transition-colors">
+                      <PlayCircle className="h-3 w-3 text-muted-foreground/60" />
                     </div>
                   )}
                 </div>
 
                 {/* Nome da aula */}
                 <span className={cn(
-                  "text-xs flex-1 text-left leading-tight",
-                  isCurrentLesson ? "font-medium text-primary" : "text-foreground"
+                  "text-xs flex-1 text-left leading-snug",
+                  isCurrentLesson ? "font-semibold text-primary" : "text-foreground font-medium"
                 )}>
                   {lesson.lesson_name}
                 </span>
 
                 {/* Duração */}
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                <span className={cn(
+                  "text-xs flex-shrink-0 font-mono",
+                  isCurrentLesson ? "text-primary/80" : "text-muted-foreground"
+                )}>
                   {formatDuration(estimatedDuration)}
                 </span>
               </button>
@@ -184,24 +214,28 @@ function ModuleItem({
           {/* Quiz do módulo (se existir) */}
           {module.quiz && (
             <button
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors border-t border-border/30 mt-1"
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3.5 transition-all border-t mt-1",
+                "bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10",
+                "border-primary/20 hover:border-primary/30"
+              )}
               onClick={() => {
                 // TODO: Abrir quiz
                 console.log('Abrir quiz:', module.quiz?.id)
               }}
             >
-              <div className="p-1.5 rounded-md bg-primary/10 shrink-0">
+              <div className="p-2 rounded-lg bg-primary/15 shrink-0 border border-primary/20">
                 <BookOpen className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-xs text-muted-foreground leading-tight">
+                <p className="text-xs text-primary/70 leading-tight font-medium">
                   Próximo conteúdo - teste teórico
                 </p>
-                <h4 className="text-sm font-medium text-foreground leading-tight mt-0.5">
+                <h4 className="text-sm font-semibold text-foreground leading-tight mt-0.5">
                   {module.quiz.name}
                 </h4>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-primary" />
             </button>
           )}
         </div>
@@ -264,21 +298,21 @@ export function LessonSidebarTabs({
 
   if (isCollapsed) {
     return (
-      <Card className="border-border/50 overflow-hidden bg-background w-16 flex flex-col h-full">
+      <Card className="border-border/50 overflow-hidden bg-background w-16 flex flex-col h-full shadow-md">
         {/* Header colapsado */}
-        <div className="p-2 border-b border-border/50 flex justify-center">
+        <div className="p-2 border-b border-border/50 flex justify-center bg-muted/30">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleCollapsedChange(false)}
-            className="h-8 w-8 hover:bg-accent"
+            className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Ícones verticais */}
-        <div className="flex flex-col items-center gap-1 py-3">
+        <div className="flex flex-col items-center gap-2 py-4">
           {tabs.map((tab) => (
             <Button
               key={tab.value}
@@ -292,15 +326,18 @@ export function LessonSidebarTabs({
               }}
               disabled={tab.disabled}
               className={cn(
-                'h-12 w-12 rounded-lg transition-all',
+                'h-12 w-12 rounded-lg transition-all relative',
                 activeTab === tab.value
-                  ? 'bg-primary/10 text-primary border-l-2 border-primary rounded-l-none'
-                  : 'hover:bg-accent',
+                  ? 'bg-primary/15 text-primary shadow-sm'
+                  : 'hover:bg-accent/50',
                 tab.disabled && 'opacity-40'
               )}
               title={tab.label}
             >
               <tab.icon className="h-5 w-5" />
+              {activeTab === tab.value && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+              )}
             </Button>
           ))}
         </div>
@@ -309,42 +346,42 @@ export function LessonSidebarTabs({
   }
 
   return (
-    <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full">
+    <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full shadow-sm">
       {/* Header com tabs - Estilo mais limpo */}
-      <div className="border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h3 className="text-base font-semibold text-foreground">
+      <div className="border-b border-border/50 bg-muted/20">
+        <div className="flex items-center justify-between px-4 py-3.5">
+          <h3 className="text-base font-bold text-foreground">
             {activeTab === 'conteudo' ? 'Conteúdo' : 'Material'}
           </h3>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleCollapsedChange(true)}
-            className="h-8 w-8 hover:bg-accent"
+            className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
           >
             <Menu className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Tabs horizontais - estilo minimalista */}
-        <div className="flex border-t border-border/30">
+        <div className="flex bg-background">
           {tabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => !tab.disabled && setActiveTab(tab.value)}
               disabled={tab.disabled}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all relative',
+                'flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold transition-all relative',
                 'border-r border-border/30 last:border-r-0',
                 activeTab === tab.value
-                  ? 'text-primary bg-primary/5'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
                 tab.disabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground'
               )}
             >
               <tab.icon className="h-4 w-4" />
               {activeTab === tab.value && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-sm" />
               )}
             </button>
           ))}
