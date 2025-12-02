@@ -76,8 +76,8 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
 
   const handleProgress = (state: any) => {
     setPlayed(state.played)
-    if (state.loadedSeconds > 0 && duration === 0) {
-      setDuration(playerRef.current?.getDuration() || 0)
+    if (state.loadedSeconds > 0 && duration === 0 && playerRef.current && typeof playerRef.current.getDuration === 'function') {
+      setDuration(playerRef.current.getDuration() || 0)
     }
     onProgress?.({ played: state.played, playedSeconds: state.playedSeconds })
   }
@@ -85,7 +85,9 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   const handleSeek = (value: number[]) => {
     const seekTo = value[0] / 100
     setPlayed(seekTo)
-    playerRef.current?.seekTo(seekTo)
+    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+      playerRef.current.seekTo(seekTo)
+    }
   }
 
   const handleVolumeChange = (value: number[]) => {
@@ -109,13 +111,17 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   }
 
   const skipBackward = () => {
-    const current = playerRef.current?.getCurrentTime() || 0
-    playerRef.current?.seekTo(Math.max(0, current - 10))
+    if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
+      const current = playerRef.current.getCurrentTime() || 0
+      playerRef.current.seekTo(Math.max(0, current - 10))
+    }
   }
 
   const skipForward = () => {
-    const current = playerRef.current?.getCurrentTime() || 0
-    playerRef.current?.seekTo(Math.min(duration, current + 10))
+    if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
+      const current = playerRef.current.getCurrentTime() || 0
+      playerRef.current.seekTo(Math.min(duration, current + 10))
+    }
   }
 
   const formatTime = (seconds: number) => {
@@ -153,7 +159,9 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
           onReady={() => {
             setIsReady(true)
             setTimeout(() => {
-              setDuration(playerRef.current?.getDuration() || 0)
+              if (playerRef.current && typeof playerRef.current.getDuration === 'function') {
+                setDuration(playerRef.current.getDuration() || 0)
+              }
             }, 100)
           }}
           onProgress={handleProgress}
