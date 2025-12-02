@@ -9,6 +9,7 @@ export interface LessonProgress {
   lesson_name: string
   module_id: number
   module_name: string
+  course_name?: string // Opcional - fallback para module_name ou 'Curso'
   scheduled_datetime: string
   watched: boolean
   watched_at: string | null

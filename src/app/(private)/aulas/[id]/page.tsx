@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { LessonRating } from '@/src/features/lessons/components/lesson-rating'
-import { LessonsList } from '@/src/features/lessons/components/lessons-list'
+import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
-import { PlayCircle, FileText, Download, Calendar, CheckCircle2, Circle } from 'lucide-react'
+import { PlayCircle, Calendar, CheckCircle2, Circle } from 'lucide-react'
 
 export default function LessonPage() {
   const params = useParams()
@@ -120,68 +120,17 @@ export default function LessonPage() {
               />
             </div>
 
-            {/* Conteúdo adicional: Material de Apoio e Exercícios */}
-            <div className="space-y-3 animate-slide-up animate-delay-300">
-              {/* Material de Apoio */}
-              {lesson.support_material_url && (
-                <Card className="p-3 border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <FileText className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium">Material de Apoio</h3>
-                        <p className="text-xs text-muted-foreground">
-                          Documento complementar
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={lesson.support_material_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Baixar
-                      </a>
-                    </Button>
-                  </div>
-                </Card>
-              )}
-
-              {/* Exercício */}
-              {lesson.exercise && (
-                <Card className="p-3 border-border/50 bg-muted/30">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <FileText className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium">{lesson.exercise.name}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {lesson.exercise.questions_count} questões
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Iniciar
-                    </Button>
-                  </div>
-                </Card>
-              )}
-
-              {/* Atividades Mock */}
-              {lesson.activities && lesson.activities.length > 0 && (
-                <Card className="p-3 border-border/50">
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold mb-2">Atividades da Aula</h3>
+            {/* Atividades da Aula */}
+            {lesson.activities && lesson.activities.length > 0 && (
+              <div className="animate-slide-up animate-delay-300">
+                <Card className="p-4 border-border/50">
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold">Atividades da Aula</h3>
                     <div className="space-y-2">
                       {lesson.activities.slice(0, 3).map((activity) => (
                         <div
                           key={activity.id}
-                          className="flex items-center gap-2 text-sm p-2 rounded hover:bg-muted/50 cursor-pointer"
+                          className="flex items-center gap-2 text-sm p-2 rounded hover:bg-muted/50 cursor-pointer transition-colors"
                         >
                           {activity.completed ? (
                             <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
@@ -194,24 +143,26 @@ export default function LessonPage() {
                     </div>
                   </div>
                 </Card>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          {/* Sidebar direita: Lista de Aulas (sticky) */}
+          {/* Sidebar direita: Tabs com Conteúdo, Material e Exercício (sticky) */}
           <div className="lg:col-span-1">
             <div className="lg:sticky lg:top-4">
               <div className="animate-slide-up animate-delay-200">
                 {eventProgress ? (
-                  <LessonsList
+                  <LessonSidebarTabs
                     lessons={eventProgress}
                     currentLessonId={lesson.id}
+                    supportMaterialUrl={lesson.support_material_url}
+                    exercise={lesson.exercise}
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
                     <div className="text-center space-y-2">
                       <PlayCircle className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-                      <p className="text-sm text-muted-foreground">Carregando aulas...</p>
+                      <p className="text-sm text-muted-foreground">Carregando...</p>
                     </div>
                   </Card>
                 )}
