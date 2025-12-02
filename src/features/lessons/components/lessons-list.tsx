@@ -1,8 +1,11 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { PlayCircle, Menu } from 'lucide-react'
+import { PlayCircle, MonitorPlay, ChevronDown } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { cn } from '@/lib/utils'
 
 interface LessonsListProps {
   lessons: LessonProgress[]
@@ -26,6 +29,52 @@ const getTotalDuration = (lessons: LessonProgress[]) => {
 }
 
 export function LessonsList({ lessons, currentLessonId, compact = false, onSelectLesson }: LessonsListProps) {
+  const modules = useMemo(
+    () =>
+      lessons.reduce(
+        (groups, lesson) => {
+          const existing = groups.find((group) => group.moduleId === lesson.module_id)
+
+          if (existing) {
+            existing.lessons.push(lesson)
+            return groups
+          }
+
+          return [
+            ...groups,
+            {
+              moduleId: lesson.module_id,
+              moduleName: lesson.module_name,
+              lessons: [lesson],
+            },
+          ]
+        },
+        [] as { moduleId: number; moduleName: string; lessons: LessonProgress[] }[]
+      ),
+    [lessons]
+  )
+
+  const [openModuleId, setOpenModuleId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (modules.length === 0) return
+
+    const moduleWithCurrent = currentLessonId
+      ? modules.find((module) =>
+          module.lessons.some((lesson) => lesson.lesson_id === currentLessonId)
+        )
+      : null
+
+    if (moduleWithCurrent) {
+      setOpenModuleId(moduleWithCurrent.moduleId)
+      return
+    }
+
+    if (openModuleId === null) {
+      setOpenModuleId(modules[0].moduleId)
+    }
+  }, [modules, currentLessonId, openModuleId])
+
   if (!lessons || lessons.length === 0) {
     return (
       <Card className="p-6 border-border/50">
@@ -37,53 +86,47 @@ export function LessonsList({ lessons, currentLessonId, compact = false, onSelec
     )
   }
 
-  // Pegar o nome do curso da primeira aula
-  const courseName = lessons[0]?.course_name || 'Curso'
-
-  const modules = lessons.reduce(
-    (groups, lesson) => {
-      const existing = groups.find((group) => group.moduleId === lesson.module_id)
-
-      if (existing) {
-        existing.lessons.push(lesson)
-        return groups
-      }
-
-      return [
-        ...groups,
-        {
-          moduleId: lesson.module_id,
-          moduleName: lesson.module_name,
-          lessons: [lesson],
-        },
-      ]
-    },
-    [] as { moduleId: number; moduleName: string; lessons: LessonProgress[] }[]
-  )
-
   const handleLessonSelect = (lessonId: number) => {
     onSelectLesson?.(lessonId)
   }
 
-  // Se for modo compacto, não mostra o Card wrapper nem header
-  if (compact) {
-    return (
-      <div className="space-y-4">
-        {modules.map((moduleGroup, moduleIndex) => (
-          <div key={moduleGroup.moduleId} className="space-y-2">
-            <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-3 py-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center">
-                {moduleIndex + 1}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight">{moduleGroup.moduleName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {moduleGroup.lessons.length} {moduleGroup.lessons.length === 1 ? 'aula' : 'aulas'} • {getTotalDuration(moduleGroup.lessons)}
-                </p>
-              </div>
-            </div>
+  const renderModules = (
+    <div className="space-y-3">
+      {modules.map((moduleGroup, moduleIndex) => {
+        const isOpen = openModuleId === moduleGroup.moduleId
 
-            <div className="space-y-1">
+        return (
+          <Collapsible
+            key={moduleGroup.moduleId}
+            open={isOpen}
+            onOpenChange={(open) => setOpenModuleId(open ? moduleGroup.moduleId : null)}
+            className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur"
+          >
+            <CollapsibleTrigger asChild>
+              <button className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition hover:border-primary/40 hover:bg-muted/40">
+                <div className="h-10 w-10 rounded-full bg-primary/15 text-primary font-semibold flex items-center justify-center text-sm">
+                  {moduleIndex + 1}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-tight text-foreground">
+                    {moduleGroup.moduleName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {moduleGroup.lessons.length} {moduleGroup.lessons.length === 1 ? 'aula' : 'aulas'} • {getTotalDuration(moduleGroup.lessons)}
+                  </p>
+                </div>
+
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 text-muted-foreground transition-transform',
+                    isOpen ? 'rotate-180' : ''
+                  )}
+                />
+              </button>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent className="px-3 pb-3 pt-1 space-y-1">
               {moduleGroup.lessons.map((lesson, index) => {
                 const isCurrentLesson = lesson.lesson_id === currentLessonId
 
@@ -92,138 +135,44 @@ export function LessonsList({ lessons, currentLessonId, compact = false, onSelec
                     key={lesson.lesson_id}
                     type="button"
                     onClick={() => handleLessonSelect(lesson.lesson_id)}
-                    className={`w-full px-4 py-3 flex items-center gap-3 rounded-lg border transition-colors text-left ${
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]',
                       isCurrentLesson
-                        ? 'bg-primary/10 border-primary/40'
-                        : 'border-border/50 hover:bg-muted/60'
-                    }`}
+                        ? 'border-primary/70 bg-primary/10 ring-1 ring-primary/20'
+                        : 'border-border/50 bg-background/60 hover:border-primary/40 hover:bg-muted/40'
+                    )}
                   >
-                    <div className="shrink-0">
-                      <div
-                        className={`p-1 rounded ${
-                          lesson.watched ? 'bg-primary/20' : 'bg-muted'
-                        }`}
-                      >
-                        <PlayCircle
-                          className={`h-4 w-4 ${
-                            lesson.watched ? 'text-primary' : 'text-muted-foreground'
-                          }`}
-                        />
-                      </div>
+                    <div className="p-2 rounded-lg bg-muted/60 text-muted-foreground shadow-sm">
+                      <MonitorPlay className={cn('h-4 w-4', isCurrentLesson && 'text-primary')} />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm line-clamp-2 ${
-                          isCurrentLesson ? 'font-semibold' : ''
-                        }`}
-                      >
+                      <p className={cn('text-sm leading-tight text-foreground line-clamp-2', isCurrentLesson && 'font-semibold')}>
                         {lesson.lesson_name}
                       </p>
+                      <p className="text-[11px] text-muted-foreground/80">{formatDuration(index)}</p>
                     </div>
 
-                    <div className="shrink-0 text-right">
-                      <span className="text-xs text-muted-foreground">
-                        {formatDuration(index)}
-                      </span>
-                    </div>
+                    {lesson.watched && (
+                      <span className="text-[11px] font-medium text-primary">Assistida</span>
+                    )}
                   </button>
                 )
               })}
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+            </CollapsibleContent>
+          </Collapsible>
+        )
+      })}
+    </div>
+  )
+
+  if (compact) {
+    return renderModules
   }
 
   return (
-    <Card className="border-border/50 overflow-hidden flex flex-col max-h-[calc(100vh-120px)] bg-background">
-      {/* Header fixo */}
-      <div className="p-4 border-b border-border/50">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">Conteúdo</h2>
-          <button className="p-1 hover:bg-muted rounded">
-            <Menu className="h-5 w-5 text-muted-foreground" />
-          </button>
-        </div>
-
-        {/* Info do curso */}
-        <div className="space-y-1">
-          <h3 className="text-sm font-medium line-clamp-2">{courseName}</h3>
-          <p className="text-xs text-muted-foreground">
-            {lessons.length} aulas • {getTotalDuration(lessons)}
-          </p>
-        </div>
-      </div>
-
-      {/* Lista com scroll */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
-        {modules.map((moduleGroup, moduleIndex) => (
-          <div key={moduleGroup.moduleId} className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center">
-                {moduleIndex + 1}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight">{moduleGroup.moduleName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {moduleGroup.lessons.length} {moduleGroup.lessons.length === 1 ? 'aula' : 'aulas'} • {getTotalDuration(moduleGroup.lessons)}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              {moduleGroup.lessons.map((lesson, index) => {
-                const isCurrentLesson = lesson.lesson_id === currentLessonId
-
-                return (
-                  <button
-                    key={lesson.lesson_id}
-                    type="button"
-                    onClick={() => handleLessonSelect(lesson.lesson_id)}
-                    className={`w-full px-4 py-3 flex items-center gap-3 rounded-lg border transition-colors text-left ${
-                      isCurrentLesson
-                        ? 'bg-primary/10 border-primary/40'
-                        : 'border-border/50 hover:bg-muted/60'
-                    }`}
-                  >
-                    <div className="shrink-0">
-                      <div
-                        className={`p-1 rounded ${
-                          lesson.watched ? 'bg-primary/20' : 'bg-muted'
-                        }`}
-                      >
-                        <PlayCircle
-                          className={`h-4 w-4 ${
-                            lesson.watched ? 'text-primary' : 'text-muted-foreground'
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm line-clamp-2 ${
-                          isCurrentLesson ? 'font-semibold' : ''
-                        }`}
-                      >
-                        {lesson.lesson_name}
-                      </p>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <span className="text-xs text-muted-foreground">
-                        {formatDuration(index)}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+    <Card className="border-border/60 bg-background/80 p-3 shadow-sm">
+      {renderModules}
     </Card>
   )
 }
