@@ -81,57 +81,62 @@ export default function LessonPage() {
       {/* Onboarding - aparece apenas na primeira vez */}
       <LessonOnboarding />
 
-      <div className="pb-8">
-        {/* Header com animação */}
-        <div className="mb-6 animate-slide-up">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant="secondary" className="text-xs">
-            {lesson.module.name}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            Aula {lesson.order}
-          </Badge>
-          {lesson.is_weekly && (
-            <Badge variant="default" className="text-xs flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              Semanal
-            </Badge>
-          )}
-          <Badge variant="outline" className="text-xs capitalize">
-            {lesson.lesson_type === 'asynchronous' ? 'Assíncrona' : 'Ao vivo'}
-          </Badge>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {lesson.lesson_name}
-        </h1>
-      </div>
+      <div className="relative pb-10">
+        <div className="pointer-events-none absolute inset-x-0 top-[-120px] h-72 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.16),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(56,189,248,0.1),transparent_30%)]" />
 
-      {/* Layout: Vídeo à esquerda | Lista de Aulas à direita */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna principal: Vídeo */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Vídeo com animação */}
-          <Card className="border-border/50 overflow-hidden animate-scale-in animate-delay-100">
-            <div className="relative aspect-video bg-black">
-              {lesson.content_url ? (
-                <video
-                  controls
-                  className="w-full h-full"
-                  src={lesson.content_url}
-                  poster=""
-                >
-                  Seu navegador não suporta o elemento de vídeo.
-                </video>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center space-y-3">
-                    <PlayCircle className="h-16 w-16 text-muted-foreground/40 mx-auto" />
-                    <p className="text-sm text-muted-foreground">Vídeo não disponível</p>
+        {/* Header com animação */}
+        <div className="relative mb-6 animate-slide-up">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge variant="secondary" className="text-xs">
+              {lesson.module.name}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              Aula {lesson.order}
+            </Badge>
+            {lesson.is_weekly && (
+              <Badge variant="default" className="text-xs flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Semanal
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-xs capitalize">
+              {lesson.lesson_type === 'asynchronous' ? 'Assíncrona' : 'Ao vivo'}
+            </Badge>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            {lesson.lesson_name}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Conteúdo e exercícios agrupados à direita para você avançar sem perder o ritmo.
+          </p>
+        </div>
+
+        {/* Layout: Vídeo à esquerda | Lista de Aulas à direita */}
+        <div className="relative grid grid-cols-1 gap-8 lg:grid-cols-[2fr_1fr]">
+          {/* Coluna principal: Vídeo */}
+          <div className="space-y-6">
+            {/* Vídeo com animação */}
+            <Card className="border-border/60 overflow-hidden bg-gradient-to-b from-background/80 to-background shadow-2xl shadow-primary/10 animate-scale-in animate-delay-100">
+              <div className="relative aspect-video bg-black">
+                {lesson.content_url ? (
+                  <video
+                    controls
+                    className="w-full h-full"
+                    src={lesson.content_url}
+                    poster=""
+                  >
+                    Seu navegador não suporta o elemento de vídeo.
+                  </video>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center space-y-3">
+                      <PlayCircle className="h-16 w-16 text-muted-foreground/40 mx-auto" />
+                      <p className="text-sm text-muted-foreground">Vídeo não disponível</p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </Card>
+                )}
+              </div>
+            </Card>
 
           {/* Tabs com conteúdo adicional */}
           <Tabs defaultValue="rating" className="animate-slide-up animate-delay-200">

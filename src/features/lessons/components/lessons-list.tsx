@@ -11,6 +11,7 @@ import {
   PlayCircle,
   Sparkles,
   Star,
+  Video,
 } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import {
@@ -98,45 +99,63 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
   const completedLessons = lessons.filter((l) => l.watched).length
 
   return (
-    <Card className="border-border/50 p-4">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
+    <aside className="lg:sticky lg:top-8">
+      <Card className="overflow-hidden border-border/60 bg-gradient-to-b from-background via-background/70 to-background/90 p-4 shadow-xl shadow-primary/5">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Cronograma</h2>
-            <p className="text-xs text-muted-foreground">Aulas, exercícios e quizzes alinhados à direita como na Rocketseat.</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Conteúdo</p>
+            <h2 className="text-xl font-bold leading-tight">Sua trilha nesta aula</h2>
+            <p className="text-xs text-muted-foreground">
+              Acompanhe a ordem Aula → Exercício → Quiz com o visual inspirado na Rocketseat.
+            </p>
           </div>
-          <Badge variant="secondary" className="text-xs">
-            {completedLessons}/{lessons.length} aulas concluídas
+          <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-[11px] font-semibold text-primary">
+            {completedLessons}/{lessons.length} aulas
           </Badge>
         </div>
 
-        <Separator />
+        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Video className="h-5 w-5" />
+            </div>
+            <div className="space-y-1 text-xs">
+              <p className="font-semibold text-foreground/80">Imersão guiada</p>
+              <p className="text-muted-foreground">
+                Navegue pelo cronograma sem sair da aula: clique para avançar ou abrir o exercício.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Separator className="my-4" />
 
         <TooltipProvider delayDuration={0}>
-          <div className="relative space-y-4 pl-2">
-            <div className="absolute left-[13px] top-2 bottom-4 w-[2px] bg-gradient-to-b from-primary/50 via-border/70 to-transparent" />
+          <div className="relative space-y-3 pl-3">
+            <div className="absolute left-2 top-2 bottom-2 w-[2px] bg-gradient-to-b from-primary via-primary/30 to-transparent" />
 
             {timelineItems.map((item, index) => {
               const isLesson = item.type === 'lesson'
               const isExercise = item.type === 'exercise'
               const isQuiz = item.type === 'quiz'
               const isCurrentLesson = item.lesson.lesson_id === currentLessonId
-              const exercise = item.lesson.exercise
+              const { exercise } = item.lesson
+
               const answeredText = exercise
                 ? `${exercise.answers_count}/${exercise.questions_count} questões`
                 : null
 
               const statusClasses = {
-                done: 'bg-green-500 shadow-[0_0_0_3px] shadow-green-500/20 text-white',
-                active: 'bg-primary shadow-[0_0_0_3px] shadow-primary/20 text-white',
+                done: 'bg-green-500 text-white shadow-[0_0_0_4px] shadow-green-500/20',
+                active: 'bg-primary text-white shadow-[0_0_0_4px] shadow-primary/30',
                 pending: 'bg-muted text-muted-foreground',
               }[item.status]
 
-              const badgeVariant = item.status === 'done'
-                ? 'outline'
-                : item.status === 'active'
-                  ? 'default'
-                  : 'secondary'
+              const pillTone = {
+                lesson: 'bg-primary/10 text-primary border border-primary/30',
+                exercise: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
+                quiz: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+              }[item.type]
 
               const icon = isLesson ? (
                 item.status === 'done' ? (
@@ -151,26 +170,26 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
               )
 
               return (
-                <div key={`${item.id}-${index}`} className="relative pl-6">
+                <div key={`${item.id}-${index}`} className="relative pl-5">
                   <span
-                    className={`absolute left-0 top-1.5 flex h-6 w-6 items-center justify-center rounded-full ${statusClasses}`}
+                    className={`absolute left-[-6px] top-2.5 flex h-6 w-6 items-center justify-center rounded-full ${statusClasses}`}
                   >
                     {icon}
                   </span>
 
                   <div
-                    className={`rounded-xl border transition-all ${
+                    className={`group rounded-xl border transition-all duration-200 ${
                       isCurrentLesson
-                        ? 'border-primary/60 bg-primary/5 shadow-md'
-                        : 'border-border/50 bg-background'
+                        ? 'border-primary/60 bg-primary/5 shadow-lg shadow-primary/10'
+                        : 'border-border/60 bg-background/80'
                     }`}
                   >
-                    <div className="flex flex-col gap-2 px-4 py-3">
-                      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        <Badge variant={badgeVariant} className="text-[10px] uppercase">
-                          {isLesson ? 'Aula' : isExercise ? 'Exercício' : 'Quiz & feedback'}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground">
+                    <div className="flex flex-col gap-3 px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        <span className={`rounded-full px-2 py-1 ${pillTone}`}>
+                          {isLesson ? 'Aula' : isExercise ? 'Exercício' : 'Quiz'}
+                        </span>
+                        <span className="text-muted-foreground/80">
                           {new Date(item.lesson.scheduled_datetime).toLocaleDateString('pt-BR', {
                             day: '2-digit',
                             month: 'short',
@@ -218,6 +237,7 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
                                 variant={isCurrentLesson ? 'default' : 'outline'}
                                 onClick={() => onExerciseOpen?.(item.lesson)}
                                 disabled={!onExerciseOpen}
+                                className="font-semibold"
                               >
                                 Responder
                               </Button>
@@ -238,10 +258,10 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
           </div>
         </TooltipProvider>
 
-        <div className="pt-3 text-center text-[11px] text-muted-foreground">
-          Próximas etapas organizadas no fluxo: Aula → Exercício → Quiz → Aula seguinte.
+        <div className="pt-4 text-center text-[11px] text-muted-foreground">
+          Fluxo contínuo: Aula → Exercício → Quiz → próxima aula, tudo alinhado ao lado direito.
         </div>
-      </div>
-    </Card>
+      </Card>
+    </aside>
   )
 }
