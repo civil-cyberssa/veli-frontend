@@ -1,14 +1,17 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { PlayCircle, Menu } from 'lucide-react'
+import { PlayCircle, MonitorPlay, ChevronDown, BookOpen, ChevronRight } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
-import Link from 'next/link'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { cn } from '@/lib/utils'
 
 interface LessonsListProps {
   lessons: LessonProgress[]
-  currentLessonId: number
+  currentLessonId: number | null
   compact?: boolean
+  onSelectLesson?: (lessonId: number) => void
 }
 
 // Função auxiliar para formatar duração (mock por enquanto)
@@ -21,10 +24,57 @@ const formatDuration = (index: number) => {
 // Calcular duração total (mock)
 const getTotalDuration = (lessons: LessonProgress[]) => {
   // Mock - substituir com cálculo real
+  if (!lessons.length) return '00:00'
   return '07:46:25'
 }
 
-export function LessonsList({ lessons, currentLessonId, compact = false }: LessonsListProps) {
+export function LessonsList({ lessons, currentLessonId, compact = false, onSelectLesson }: LessonsListProps) {
+  const modules = useMemo(
+    () =>
+      lessons.reduce(
+        (groups, lesson) => {
+          const existing = groups.find((group) => group.moduleId === lesson.module_id)
+
+          if (existing) {
+            existing.lessons.push(lesson)
+            return groups
+          }
+
+          return [
+            ...groups,
+            {
+              moduleId: lesson.module_id,
+              moduleName: lesson.module_name,
+              lessons: [lesson],
+            },
+          ]
+        },
+        [] as { moduleId: number; moduleName: string; lessons: LessonProgress[] }[]
+      ),
+    [lessons]
+  )
+
+  const [openModuleId, setOpenModuleId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (modules.length === 0) return
+
+    const moduleWithCurrent = currentLessonId
+      ? modules.find((module) =>
+          module.lessons.some((lesson) => lesson.lesson_id === currentLessonId)
+        )
+      : null
+
+    if (moduleWithCurrent) {
+      setOpenModuleId(moduleWithCurrent.moduleId)
+      return
+    }
+
+    if (openModuleId === null) {
+      setOpenModuleId(modules[0].moduleId)
+    }
+  }, [modules, currentLessonId, openModuleId])
+
   if (!lessons || lessons.length === 0) {
     return (
       <Card className="p-6 border-border/50">
@@ -36,130 +86,123 @@ export function LessonsList({ lessons, currentLessonId, compact = false }: Lesso
     )
   }
 
-  // Pegar o nome do curso da primeira aula
-  const courseName = lessons[0]?.course_name || 'Curso'
+  const handleLessonSelect = (lessonId: number, moduleId: number) => {
+    setOpenModuleId(moduleId)
+    onSelectLesson?.(lessonId)
+  }
 
-  // Se for modo compacto, não mostra o Card wrapper nem header
-  if (compact) {
-    return (
-      <div>
-        {lessons.map((lesson, index) => {
-          const isCurrentLesson = lesson.lesson_id === currentLessonId
+  const renderModules = (
+    <div className="space-y-3">
+      {modules.map((moduleGroup, moduleIndex) => {
+        const isOpen = openModuleId === moduleGroup.moduleId
 
-          return (
-            <Link
-              key={lesson.lesson_id}
-              href={`/aulas/${lesson.lesson_id}`}
-            >
-              <div
-                className={`px-4 py-3 flex items-center gap-3 transition-colors cursor-pointer border-l-4 ${
-                  isCurrentLesson
-                    ? 'bg-primary/10 border-l-primary'
-                    : 'border-l-transparent hover:bg-muted/50'
-                }`}
+        return (
+          <Collapsible
+            key={moduleGroup.moduleId}
+            open={isOpen}
+            onOpenChange={(open) => setOpenModuleId(open ? moduleGroup.moduleId : null)}
+            className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur"
+          >
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition hover:border-primary/40 hover:bg-muted/40"
               >
-                {/* Ícone de play */}
-                <div className="shrink-0">
-                  <div className={`p-1 rounded ${
-                    lesson.watched ? 'bg-primary/20' : 'bg-muted'
-                  }`}>
-                    <PlayCircle className={`h-4 w-4 ${
-                      lesson.watched ? 'text-primary' : 'text-muted-foreground'
-                    }`} />
-                  </div>
+                <div className="h-10 w-10 rounded-full bg-primary/15 text-primary font-semibold flex items-center justify-center text-sm">
+                  {moduleIndex + 1}
                 </div>
 
-                {/* Título da aula */}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm line-clamp-2 ${
-                    isCurrentLesson ? 'font-medium' : ''
-                  }`}>
-                    {lesson.lesson_name}
+                  <p className="text-sm font-semibold leading-tight text-foreground">
+                    {moduleGroup.moduleName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {moduleGroup.lessons.length} {moduleGroup.lessons.length === 1 ? 'aula' : 'aulas'} • {getTotalDuration(moduleGroup.lessons)}
                   </p>
                 </div>
 
-                {/* Duração */}
-                <div className="shrink-0">
-                  <span className="text-xs text-muted-foreground">
-                    {formatDuration(index)}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-    )
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 text-muted-foreground transition-transform',
+                    isOpen ? 'rotate-180' : ''
+                  )}
+                />
+              </button>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent className="px-3 pb-3 pt-1 space-y-2 data-[state=closed]:hidden">
+              {moduleGroup.lessons.map((lesson, index) => {
+                const isCurrentLesson = lesson.lesson_id === currentLessonId
+                const exercise = lesson.exercise
+
+                return (
+                  <div key={lesson.lesson_id} className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => handleLessonSelect(lesson.lesson_id, moduleGroup.moduleId)}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]',
+                        isCurrentLesson
+                          ? 'border-primary/70 bg-primary/10 ring-1 ring-primary/20'
+                          : 'border-border/50 bg-background/60 hover:border-primary/40 hover:bg-muted/40'
+                      )}
+                    >
+                      <div className="p-2 rounded-lg bg-muted/60 text-muted-foreground shadow-sm">
+                        <MonitorPlay className={cn('h-4 w-4', isCurrentLesson && 'text-primary')} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className={cn('text-sm leading-tight text-foreground line-clamp-2', isCurrentLesson && 'font-semibold')}>
+                          {lesson.lesson_name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground/80">{formatDuration(index)}</p>
+                      </div>
+
+                      {lesson.watched && (
+                        <span className="text-[11px] font-medium text-primary">Assistida</span>
+                      )}
+                    </button>
+
+                    {exercise && (
+                      <div className="ml-11 flex items-center justify-between gap-3 rounded-lg border border-dashed border-border/60 bg-background/80 px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                            <BookOpen className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground truncate">{exercise.name}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {exercise.questions_count} {exercise.questions_count === 1 ? 'questão' : 'questões'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-primary text-[11px] font-semibold hover:underline"
+                          onClick={() => handleLessonSelect(lesson.lesson_id, moduleGroup.moduleId)}
+                        >
+                          Iniciar
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        )
+      })}
+    </div>
+  )
+
+  if (compact) {
+    return renderModules
   }
 
   return (
-    <Card className="border-border/50 overflow-hidden flex flex-col max-h-[calc(100vh-120px)] bg-background">
-      {/* Header fixo */}
-      <div className="p-4 border-b border-border/50">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">Conteúdo</h2>
-          <button className="p-1 hover:bg-muted rounded">
-            <Menu className="h-5 w-5 text-muted-foreground" />
-          </button>
-        </div>
-
-        {/* Info do curso */}
-        <div className="space-y-1">
-          <h3 className="text-sm font-medium line-clamp-2">{courseName}</h3>
-          <p className="text-xs text-muted-foreground">
-            {lessons.length} aulas • {getTotalDuration(lessons)}
-          </p>
-        </div>
-      </div>
-
-      {/* Lista com scroll */}
-      <div className="flex-1 overflow-y-auto">
-        {lessons.map((lesson, index) => {
-          const isCurrentLesson = lesson.lesson_id === currentLessonId
-
-          return (
-            <Link
-              key={lesson.lesson_id}
-              href={`/aulas/${lesson.lesson_id}`}
-            >
-              <div
-                className={`px-4 py-3 flex items-center gap-3 transition-colors cursor-pointer border-l-4 ${
-                  isCurrentLesson
-                    ? 'bg-primary/10 border-l-primary'
-                    : 'border-l-transparent hover:bg-muted/50'
-                }`}
-              >
-                {/* Ícone de play */}
-                <div className="shrink-0">
-                  <div className={`p-1 rounded ${
-                    lesson.watched ? 'bg-primary/20' : 'bg-muted'
-                  }`}>
-                    <PlayCircle className={`h-4 w-4 ${
-                      lesson.watched ? 'text-primary' : 'text-muted-foreground'
-                    }`} />
-                  </div>
-                </div>
-
-                {/* Título da aula */}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm line-clamp-2 ${
-                    isCurrentLesson ? 'font-medium' : ''
-                  }`}>
-                    {lesson.lesson_name}
-                  </p>
-                </div>
-
-                {/* Duração */}
-                <div className="shrink-0">
-                  <span className="text-xs text-muted-foreground">
-                    {formatDuration(index)}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+    <Card className="border-border/60 bg-background/80 p-3 shadow-sm">
+      {renderModules}
     </Card>
   )
 }
