@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import ReactPlayer from 'react-player'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -32,22 +31,39 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerProps) {
-  const playerRef = useRef<any>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const progressInterval = useRef<NodeJS.Timeout | null>(null)
 
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(0.8)
   const [muted, setMuted] = useState(false)
-  const [played, setPlayed] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
-  const [isReady, setIsReady] = useState(false)
-  const [hasInteracted, setHasInteracted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [buffered, setBuffered] = useState(0)
 
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null)
 
+  // Atualizar volume do vídeo
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume
+      videoRef.current.muted = muted
+    }
+  }, [volume, muted])
+
+  // Atualizar playback rate
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackRate
+    }
+  }, [playbackRate])
+
+  // Listener para fullscreen
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement)
@@ -56,6 +72,36 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Iniciar/parar intervalo de progresso
+  useEffect(() => {
+    if (playing) {
+      progressInterval.current = setInterval(() => {
+        if (videoRef.current) {
+          const current = videoRef.current.currentTime
+          const dur = videoRef.current.duration
+          setCurrentTime(current)
+
+          if (dur > 0) {
+            onProgress?.({
+              played: current / dur,
+              playedSeconds: current,
+            })
+          }
+        }
+      }, 1000)
+    } else {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current)
+      }
+    }
+
+    return () => {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current)
+      }
+    }
+  }, [playing, onProgress])
 
   const handleMouseMove = () => {
     setShowControls(true)
@@ -70,24 +116,22 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   }
 
   const handlePlayPause = () => {
-    setHasInteracted(true)
-    setPlaying(!playing)
-  }
+    if (!videoRef.current) return
 
-  const handleProgress = (state: any) => {
-    setPlayed(state.played)
-    if (state.loadedSeconds > 0 && duration === 0 && playerRef.current && typeof playerRef.current.getDuration === 'function') {
-      setDuration(playerRef.current.getDuration() || 0)
+    if (playing) {
+      videoRef.current.pause()
+      setPlaying(false)
+    } else {
+      videoRef.current.play()
+      setPlaying(true)
     }
-    onProgress?.({ played: state.played, playedSeconds: state.playedSeconds })
   }
 
   const handleSeek = (value: number[]) => {
-    const seekTo = value[0] / 100
-    setPlayed(seekTo)
-    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
-      playerRef.current.seekTo(seekTo)
-    }
+    if (!videoRef.current) return
+    const seekTime = (value[0] / 100) * duration
+    videoRef.current.currentTime = seekTime
+    setCurrentTime(seekTime)
   }
 
   const handleVolumeChange = (value: number[]) => {
@@ -97,34 +141,35 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   }
 
   const toggleMute = () => {
-    setMuted(!muted)
+    if (muted) {
+      setMuted(false)
+      setVolume(0.8)
+    } else {
+      setMuted(true)
+    }
   }
 
   const handleFullscreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen()
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen()
-      }
+      document.exitFullscreen()
     }
   }
 
   const skipBackward = () => {
-    if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
-      const current = playerRef.current.getCurrentTime() || 0
-      playerRef.current.seekTo(Math.max(0, current - 10))
-    }
+    if (!videoRef.current) return
+    videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10)
   }
 
   const skipForward = () => {
-    if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
-      const current = playerRef.current.getCurrentTime() || 0
-      playerRef.current.seekTo(Math.min(duration, current + 10))
-    }
+    if (!videoRef.current) return
+    videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10)
   }
 
   const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return '0:00'
+
     const h = Math.floor(seconds / 3600)
     const m = Math.floor((seconds % 3600) / 60)
     const s = Math.floor(seconds % 60)
@@ -138,53 +183,52 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
   return (
-    <Card className="border-border/50 overflow-hidden bg-black group">
+    <Card className="border-border/50 overflow-hidden bg-black">
       <div
         ref={containerRef}
         className="relative aspect-video bg-black"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => playing && setShowControls(false)}
       >
-        {/* @ts-ignore */}
-        <ReactPlayer
-          ref={playerRef}
-          url={url}
-          playing={playing && hasInteracted}
-          volume={volume}
-          muted={muted}
-          playbackRate={playbackRate}
-          width="100%"
-          height="100%"
-          progressInterval={1000}
-          onReady={() => {
-            setIsReady(true)
-            setTimeout(() => {
-              if (playerRef.current && typeof playerRef.current.getDuration === 'function') {
-                setDuration(playerRef.current.getDuration() || 0)
-              }
-            }, 100)
+        <video
+          ref={videoRef}
+          src={url}
+          poster={poster}
+          className="w-full h-full"
+          onLoadedMetadata={(e) => {
+            const target = e.target as HTMLVideoElement
+            setDuration(target.duration)
+            setIsLoading(false)
           }}
-          onProgress={handleProgress}
-          onEnded={onEnded}
-          config={{
-            file: {
-              attributes: {
-                preload: 'metadata',
-                playsInline: true,
-              },
-            },
+          onTimeUpdate={(e) => {
+            const target = e.target as HTMLVideoElement
+            setCurrentTime(target.currentTime)
           }}
+          onProgress={(e) => {
+            const target = e.target as HTMLVideoElement
+            if (target.buffered.length > 0) {
+              const bufferedEnd = target.buffered.end(target.buffered.length - 1)
+              setBuffered((bufferedEnd / target.duration) * 100)
+            }
+          }}
+          onEnded={() => {
+            setPlaying(false)
+            onEnded?.()
+          }}
+          onWaiting={() => setIsLoading(true)}
+          onCanPlay={() => setIsLoading(false)}
+          playsInline
         />
 
         {/* Loading spinner */}
-        {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
             <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
           </div>
         )}
 
-        {/* Center play button overlay */}
-        {!playing && isReady && (
+        {/* Center play button */}
+        {!playing && !isLoading && (
           <div
             className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer transition-opacity hover:bg-black/30"
             onClick={handlePlayPause}
@@ -205,14 +249,14 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
           {/* Progress bar */}
           <div className="mb-4">
             <Slider
-              value={[played * 100]}
+              value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
               onValueChange={handleSeek}
               max={100}
               step={0.1}
               className="cursor-pointer"
             />
             <div className="flex items-center justify-between text-xs text-white mt-1">
-              <span>{formatTime(played * duration)}</span>
+              <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
@@ -227,11 +271,7 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
                 onClick={handlePlayPause}
                 className="text-white hover:text-white hover:bg-white/20"
               >
-                {playing ? (
-                  <Pause className="h-5 w-5" />
-                ) : (
-                  <Play className="h-5 w-5" />
-                )}
+                {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
               </Button>
 
               {/* Skip backward */}
