@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,19 +13,28 @@ import { ActivitiesSidebar } from '@/src/features/lessons/components/activities-
 import { LessonsList } from '@/src/features/lessons/components/lessons-list'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { PlayCircle, FileText, Download, Calendar } from 'lucide-react'
+import { ExerciseModal } from '@/src/features/lessons/components/exercise-modal'
+import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
 
 export default function LessonPage() {
   const params = useParams()
   const lessonId = params.id as string
 
+  const { selectedId: subscriptionId } = useSubscriptions()
   const { data: lesson, isLoading, error } = useLesson(lessonId)
-  // TODO: Pegar o event_id real da aula atual
-  const { data: eventProgress } = useEventProgress('1')
+  const { data: eventProgress } = useEventProgress(
+    subscriptionId ? subscriptionId.toString() : null
+  )
+  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
 
   const handleRatingChange = async (rating: number) => {
     // TODO: Implementar chamada à API para salvar o rating
     console.log('Rating changed to:', rating)
   }
+
+  const currentLessonEvent = eventProgress?.find(
+    (event) => event.lesson_id === Number(lessonId)
+  )
 
   if (isLoading) {
     return (
@@ -175,6 +185,26 @@ export default function LessonPage() {
                       <p className="text-xs text-muted-foreground">
                         Este exercício contém {lesson.exercise.questions_count} questões
                       </p>
+                      {currentLessonEvent?.exercise && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {currentLessonEvent.exercise.answers_count}/
+                          {currentLessonEvent.exercise.questions_count} questões respondidas
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => setIsExerciseModalOpen(true)}
+                        disabled={!currentLessonEvent?.event_id || !subscriptionId}
+                      >
+                        Responder
+                      </Button>
+                      {!subscriptionId && (
+                        <p className="text-[11px] text-muted-foreground text-right">
+                          Selecione um curso para liberar o exercício.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -214,6 +244,12 @@ export default function LessonPage() {
           )}
         </div>
       </div>
+      <ExerciseModal
+        open={isExerciseModalOpen}
+        onOpenChange={setIsExerciseModalOpen}
+        eventId={currentLessonEvent?.event_id?.toString() || null}
+        subscriptionId={subscriptionId}
+      />
     </div>
     </>
   )
