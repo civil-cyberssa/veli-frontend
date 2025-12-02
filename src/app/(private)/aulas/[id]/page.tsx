@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { LessonRating } from '@/src/features/lessons/components/lesson-rating'
 import { ActivitiesSidebar } from '@/src/features/lessons/components/activities-sidebar'
+import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { PlayCircle, FileText, Download, Calendar } from 'lucide-react'
 
 export default function LessonPage() {
@@ -55,9 +56,13 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="pb-8">
-      {/* Header com animação */}
-      <div className="mb-6 animate-slide-up">
+    <>
+      {/* Onboarding - aparece apenas na primeira vez */}
+      <LessonOnboarding />
+
+      <div className="pb-8">
+        {/* Header com animação */}
+        <div className="mb-6 animate-slide-up">
         <div className="flex items-center gap-2 mb-2">
           <Badge variant="secondary" className="text-xs">
             {lesson.module.name}
@@ -169,5 +174,6 @@ export default function LessonPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
