@@ -8,6 +8,7 @@ import Link from 'next/link'
 interface LessonsListProps {
   lessons: LessonProgress[]
   currentLessonId: number
+  compact?: boolean
 }
 
 // Função auxiliar para formatar duração (mock por enquanto)
@@ -23,7 +24,7 @@ const getTotalDuration = (lessons: LessonProgress[]) => {
   return '07:46:25'
 }
 
-export function LessonsList({ lessons, currentLessonId }: LessonsListProps) {
+export function LessonsList({ lessons, currentLessonId, compact = false }: LessonsListProps) {
   if (!lessons || lessons.length === 0) {
     return (
       <Card className="p-6 border-border/50">
@@ -37,6 +38,59 @@ export function LessonsList({ lessons, currentLessonId }: LessonsListProps) {
 
   // Pegar o nome do curso da primeira aula
   const courseName = lessons[0]?.course_name || 'Curso'
+
+  // Se for modo compacto, não mostra o Card wrapper nem header
+  if (compact) {
+    return (
+      <div>
+        {lessons.map((lesson, index) => {
+          const isCurrentLesson = lesson.lesson_id === currentLessonId
+
+          return (
+            <Link
+              key={lesson.lesson_id}
+              href={`/aulas/${lesson.lesson_id}`}
+            >
+              <div
+                className={`px-4 py-3 flex items-center gap-3 transition-colors cursor-pointer border-l-4 ${
+                  isCurrentLesson
+                    ? 'bg-primary/10 border-l-primary'
+                    : 'border-l-transparent hover:bg-muted/50'
+                }`}
+              >
+                {/* Ícone de play */}
+                <div className="shrink-0">
+                  <div className={`p-1 rounded ${
+                    lesson.watched ? 'bg-primary/20' : 'bg-muted'
+                  }`}>
+                    <PlayCircle className={`h-4 w-4 ${
+                      lesson.watched ? 'text-primary' : 'text-muted-foreground'
+                    }`} />
+                  </div>
+                </div>
+
+                {/* Título da aula */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm line-clamp-2 ${
+                    isCurrentLesson ? 'font-medium' : ''
+                  }`}>
+                    {lesson.lesson_name}
+                  </p>
+                </div>
+
+                {/* Duração */}
+                <div className="shrink-0">
+                  <span className="text-xs text-muted-foreground">
+                    {formatDuration(index)}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <Card className="border-border/50 overflow-hidden flex flex-col max-h-[calc(100vh-120px)] bg-background">
