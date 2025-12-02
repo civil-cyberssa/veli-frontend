@@ -1,14 +1,26 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { CheckCircle2, Circle, Star, PlayCircle } from 'lucide-react'
+import { PlayCircle, Menu } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import Link from 'next/link'
 
 interface LessonsListProps {
   lessons: LessonProgress[]
   currentLessonId: number
+}
+
+// Função auxiliar para formatar duração (mock por enquanto)
+const formatDuration = (index: number) => {
+  // Mock de durações - substituir com dados reais quando disponível
+  const mockDurations = ['01:53:55', '01:55:10', '01:57:51', '01:59:29', '02:01:15']
+  return mockDurations[index % mockDurations.length] || '01:00:00'
+}
+
+// Calcular duração total (mock)
+const getTotalDuration = (lessons: LessonProgress[]) => {
+  // Mock - substituir com cálculo real
+  return '07:46:25'
 }
 
 export function LessonsList({ lessons, currentLessonId }: LessonsListProps) {
@@ -23,131 +35,76 @@ export function LessonsList({ lessons, currentLessonId }: LessonsListProps) {
     )
   }
 
-  // Agrupar aulas por módulo
-  const lessonsByModule = lessons.reduce((acc, lesson) => {
-    if (!acc[lesson.module_name]) {
-      acc[lesson.module_name] = []
-    }
-    acc[lesson.module_name].push(lesson)
-    return acc
-  }, {} as Record<string, LessonProgress[]>)
+  // Pegar o nome do curso da primeira aula
+  const courseName = lessons[0]?.course_name || 'Curso'
 
   return (
-    <Card className="border-border/50 overflow-hidden flex flex-col max-h-[calc(100vh-120px)]">
+    <Card className="border-border/50 overflow-hidden flex flex-col max-h-[calc(100vh-120px)] bg-background">
       {/* Header fixo */}
-      <div className="p-4 border-b border-border/50 bg-background">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Conteúdo</h2>
-          <Badge variant="secondary" className="text-xs">
-            {lessons.filter(l => l.watched).length}/{lessons.length}
-          </Badge>
+      <div className="p-4 border-b border-border/50">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold">Conteúdo</h2>
+          <button className="p-1 hover:bg-muted rounded">
+            <Menu className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Info do curso */}
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium line-clamp-2">{courseName}</h3>
+          <p className="text-xs text-muted-foreground">
+            {lessons.length} aulas • {getTotalDuration(lessons)}
+          </p>
         </div>
       </div>
 
       {/* Lista com scroll */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {Object.entries(lessonsByModule).map(([moduleName, moduleLessons]) => (
-            <div key={moduleName} className="space-y-2">
-              {/* Nome do módulo */}
-              <h3 className="text-sm font-medium text-muted-foreground px-2">
-                {moduleName}
-              </h3>
+      <div className="flex-1 overflow-y-auto">
+        {lessons.map((lesson, index) => {
+          const isCurrentLesson = lesson.lesson_id === currentLessonId
 
-              {/* Lista de aulas do módulo */}
-              <div className="space-y-1">
-                {moduleLessons.map((lesson) => {
-                  const isCurrentLesson = lesson.lesson_id === currentLessonId
-                  const hasExercise = lesson.exercise && lesson.exercise.answers_count > 0
+          return (
+            <Link
+              key={lesson.lesson_id}
+              href={`/aulas/${lesson.lesson_id}`}
+            >
+              <div
+                className={`px-4 py-3 flex items-center gap-3 transition-colors cursor-pointer border-l-4 ${
+                  isCurrentLesson
+                    ? 'bg-primary/10 border-l-primary'
+                    : 'border-l-transparent hover:bg-muted/50'
+                }`}
+              >
+                {/* Ícone de play */}
+                <div className="shrink-0">
+                  <div className={`p-1 rounded ${
+                    lesson.watched ? 'bg-primary/20' : 'bg-muted'
+                  }`}>
+                    <PlayCircle className={`h-4 w-4 ${
+                      lesson.watched ? 'text-primary' : 'text-muted-foreground'
+                    }`} />
+                  </div>
+                </div>
 
-                  return (
-                    <Link
-                      key={lesson.lesson_id}
-                      href={`/aulas/${lesson.lesson_id}`}
-                    >
-                      <div
-                        className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                          isCurrentLesson
-                            ? 'bg-primary/10 border-primary/50 shadow-sm'
-                            : 'border-border/50 hover:bg-muted/50 hover:border-border'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          {/* Ícone de status */}
-                          <div className="mt-0.5 shrink-0">
-                            {lesson.watched ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            ) : (
-                              <Circle className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
+                {/* Título da aula */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm line-clamp-2 ${
+                    isCurrentLesson ? 'font-medium' : ''
+                  }`}>
+                    {lesson.lesson_name}
+                  </p>
+                </div>
 
-                          {/* Conteúdo */}
-                          <div className="flex-1 min-w-0 space-y-2">
-                            <div>
-                              <h4 className={`text-sm font-medium line-clamp-2 ${
-                                isCurrentLesson ? 'text-primary' : ''
-                              }`}>
-                                {lesson.lesson_name}
-                              </h4>
-                            </div>
-
-                            {/* Rating e Exercício */}
-                            <div className="flex items-center gap-3 text-xs">
-                              {/* Rating */}
-                              {lesson.rating && (
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-muted-foreground">{lesson.rating}/5</span>
-                                </div>
-                              )}
-
-                              {/* Exercício */}
-                              {hasExercise && (
-                                <div className="flex items-center gap-1">
-                                  <Badge variant="outline" className="text-xs h-5 px-1.5">
-                                    {lesson.exercise!.answers_count}/{lesson.exercise!.questions_count} questões
-                                  </Badge>
-                                </div>
-                              )}
-
-                              {/* Score do exercício */}
-                              {lesson.exercise_score !== null && (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-muted-foreground">
-                                    Nota: {lesson.exercise_score}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
+                {/* Duração */}
+                <div className="shrink-0">
+                  <span className="text-xs text-muted-foreground">
+                    {formatDuration(index)}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-      </div>
-
-      {/* Progresso geral - Footer fixo */}
-      <div className="p-4 border-t border-border/50 bg-background">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Progresso</span>
-            <span className="font-medium">
-              {Math.round((lessons.filter(l => l.watched).length / lessons.length) * 100)}%
-            </span>
-          </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{
-                width: `${(lessons.filter(l => l.watched).length / lessons.length) * 100}%`
-              }}
-            />
-          </div>
-        </div>
+            </Link>
+          )
+        })}
       </div>
     </Card>
   )
