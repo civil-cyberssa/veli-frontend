@@ -29,6 +29,7 @@ export function ActivitiesSidebar({ activities }: ActivitiesSidebarProps) {
 
   return (
     <Card className="p-6 border-border/50">
+      
       <h2 className="text-lg font-semibold mb-4">Atividades</h2>
 
       <div className="space-y-3">

@@ -11,13 +11,17 @@ import { LessonRating } from '@/src/features/lessons/components/lesson-rating'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
-import { PlayCircle, Calendar, CheckCircle2, Circle } from 'lucide-react'
+import { PlayCircle, Calendar, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 
 export default function LessonPage() {
   const params = useParams()
   const lessonId = params.id as string
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [autoplay, setAutoplay] = useState(true)
 
+  const handleAutoplayChange = (checked: boolean) => {
+    setAutoplay(checked)
+  }
   const { data: lesson, isLoading, error } = useLesson(lessonId)
   // TODO: Pegar o event_id real da aula atual
   const { data: eventProgress } = useEventProgress('1')
@@ -68,25 +72,20 @@ export default function LessonPage() {
 
       <div className="pb-8">
         {/* Header com informações da aula */}
-        <div className="mb-4 animate-slide-up">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="secondary" className="text-xs">
-              {lesson.module.name}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              Aula {lesson.order}
-            </Badge>
-            {lesson.is_weekly && (
-              <Badge variant="default" className="text-xs flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                Semanal
-              </Badge>
-            )}
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            {lesson.lesson_name}
-          </h1>
-        </div>
+        <header className="flex items-center justify-between py-3 border-b border-border/50">
+      {/* Left: Back button + Title */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-sm font-medium text-foreground truncate">{lesson.lesson_name}</h1>
+      </div>
+
+      {/* Right: Autoplay toggle */}
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-sm text-muted-foreground hidden sm:inline">Reprodução automática</span>
+      </div>
+    </header>
 
         {/* Layout: Vídeo à esquerda (maior) | Lista de Aulas à direita (fixa) */}
         <div className={`grid grid-cols-1 gap-4 transition-all duration-300 ${
