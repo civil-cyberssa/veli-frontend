@@ -11,7 +11,6 @@ import {
   VolumeX,
   Maximize,
   Minimize,
-  Settings,
   SkipBack,
   SkipForward,
 } from 'lucide-react'
@@ -28,14 +27,15 @@ interface VideoPlayerProps {
   poster?: string
   onProgress?: (progress: { played: number; playedSeconds: number }) => void
   onEnded?: () => void
+  autoPlay?: boolean
 }
 
-export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerProps) {
+export function VideoPlayer({ url, poster, onProgress, onEnded, autoPlay = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<NodeJS.Timeout | null>(null)
 
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.8)
   const [muted, setMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -44,8 +44,6 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
-  const [buffered, setBuffered] = useState(0)
-
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null)
 
   // Atualizar volume do vídeo
@@ -62,6 +60,24 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
       videoRef.current.playbackRate = playbackRate
     }
   }, [playbackRate])
+
+  // Auto play control
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    if (autoPlay) {
+      const playPromise = video.play()
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setPlaying(true))
+          .catch(() => setPlaying(false))
+      }
+    } else {
+      video.pause()
+      setPlaying(false)
+    }
+  }, [autoPlay, url])
 
   // Listener para fullscreen
   useEffect(() => {
@@ -195,6 +211,7 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
           src={url}
           poster={poster}
           className="w-full h-full"
+          autoPlay={autoPlay}
           onLoadedMetadata={(e) => {
             const target = e.target as HTMLVideoElement
             setDuration(target.duration)
@@ -204,19 +221,23 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
             const target = e.target as HTMLVideoElement
             setCurrentTime(target.currentTime)
           }}
-          onProgress={(e) => {
-            const target = e.target as HTMLVideoElement
-            if (target.buffered.length > 0) {
-              const bufferedEnd = target.buffered.end(target.buffered.length - 1)
-              setBuffered((bufferedEnd / target.duration) * 100)
-            }
-          }}
           onEnded={() => {
             setPlaying(false)
             onEnded?.()
           }}
           onWaiting={() => setIsLoading(true)}
-          onCanPlay={() => setIsLoading(false)}
+          onCanPlay={() => {
+            setIsLoading(false)
+
+            if (autoPlay && !playing) {
+              const playPromise = videoRef.current?.play()
+              if (playPromise) {
+                playPromise
+                  .then(() => setPlaying(true))
+                  .catch(() => setPlaying(false))
+              }
+            }
+          }}
           playsInline
         />
 
