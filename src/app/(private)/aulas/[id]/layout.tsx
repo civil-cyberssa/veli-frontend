@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Home } from 'lucide-react'
-import { ThemeToggleMode } from '@/components/shared/theme-toggle-mode'
+import { ModeToggle } from '@/components/shared/theme-toggle-mode'
 
 export default function LessonLayout({
   children,
@@ -40,7 +40,7 @@ export default function LessonLayout({
           </div>
 
           <div className="flex items-center gap-2">
-            <ThemeToggleMode />
+            <ModeToggle />
           </div>
         </div>
       </header>
