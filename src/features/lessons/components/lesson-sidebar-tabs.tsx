@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LessonsList } from './lessons-list'
-import { FileText, Download, BookOpen, MonitorPlay, ChevronLeft, ChevronRight, Award } from 'lucide-react'
+import { FileText, Download, BookOpen, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle, Award } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +27,133 @@ interface LessonSidebarTabsProps {
 
 type TabValue = 'conteudo' | 'material' | 'exercicio'
 
+// Interface para módulo agrupado
+interface ModuleGroup {
+  module_id: number
+  module_name: string
+  lessons: LessonProgress[]
+  total_duration: string
+}
+
+// Função para agrupar aulas por módulo
+function groupLessonsByModule(lessons: LessonProgress[]): ModuleGroup[] {
+  const modulesMap = new Map<number, ModuleGroup>()
+
+  lessons.forEach((lesson) => {
+    if (!modulesMap.has(lesson.module_id)) {
+      modulesMap.set(lesson.module_id, {
+        module_id: lesson.module_id,
+        module_name: lesson.module_name,
+        lessons: [],
+        total_duration: '00:00',
+      })
+    }
+
+    const module = modulesMap.get(lesson.module_id)!
+    module.lessons.push(lesson)
+  })
+
+  // Calcular duração total de cada módulo (estimativa: 7-12min por aula)
+  return Array.from(modulesMap.values()).map((module) => {
+    const totalMinutes = module.lessons.length * 9 // média de 9 minutos por aula
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+
+    module.total_duration = hours > 0
+      ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+      : `${minutes.toString().padStart(2, '0')}:00`
+
+    return module
+  })
+}
+
+// Componente de módulo expansível
+function ModuleItem({
+  module,
+  index,
+  currentLessonId,
+  isExpanded,
+  onToggle,
+}: {
+  module: ModuleGroup
+  index: number
+  currentLessonId: number | null
+  isExpanded: boolean
+  onToggle: () => void
+}) {
+  const hasCurrentLesson = module.lessons.some((l) => l.lesson_id === currentLessonId)
+
+  return (
+    <div className="border-b border-border/50 last:border-b-0">
+      {/* Header do módulo */}
+      <button
+        onClick={onToggle}
+        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+      >
+        {/* Número do módulo */}
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-semibold">
+          {index + 1}
+        </div>
+
+        {/* Info do módulo */}
+        <div className="flex-1 text-left">
+          <h4 className="text-sm font-medium">{module.module_name}</h4>
+          <p className="text-xs text-muted-foreground">
+            {module.lessons.length} aulas • {module.total_duration}
+          </p>
+        </div>
+
+        {/* Chevron */}
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform",
+            isExpanded && "rotate-180"
+          )}
+        />
+      </button>
+
+      {/* Lista de aulas (expansível) */}
+      {isExpanded && (
+        <div className="bg-muted/20">
+          {module.lessons.map((lesson) => {
+            const isCurrentLesson = lesson.lesson_id === currentLessonId
+
+            return (
+              <Link
+                key={lesson.lesson_id}
+                href={`/aulas/${lesson.lesson_id}`}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors border-l-2",
+                  isCurrentLesson
+                    ? "bg-primary/10 border-l-primary"
+                    : "border-l-transparent"
+                )}
+              >
+                {/* Ícone de status */}
+                {lesson.watched ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                ) : isCurrentLesson ? (
+                  <PlayCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                )}
+
+                {/* Nome da aula */}
+                <span className={cn(
+                  "text-xs flex-1",
+                  isCurrentLesson && "font-medium text-primary"
+                )}>
+                  {lesson.lesson_name}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function LessonSidebarTabs({
   lessons,
   currentLessonId,
@@ -36,9 +164,31 @@ export function LessonSidebarTabs({
 }: LessonSidebarTabsProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<TabValue>('conteudo')
+
+  // Agrupar aulas por módulo
+  const modules = groupLessonsByModule(lessons)
+
+  // Inicialmente expandir o módulo que contém a aula atual
+  const currentModule = lessons.find((l) => l.lesson_id === currentLessonId)
+  const [expandedModules, setExpandedModules] = useState<Set<number>>(
+    new Set(currentModule ? [currentModule.module_id] : [])
+  )
+
   const handleCollapsedChange = (collapsed: boolean) => {
     setIsCollapsed(collapsed)
     onCollapsedChange?.(collapsed)
+  }
+
+  const toggleModule = (moduleId: number) => {
+    setExpandedModules((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(moduleId)) {
+        newSet.delete(moduleId)
+      } else {
+        newSet.add(moduleId)
+      }
+      return newSet
+    })
   }
 
   const tabs = [
@@ -93,8 +243,8 @@ export function LessonSidebarTabs({
               disabled={tab.disabled}
               className={cn(
                 'h-12 w-12 rounded-lg transition-all',
-                activeTab === tab.value 
-                  ? 'bg-primary/10 text-primary border-l-2 border-primary rounded-l-none' 
+                activeTab === tab.value
+                  ? 'bg-primary/10 text-primary border-l-2 border-primary rounded-l-none'
                   : 'hover:bg-accent',
                 tab.disabled && 'opacity-40'
               )}
@@ -110,11 +260,11 @@ export function LessonSidebarTabs({
 
   return (
     <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full">
-      {/* Header com tabs - Estilo mais limpo */}
-      <div className="border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3">
+      {/* Header - Estilo limpo com apenas título e ícone de menu */}
+      <div className="border-b border-border/50 px-4 py-3">
+        <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">
-            {activeTab === 'conteudo' ? 'Conteúdo' : activeTab === 'material' ? 'Material' : 'Exercício'}
+            {tabs.find((tab) => tab.value === activeTab)?.label || 'Conteúdo'}
           </h3>
           <Button
             variant="ghost"
@@ -122,50 +272,30 @@ export function LessonSidebarTabs({
             onClick={() => handleCollapsedChange(true)}
             className="h-8 w-8 hover:bg-accent"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <Menu className="h-5 w-5" />
           </Button>
-        </div>
-
-        {/* Tabs horizontais - estilo minimalista */}
-        <div className="flex border-t border-border/30">
-          {tabs.map((tab, index) => (
-            <button
-              key={tab.value}
-              onClick={() => !tab.disabled && setActiveTab(tab.value)}
-              disabled={tab.disabled}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all relative',
-                'border-r border-border/30 last:border-r-0',
-                activeTab === tab.value
-                  ? 'text-primary bg-primary/5'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
-                tab.disabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground'
-              )}
-            >
-              <tab.icon className="h-4 w-4" />
-              {activeTab === tab.value && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-              )}
-            </button>
-          ))}
         </div>
       </div>
 
       {/* Conteúdo das tabs */}
       <div className="flex-1 overflow-y-auto">
-        {/* Tab: Conteúdo (Lista de Aulas) */}
+        {/* Tab: Conteúdo (Módulos Agrupados) */}
         {activeTab === 'conteudo' && (
-          <div className="p-4">
-            <LessonsList
-              lessons={lessons}
-              currentLessonId={currentLessonId}
-              compact={true}
-              onSelectLesson={onSelectLesson}
-            />
-            
+          <div>
+            {modules.map((module, index) => (
+              <ModuleItem
+                key={module.module_id}
+                module={module}
+                index={index}
+                currentLessonId={currentLessonId}
+                isExpanded={expandedModules.has(module.module_id)}
+                onToggle={() => toggleModule(module.module_id)}
+              />
+            ))}
+
             {/* Seção de certificado ao final */}
-            <div className="mt-6 pt-4 border-t border-border/50">
-              <button 
+            <div className="px-4 py-4 border-t border-border/50">
+              <button
                 className="w-full flex items-center justify-center gap-3 p-4 rounded-lg border border-border/50 hover:bg-accent/50 transition-colors group"
                 disabled
               >
@@ -198,10 +328,10 @@ export function LessonSidebarTabs({
                     </p>
                   </div>
                 </div>
-                
-                <Button 
-                  variant="default" 
-                  className="w-full h-11" 
+
+                <Button
+                  variant="default"
+                  className="w-full h-11"
                   asChild
                 >
                   <a
@@ -246,7 +376,7 @@ export function LessonSidebarTabs({
                     </p>
                   </div>
                 </div>
-                
+
                 <Button variant="default" className="w-full h-11">
                   Iniciar Exercício
                 </Button>
