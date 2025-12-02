@@ -17,10 +17,11 @@ interface Exercise {
 
 interface LessonSidebarTabsProps {
   lessons: LessonProgress[]
-  currentLessonId: number
+  currentLessonId: number | null
   supportMaterialUrl?: string
   exercise?: Exercise
   onCollapsedChange?: (collapsed: boolean) => void
+  onSelectLesson?: (lessonId: number) => void
 }
 
 type TabValue = 'conteudo' | 'material' | 'exercicio'
@@ -31,6 +32,7 @@ export function LessonSidebarTabs({
   supportMaterialUrl,
   exercise,
   onCollapsedChange,
+  onSelectLesson,
 }: LessonSidebarTabsProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<TabValue>('conteudo')
@@ -158,6 +160,7 @@ export function LessonSidebarTabs({
               lessons={lessons}
               currentLessonId={currentLessonId}
               compact={true}
+              onSelectLesson={onSelectLesson}
             />
             
             {/* Seção de certificado ao final */}

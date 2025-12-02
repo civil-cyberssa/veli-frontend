@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,23 +15,45 @@ import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 
 export default function LessonPage() {
   const params = useParams()
-  const lessonId = params.id as string
+  const courseId = params.id as string
   const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [autoplay, setAutoplay] = useState(true)
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
 
   const handleAutoplayChange = (checked: boolean) => {
     setAutoplay(checked)
   }
-  const { data: lesson, isLoading, error } = useLesson(lessonId)
-  const { data: eventProgress } = useEventProgress(lessonId)
+  const { data: eventProgress, isLoading: isProgressLoading } = useEventProgress(courseId)
+  const { data: lesson, isLoading, error } = useLesson(
+    selectedLessonId ? String(selectedLessonId) : null
+  )
+
+  const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
+
+  useEffect(() => {
+    if (!eventProgress || eventProgress.length === 0) {
+      setSelectedLessonId(null)
+      return
+    }
+
+    const existsInList = eventProgress.some(
+      (item) => item.lesson_id === selectedLessonId
+    )
+
+    if (!selectedLessonId || !existsInList) {
+      setSelectedLessonId(eventProgress[0].lesson_id)
+    }
+  }, [eventProgress, selectedLessonId])
 
   const handleRatingChange = async (rating: number) => {
     // TODO: Implementar chamada à API para salvar o rating
     console.log('Rating changed to:', rating)
   }
 
-  if (isLoading) {
+  const isLessonLoading = (isLoading || isProgressLoading || !selectedLessonId) && !lesson
+
+  if (isLessonLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 animate-fade-in">
         <div className="relative">
@@ -54,7 +76,18 @@ export default function LessonPage() {
     )
   }
 
-  if (!lesson) {
+  if (!hasLessons && !isProgressLoading) {
+    return (
+      <div className="flex items-center justify-center h-96 animate-fade-in">
+        <div className="text-center space-y-2">
+          <div className="text-muted-foreground/40 text-4xl">📚</div>
+          <p className="text-sm text-muted-foreground">Nenhuma aula disponível</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!lesson && !isLoading) {
     return (
       <div className="flex items-center justify-center h-96 animate-fade-in">
         <div className="text-center space-y-2">
@@ -82,7 +115,9 @@ export default function LessonPage() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">{lesson.lesson_name}</h1>
+            <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
+              {lesson?.lesson_name || 'Carregando aula...'}
+            </h1>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
@@ -99,7 +134,7 @@ export default function LessonPage() {
           <div className={`space-y-4 ${sidebarCollapsed ? '' : 'lg:col-span-3'}`}>
             {/* Vídeo */}
             <div className="animate-scale-in animate-delay-100">
-              {lesson.content_url ? (
+              {lesson?.content_url ? (
                 <VideoPlayer
                   url={lesson.content_url}
                   autoPlay={autoplay}
@@ -129,13 +164,13 @@ export default function LessonPage() {
             {/* Rating */}
             <div className="animate-slide-up animate-delay-200">
               <LessonRating
-                initialRating={lesson.rating}
+                initialRating={lesson?.rating ?? null}
                 onRatingChange={handleRatingChange}
               />
             </div>
 
             {/* Atividades da Aula */}
-            {lesson.activities && lesson.activities.length > 0 && (
+            {lesson?.activities && lesson.activities.length > 0 && (
               <div className="animate-slide-up animate-delay-300">
                 <Card className="p-4 border-border/50">
                   <div className="space-y-3">
@@ -168,10 +203,11 @@ export default function LessonPage() {
                 {eventProgress ? (
                   <LessonSidebarTabs
                     lessons={eventProgress}
-                    currentLessonId={lesson.id}
+                    currentLessonId={selectedLessonId}
                     supportMaterialUrl={lesson.support_material_url}
                     exercise={lesson.exercise}
                     onCollapsedChange={setSidebarCollapsed}
+                    onSelectLesson={setSelectedLessonId}
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
