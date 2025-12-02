@@ -4,9 +4,12 @@ import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
+import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { LessonRating } from '@/src/features/lessons/components/lesson-rating'
 import { ActivitiesSidebar } from '@/src/features/lessons/components/activities-sidebar'
+import { LessonsList } from '@/src/features/lessons/components/lessons-list'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { PlayCircle, FileText, Download, Calendar } from 'lucide-react'
 
@@ -15,6 +18,8 @@ export default function LessonPage() {
   const lessonId = params.id as string
 
   const { data: lesson, isLoading, error } = useLesson(lessonId)
+  // TODO: Pegar o event_id real da aula atual
+  const { data: eventProgress } = useEventProgress('1')
 
   const handleRatingChange = async (rating: number) => {
     // TODO: Implementar chamada à API para salvar o rating
@@ -85,9 +90,9 @@ export default function LessonPage() {
         </h1>
       </div>
 
-      {/* Layout: Vídeo + Rating à esquerda | Atividades à direita */}
+      {/* Layout: Vídeo à esquerda | Lista de Aulas à direita */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna principal: Vídeo + Rating + Material */}
+        {/* Coluna principal: Vídeo */}
         <div className="lg:col-span-2 space-y-6">
           {/* Vídeo com animação */}
           <Card className="border-border/50 overflow-hidden animate-scale-in animate-delay-100">
@@ -112,65 +117,101 @@ export default function LessonPage() {
             </div>
           </Card>
 
-          {/* Rating com animação */}
-          <div className="animate-slide-up animate-delay-200">
-            <LessonRating
-              initialRating={lesson.rating}
-              onRatingChange={handleRatingChange}
-            />
-          </div>
+          {/* Tabs com conteúdo adicional */}
+          <Tabs defaultValue="rating" className="animate-slide-up animate-delay-200">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="rating">Avaliação</TabsTrigger>
+              <TabsTrigger value="materials">Materiais</TabsTrigger>
+              <TabsTrigger value="activities">Atividades</TabsTrigger>
+            </TabsList>
 
-          {/* Material de Apoio com animação */}
-          {lesson.support_material_url && (
-            <Card className="p-4 border-border/50 animate-slide-up animate-delay-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <FileText className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium">Material de Apoio</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Documento complementar da aula
-                    </p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <a
-                    href={lesson.support_material_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Baixar
-                  </a>
-                </Button>
-              </div>
-            </Card>
-          )}
+            {/* Tab: Rating */}
+            <TabsContent value="rating" className="space-y-4">
+              <LessonRating
+                initialRating={lesson.rating}
+                onRatingChange={handleRatingChange}
+              />
+            </TabsContent>
 
-          {/* Informações do Exercício com animação */}
-          {lesson.exercise && (
-            <Card className="p-4 border-border/50 bg-muted/30 animate-slide-up animate-delay-300">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium mb-1">{lesson.exercise.name}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Este exercício contém {lesson.exercise.questions_count} questões
-                  </p>
-                </div>
-              </div>
-            </Card>
-          )}
+            {/* Tab: Materiais */}
+            <TabsContent value="materials" className="space-y-4">
+              {lesson.support_material_url && (
+                <Card className="p-4 border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium">Material de Apoio</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Documento complementar da aula
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={lesson.support_material_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Baixar
+                      </a>
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {lesson.exercise && (
+                <Card className="p-4 border-border/50 bg-muted/30">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium mb-1">{lesson.exercise.name}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Este exercício contém {lesson.exercise.questions_count} questões
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {!lesson.support_material_url && !lesson.exercise && (
+                <Card className="p-8 border-border/50">
+                  <div className="text-center space-y-2">
+                    <FileText className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+                    <p className="text-sm text-muted-foreground">Nenhum material disponível</p>
+                  </div>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Tab: Atividades */}
+            <TabsContent value="activities">
+              <ActivitiesSidebar activities={lesson.activities || []} />
+            </TabsContent>
+          </Tabs>
         </div>
 
-        {/* Sidebar: Atividades com animação */}
+        {/* Sidebar: Lista de Aulas com animação */}
         <div className="lg:col-span-1 animate-slide-up animate-delay-200">
-          <ActivitiesSidebar activities={lesson.activities || []} />
+          {eventProgress ? (
+            <LessonsList
+              lessons={eventProgress}
+              currentLessonId={lesson.id}
+            />
+          ) : (
+            <Card className="p-6 border-border/50">
+              <div className="text-center space-y-2">
+                <PlayCircle className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+                <p className="text-sm text-muted-foreground">Carregando aulas...</p>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>
