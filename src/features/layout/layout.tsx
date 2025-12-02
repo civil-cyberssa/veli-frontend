@@ -36,8 +36,13 @@ export default function Layout({children}: {children: React.ReactNode}) {
   // Detectar se está no ambiente de aprendizagem (página de aulas)
   const isLessonPage = pathname.startsWith('/aulas')
 
+  // Se estiver na página de aulas, ocultar completamente o layout com sidebar
+  if (isLessonPage) {
+    return <>{children}</>
+  }
+
   return (
-    <SidebarProvider defaultOpen={!isLessonPage}>
+    <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">

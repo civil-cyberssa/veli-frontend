@@ -19,6 +19,7 @@ interface LessonSidebarTabsProps {
   currentLessonId: number
   supportMaterialUrl?: string
   exercise?: Exercise
+  onCollapsedChange?: (collapsed: boolean) => void
 }
 
 type TabValue = 'conteudo' | 'material' | 'exercicio'
@@ -28,9 +29,15 @@ export function LessonSidebarTabs({
   currentLessonId,
   supportMaterialUrl,
   exercise,
+  onCollapsedChange,
 }: LessonSidebarTabsProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<TabValue>('conteudo')
+
+  const handleCollapsedChange = (collapsed: boolean) => {
+    setIsCollapsed(collapsed)
+    onCollapsedChange?.(collapsed)
+  }
 
   const tabs = [
     {
@@ -61,7 +68,7 @@ export function LessonSidebarTabs({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsCollapsed(false)}
+            onClick={() => handleCollapsedChange(false)}
             className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
@@ -78,7 +85,7 @@ export function LessonSidebarTabs({
               onClick={() => {
                 if (!tab.disabled) {
                   setActiveTab(tab.value)
-                  setIsCollapsed(false)
+                  handleCollapsedChange(false)
                 }
               }}
               disabled={tab.disabled}
@@ -105,7 +112,7 @@ export function LessonSidebarTabs({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsCollapsed(true)}
+            onClick={() => handleCollapsedChange(true)}
             className="h-6 w-6"
           >
             <ChevronLeft className="h-4 w-4" />

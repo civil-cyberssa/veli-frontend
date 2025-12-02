@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +15,7 @@ import { PlayCircle, Calendar, CheckCircle2, Circle } from 'lucide-react'
 export default function LessonPage() {
   const params = useParams()
   const lessonId = params.id as string
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const { data: lesson, isLoading, error } = useLesson(lessonId)
   // TODO: Pegar o event_id real da aula atual
@@ -86,9 +88,11 @@ export default function LessonPage() {
         </div>
 
         {/* Layout: Vídeo à esquerda (maior) | Lista de Aulas à direita (fixa) */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-1 gap-4 transition-all duration-300 ${
+          sidebarCollapsed ? 'lg:grid-cols-[1fr_64px]' : 'lg:grid-cols-4'
+        }`}>
           {/* Coluna principal: Vídeo + Conteúdo adicional */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className={`space-y-4 ${sidebarCollapsed ? '' : 'lg:col-span-3'}`}>
             {/* Vídeo */}
             <Card className="border-border/50 overflow-hidden animate-scale-in animate-delay-100">
               <div className="relative aspect-video bg-black">
@@ -148,7 +152,7 @@ export default function LessonPage() {
           </div>
 
           {/* Sidebar direita: Tabs com Conteúdo, Material e Exercício (sticky) */}
-          <div className="lg:col-span-1">
+          <div className={sidebarCollapsed ? '' : 'lg:col-span-1'}>
             <div className="lg:sticky lg:top-4">
               <div className="animate-slide-up animate-delay-200">
                 {eventProgress ? (
@@ -157,6 +161,7 @@ export default function LessonPage() {
                     currentLessonId={lesson.id}
                     supportMaterialUrl={lesson.support_material_url}
                     exercise={lesson.exercise}
+                    onCollapsedChange={setSidebarCollapsed}
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
