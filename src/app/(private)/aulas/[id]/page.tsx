@@ -24,8 +24,7 @@ export default function LessonPage() {
     setAutoplay(checked)
   }
   const { data: lesson, isLoading, error } = useLesson(lessonId)
-  // TODO: Pegar o event_id real da aula atual
-  const { data: eventProgress } = useEventProgress('1')
+  const { data: eventProgress } = useEventProgress(lessonId)
 
   const handleRatingChange = async (rating: number) => {
     // TODO: Implementar chamada à API para salvar o rating
