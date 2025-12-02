@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,16 +25,22 @@ export default function LessonPage() {
   const { data: eventProgress } = useEventProgress(
     subscriptionId ? subscriptionId.toString() : null
   )
+  const currentLessonEvent = eventProgress?.find(
+    (event) => event.lesson_id === Number(lessonId)
+  )
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (currentLessonEvent?.event_id) {
+      setSelectedEventId(currentLessonEvent.event_id.toString())
+    }
+  }, [currentLessonEvent])
 
   const handleRatingChange = async (rating: number) => {
     // TODO: Implementar chamada à API para salvar o rating
     console.log('Rating changed to:', rating)
   }
-
-  const currentLessonEvent = eventProgress?.find(
-    (event) => event.lesson_id === Number(lessonId)
-  )
 
   if (isLoading) {
     return (
@@ -195,7 +201,12 @@ export default function LessonPage() {
                     <div className="flex flex-col items-end gap-2">
                       <Button
                         size="sm"
-                        onClick={() => setIsExerciseModalOpen(true)}
+                        onClick={() => {
+                          if (currentLessonEvent?.event_id) {
+                            setSelectedEventId(currentLessonEvent.event_id.toString())
+                            setIsExerciseModalOpen(true)
+                          }
+                        }}
                         disabled={!currentLessonEvent?.event_id || !subscriptionId}
                       >
                         Responder
@@ -233,6 +244,10 @@ export default function LessonPage() {
             <LessonsList
               lessons={eventProgress}
               currentLessonId={lesson.id}
+              onExerciseOpen={subscriptionId ? (lessonProgress) => {
+                setSelectedEventId(lessonProgress.event_id.toString())
+                setIsExerciseModalOpen(true)
+              } : undefined}
             />
           ) : (
             <Card className="p-6 border-border/50">
@@ -247,7 +262,7 @@ export default function LessonPage() {
       <ExerciseModal
         open={isExerciseModalOpen}
         onOpenChange={setIsExerciseModalOpen}
-        eventId={currentLessonEvent?.event_id?.toString() || null}
+        eventId={selectedEventId}
         subscriptionId={subscriptionId}
       />
     </div>

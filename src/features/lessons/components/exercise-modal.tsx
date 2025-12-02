@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dialog"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
 import { useExercise } from "../hooks/useExercise"
-import { CheckCircle2, Loader2, XCircle } from "lucide-react"
+import { CheckCircle2, Loader2, Pause, Play, Sparkles, XCircle } from "lucide-react"
 
 interface ExerciseModalProps {
   open: boolean
@@ -33,7 +34,7 @@ const answerOptions: Array<{ key: "answer_a" | "answer_b" | "answer_c" | "answer
 
 export function ExerciseModal({ open, onOpenChange, eventId, subscriptionId }: ExerciseModalProps) {
   const { data: session } = useSession()
-  const { data, isLoading, error, refetch } = useExercise(eventId, open)
+  const { data, isLoading, error, refetch } = useExercise(eventId, Boolean(eventId))
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
   const [submitting, setSubmitting] = useState<Record<number, boolean>>({})
 
@@ -99,113 +100,140 @@ export function ExerciseModal({ open, onOpenChange, eventId, subscriptionId }: E
     }
   }
 
+  const totalQuestions = data?.exercise.questions_count ?? 0
+  const answered = data?.answers_count ?? 0
+  const progress = totalQuestions ? Math.round((answered / totalQuestions) * 100) : 0
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Responder exercício</DialogTitle>
-          <DialogDescription>
-            Visualize e responda as questões disponíveis para esta aula.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-h-[90vh] w-[min(960px,90vw)] overflow-hidden p-0">
+        <div className="relative h-full overflow-hidden rounded-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
 
-        {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Carregando questões...
-          </div>
-        )}
+          <div className="relative space-y-4 p-6">
+            <DialogHeader className="gap-1 sm:gap-2">
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Responder exercício
+              </DialogTitle>
+              <DialogDescription className="max-w-2xl text-muted-foreground">
+                Responda com rapidez: as questões já são pré-carregadas para evitar atrasos e você acompanha o progresso em tempo real.
+              </DialogDescription>
+            </DialogHeader>
 
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <XCircle className="h-4 w-4" />
-            {error.message}
-          </div>
-        )}
-
-        {!isLoading && !error && data && (
-          <div className="space-y-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">{data.exercise.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {data.answers_count}/{data.exercise.questions_count} questões respondidas
-                </p>
+            {isLoading && (
+              <div className="flex items-center gap-2 rounded-md border border-border/60 bg-background/60 px-3 py-2 text-sm text-muted-foreground shadow-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando questões...
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="secondary">Evento #{data.event_id}</Badge>
-                <Badge variant="outline">Aula #{data.lesson_id}</Badge>
-                {data.score !== null && <Badge variant="default">Nota: {data.score}</Badge>}
+            )}
+
+            {error && (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                <XCircle className="h-4 w-4" />
+                {error.message}
               </div>
-            </div>
+            )}
 
-            <Separator />
-
-            <div className="space-y-3">
-              {data.questions.map((question) => {
-                const currentAnswer = selectedAnswers[question.id]
-                const sentAnswer = answersMap[question.id]
-                const isAnswered = Boolean(sentAnswer)
-
-                return (
-                  <Card key={question.id} className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold">{question.name}</p>
-                        {question.statement && (
-                          <p className="text-xs text-muted-foreground mt-1">{question.statement}</p>
-                        )}
-                      </div>
-                      {isAnswered && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3 text-green-500" />
-                          Respondida ({sentAnswer})
-                        </Badge>
+            {!isLoading && !error && data && (
+              <>
+                <div className="grid gap-3 rounded-xl border border-border/60 bg-background/70 p-4 shadow-sm sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold leading-tight">{data.exercise.name}</p>
+                    <p className="text-xs text-muted-foreground">Aula #{data.lesson_id} • Evento #{data.event_id}</p>
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{answered}/{totalQuestions} questões respondidas</span>
+                      {data.score !== null && (
+                        <Badge variant="secondary" className="font-medium">Nota atual: {data.score}</Badge>
                       )}
                     </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                </div>
 
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {answerOptions.map(({ key, label }) => (
-                        <Button
-                          key={key}
-                          type="button"
-                          variant={currentAnswer === label ? "default" : "outline"}
-                          className="justify-start text-left"
-                          onClick={() => handleSelectAnswer(question.id, label)}
-                        >
-                          <span className="mr-2 font-semibold">{label}.</span>
-                          <span className="text-sm">{question[key]}</span>
-                        </Button>
-                      ))}
-                    </div>
+                <Separator />
 
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleSubmitAnswer(question.id)}
-                        disabled={submitting[question.id]}
+                <div className="space-y-3 pr-1 sm:pr-2">
+                  {data.questions.map((question) => {
+                    const currentAnswer = selectedAnswers[question.id]
+                    const sentAnswer = answersMap[question.id]
+                    const isAnswered = Boolean(sentAnswer)
+
+                    return (
+                      <Card
+                        key={question.id}
+                        className="border-border/60 bg-background/70 p-4 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
                       >
-                        {submitting[question.id] ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Enviando...
-                          </>
-                        ) : (
-                          "Enviar resposta"
-                        )}
-                      </Button>
-                      {isAnswered && (
-                        <span className="text-xs text-muted-foreground">
-                          Última resposta enviada: {sentAnswer}
-                        </span>
-                      )}
-                    </div>
-                  </Card>
-                )
-              })}
-            </div>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold">{question.name}</p>
+                            {question.statement && (
+                              <p className="mt-1 text-xs text-muted-foreground">{question.statement}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Badge variant={isAnswered ? "outline" : "secondary"} className="flex items-center gap-1">
+                              {isAnswered ? (
+                                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                              ) : (
+                                <Pause className="h-3 w-3" />
+                              )}
+                              {isAnswered ? `Respondida (${sentAnswer})` : "Pendente"}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                          {answerOptions.map(({ key, label }) => (
+                            <Button
+                              key={key}
+                              type="button"
+                              variant={currentAnswer === label ? "default" : "outline"}
+                              className="justify-start gap-3 text-left transition-colors"
+                              onClick={() => handleSelectAnswer(question.id, label)}
+                            >
+                              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-sm font-semibold text-primary">
+                                {label}
+                              </span>
+                              <span className="text-sm leading-snug text-foreground/90">{question[key]}</span>
+                            </Button>
+                          ))}
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSubmitAnswer(question.id)}
+                            disabled={submitting[question.id]}
+                          >
+                            {submitting[question.id] ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="mr-2 h-4 w-4" />
+                                Enviar resposta
+                              </>
+                            )}
+                          </Button>
+                          {isAnswered && (
+                            <span className="text-xs text-muted-foreground">
+                              Última resposta enviada: {sentAnswer}
+                            </span>
+                          )}
+                        </div>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   )
