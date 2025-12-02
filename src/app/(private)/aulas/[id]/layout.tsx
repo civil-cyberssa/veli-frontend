@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Home } from 'lucide-react'
 import { ModeToggle } from '@/components/shared/theme-toggle-mode'
+import { LessonMiniSidebar } from '@/src/features/lessons/components/lesson-mini-sidebar'
 
 export default function LessonLayout({
   children,
@@ -14,9 +15,12 @@ export default function LessonLayout({
 
   return (
     <div className="min-h-screen bg-background animate-fade-in">
+      {/* Mini Sidebar colapsável */}
+      <LessonMiniSidebar />
+
       {/* Header compacto */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between px-4">
+        <div className="w-full max-w-[1920px] mx-auto flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -45,8 +49,8 @@ export default function LessonLayout({
         </div>
       </header>
 
-      {/* Conteúdo principal com animação */}
-      <main className="container px-4 py-6 animate-slide-up">
+      {/* Conteúdo principal com animação - Totalmente centralizado */}
+      <main className="w-full max-w-[1920px] mx-auto px-4 py-6 animate-slide-up">
         {children}
       </main>
 
