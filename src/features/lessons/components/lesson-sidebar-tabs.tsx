@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { LessonsList } from './lessons-list'
-import { FileText, Download, BookOpen, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle } from 'lucide-react'
+import { FileText, Download, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle, BookOpen } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { cn } from '@/lib/utils'
 
@@ -24,7 +23,7 @@ interface LessonSidebarTabsProps {
   onSelectLesson?: (lessonId: number) => void
 }
 
-type TabValue = 'conteudo' | 'material' | 'exercicio'
+type TabValue = 'conteudo' | 'material'
 
 // Interface para módulo agrupado
 interface ModuleGroup {
@@ -32,13 +31,25 @@ interface ModuleGroup {
   module_name: string
   lessons: LessonProgress[]
   total_duration: string
+  quiz?: {
+    id: number
+    name: string
+    questions_count: number
+  }
+}
+
+// Função para formatar duração em MM:SS
+function formatDuration(minutes: number): string {
+  const mins = Math.floor(minutes)
+  const secs = Math.floor((minutes - mins) * 60)
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 }
 
 // Função para agrupar aulas por módulo
 function groupLessonsByModule(lessons: LessonProgress[]): ModuleGroup[] {
   const modulesMap = new Map<number, ModuleGroup>()
 
-  lessons.forEach((lesson) => {
+  lessons.forEach((lesson, index) => {
     if (!modulesMap.has(lesson.module_id)) {
       modulesMap.set(lesson.module_id, {
         module_id: lesson.module_id,
@@ -50,17 +61,26 @@ function groupLessonsByModule(lessons: LessonProgress[]): ModuleGroup[] {
 
     const module = modulesMap.get(lesson.module_id)!
     module.lessons.push(lesson)
+
+    // Se a aula tem quiz, adicionar ao módulo
+    if (lesson.exercise && !module.quiz) {
+      module.quiz = {
+        id: lesson.exercise.id,
+        name: lesson.exercise.name,
+        questions_count: lesson.exercise.questions_count,
+      }
+    }
   })
 
-  // Calcular duração total de cada módulo (estimativa: 7-12min por aula)
+  // Calcular duração total de cada módulo
   return Array.from(modulesMap.values()).map((module) => {
     const totalMinutes = module.lessons.length * 9 // média de 9 minutos por aula
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
 
     module.total_duration = hours > 0
-      ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-      : `${minutes.toString().padStart(2, '0')}:00`
+      ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+      : `${String(minutes).padStart(2, '0')}:${String(0).padStart(2, '0')}`
 
     return module
   })
@@ -82,24 +102,22 @@ function ModuleItem({
   onToggle: () => void
   onSelectLesson?: (lessonId: number) => void
 }) {
-  const hasCurrentLesson = module.lessons.some((l) => l.lesson_id === currentLessonId)
-
   return (
     <div className="border-b border-border/50 last:border-b-0">
       {/* Header do módulo */}
       <button
         onClick={onToggle}
-        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+        className="w-full px-4 py-3.5 flex items-center gap-3 hover:bg-muted/30 transition-colors"
       >
         {/* Número do módulo */}
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-semibold">
+        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center text-sm font-semibold">
           {index + 1}
         </div>
 
         {/* Info do módulo */}
         <div className="flex-1 text-left">
-          <h4 className="text-sm font-medium">{module.module_name}</h4>
-          <p className="text-xs text-muted-foreground">
+          <h4 className="text-sm font-medium leading-tight">{module.module_name}</h4>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {module.lessons.length} aulas • {module.total_duration}
           </p>
         </div>
@@ -115,40 +133,77 @@ function ModuleItem({
 
       {/* Lista de aulas (expansível) */}
       {isExpanded && (
-        <div className="bg-muted/20">
-          {module.lessons.map((lesson) => {
+        <div className="bg-background">
+          {module.lessons.map((lesson, lessonIndex) => {
             const isCurrentLesson = lesson.lesson_id === currentLessonId
+            // Duração estimada: varia entre 5-15 minutos
+            const estimatedDuration = 5 + (lessonIndex % 10)
 
             return (
               <button
                 key={lesson.lesson_id}
                 onClick={() => onSelectLesson?.(lesson.lesson_id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors border-l-2",
+                  "w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors border-l-2",
                   isCurrentLesson
-                    ? "bg-primary/10 border-l-primary"
-                    : "border-l-transparent"
+                    ? "bg-primary/10 border-l-primary text-primary"
+                    : "border-l-transparent text-foreground"
                 )}
               >
                 {/* Ícone de status */}
-                {lesson.watched ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                ) : isCurrentLesson ? (
-                  <PlayCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                )}
+                <div className="flex-shrink-0">
+                  {lesson.watched ? (
+                    <div className="w-4 h-4 rounded-sm border border-green-500 bg-green-500/10 flex items-center justify-center">
+                      <CheckCircle2 className="h-3 w-3 text-green-500" />
+                    </div>
+                  ) : isCurrentLesson ? (
+                    <PlayCircle className="h-4 w-4 text-primary" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-sm border border-muted-foreground/30 flex items-center justify-center">
+                      <PlayCircle className="h-3 w-3 text-muted-foreground/50" />
+                    </div>
+                  )}
+                </div>
 
                 {/* Nome da aula */}
                 <span className={cn(
-                  "text-xs flex-1 text-left",
-                  isCurrentLesson && "font-medium text-primary"
+                  "text-xs flex-1 text-left leading-tight",
+                  isCurrentLesson ? "font-medium text-primary" : "text-foreground"
                 )}>
                   {lesson.lesson_name}
+                </span>
+
+                {/* Duração */}
+                <span className="text-xs text-muted-foreground flex-shrink-0">
+                  {formatDuration(estimatedDuration)}
                 </span>
               </button>
             )
           })}
+
+          {/* Quiz do módulo (se existir) */}
+          {module.quiz && (
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors border-t border-border/30 mt-1"
+              onClick={() => {
+                // TODO: Abrir quiz
+                console.log('Abrir quiz:', module.quiz?.id)
+              }}
+            >
+              <div className="p-1.5 rounded-md bg-primary/10 shrink-0">
+                <BookOpen className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-xs text-muted-foreground leading-tight">
+                  Próximo conteúdo - teste teórico
+                </p>
+                <h4 className="text-sm font-medium text-foreground leading-tight mt-0.5">
+                  {module.quiz.name}
+                </h4>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -205,12 +260,6 @@ export function LessonSidebarTabs({
       icon: FileText,
       disabled: !supportMaterialUrl,
     },
-    {
-      value: 'exercicio' as TabValue,
-      label: 'Exercício',
-      icon: BookOpen,
-      disabled: !exercise,
-    },
   ]
 
   if (isCollapsed) {
@@ -265,7 +314,7 @@ export function LessonSidebarTabs({
       <div className="border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
           <h3 className="text-base font-semibold text-foreground">
-            {activeTab === 'conteudo' ? 'Conteúdo' : activeTab === 'material' ? 'Material' : 'Exercício'}
+            {activeTab === 'conteudo' ? 'Conteúdo' : 'Material'}
           </h3>
           <Button
             variant="ghost"
@@ -279,7 +328,7 @@ export function LessonSidebarTabs({
 
         {/* Tabs horizontais - estilo minimalista */}
         <div className="flex border-t border-border/30">
-          {tabs.map((tab, index) => (
+          {tabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => !tab.disabled && setActiveTab(tab.value)}
@@ -318,32 +367,6 @@ export function LessonSidebarTabs({
                 onSelectLesson={onSelectLesson}
               />
             ))}
-
-            {/* Seção de Quiz (se houver exercício) */}
-            {exercise && (
-              <div className="border-t border-border/50">
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-4 hover:bg-muted/30 transition-colors group"
-                  onClick={() => {
-                    // TODO: Navegar para o quiz
-                    console.log('Abrir quiz:', exercise.id)
-                  }}
-                >
-                  <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-xs text-muted-foreground mb-0.5">
-                      Próximo conteúdo - teste teórico
-                    </p>
-                    <h4 className="text-sm font-medium text-foreground">
-                      {exercise.name}
-                    </h4>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-            )}
           </div>
         )}
 
@@ -389,42 +412,6 @@ export function LessonSidebarTabs({
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Nenhum material disponível
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab: Exercício */}
-        {activeTab === 'exercicio' && (
-          <div className="p-4">
-            {exercise ? (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-border/50 bg-card">
-                  <div className="p-2.5 rounded-lg bg-primary/10 shrink-0">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground mb-1">
-                      {exercise.name}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {exercise.questions_count} {exercise.questions_count === 1 ? 'questão' : 'questões'}
-                    </p>
-                  </div>
-                </div>
-
-                <Button variant="default" className="w-full h-11">
-                  Iniciar Exercício
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="p-3 rounded-full bg-muted/50 mb-3">
-                  <BookOpen className="h-6 w-6 text-muted-foreground/40" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Nenhum exercício disponível
                 </p>
               </div>
             )}
