@@ -22,32 +22,42 @@ export default function LessonPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-sm text-muted-foreground">Carregando aula...</p>
+      <div className="flex flex-col items-center justify-center h-96 animate-fade-in">
+        <div className="relative">
+          <div className="h-12 w-12 rounded-full border-4 border-muted"></div>
+          <div className="absolute top-0 h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+        </div>
+        <p className="text-sm text-muted-foreground mt-4">Carregando aula...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-sm text-destructive">Erro ao carregar aula: {error.message}</p>
+      <div className="flex items-center justify-center h-96 animate-fade-in">
+        <div className="text-center space-y-2">
+          <div className="text-destructive text-4xl">⚠️</div>
+          <p className="text-sm text-destructive">Erro ao carregar aula: {error.message}</p>
+        </div>
       </div>
     )
   }
 
   if (!lesson) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-sm text-muted-foreground">Aula não encontrada</p>
+      <div className="flex items-center justify-center h-96 animate-fade-in">
+        <div className="text-center space-y-2">
+          <div className="text-muted-foreground/40 text-4xl">📚</div>
+          <p className="text-sm text-muted-foreground">Aula não encontrada</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="pb-8">
-      {/* Header */}
-      <div className="mb-6">
+      {/* Header com animação */}
+      <div className="mb-6 animate-slide-up">
         <div className="flex items-center gap-2 mb-2">
           <Badge variant="secondary" className="text-xs">
             {lesson.module.name}
@@ -74,8 +84,8 @@ export default function LessonPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna principal: Vídeo + Rating + Material */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Vídeo */}
-          <Card className="border-border/50 overflow-hidden">
+          {/* Vídeo com animação */}
+          <Card className="border-border/50 overflow-hidden animate-scale-in animate-delay-100">
             <div className="relative aspect-video bg-black">
               {lesson.content_url ? (
                 <video
@@ -97,15 +107,17 @@ export default function LessonPage() {
             </div>
           </Card>
 
-          {/* Rating */}
-          <LessonRating
-            initialRating={lesson.rating}
-            onRatingChange={handleRatingChange}
-          />
+          {/* Rating com animação */}
+          <div className="animate-slide-up animate-delay-200">
+            <LessonRating
+              initialRating={lesson.rating}
+              onRatingChange={handleRatingChange}
+            />
+          </div>
 
-          {/* Material de Apoio */}
+          {/* Material de Apoio com animação */}
           {lesson.support_material_url && (
-            <Card className="p-4 border-border/50">
+            <Card className="p-4 border-border/50 animate-slide-up animate-delay-300">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
@@ -133,9 +145,9 @@ export default function LessonPage() {
             </Card>
           )}
 
-          {/* Informações do Exercício */}
+          {/* Informações do Exercício com animação */}
           {lesson.exercise && (
-            <Card className="p-4 border-border/50 bg-muted/30">
+            <Card className="p-4 border-border/50 bg-muted/30 animate-slide-up animate-delay-300">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <FileText className="h-5 w-5 text-primary" />
@@ -151,8 +163,8 @@ export default function LessonPage() {
           )}
         </div>
 
-        {/* Sidebar: Atividades */}
-        <div className="lg:col-span-1">
+        {/* Sidebar: Atividades com animação */}
+        <div className="lg:col-span-1 animate-slide-up animate-delay-200">
           <ActivitiesSidebar activities={lesson.activities || []} />
         </div>
       </div>
