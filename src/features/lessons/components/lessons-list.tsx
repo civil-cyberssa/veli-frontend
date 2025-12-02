@@ -33,16 +33,19 @@ export function LessonsList({ lessons, currentLessonId }: LessonsListProps) {
   }, {} as Record<string, LessonProgress[]>)
 
   return (
-    <Card className="p-4 border-border/50">
-      <div className="space-y-4">
+    <Card className="border-border/50 overflow-hidden flex flex-col max-h-[calc(100vh-120px)]">
+      {/* Header fixo */}
+      <div className="p-4 border-b border-border/50 bg-background">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Aulas do Curso</h2>
+          <h2 className="text-base font-semibold">Conteúdo</h2>
           <Badge variant="secondary" className="text-xs">
-            {lessons.filter(l => l.watched).length}/{lessons.length} assistidas
+            {lessons.filter(l => l.watched).length}/{lessons.length}
           </Badge>
         </div>
+      </div>
 
-        <div className="space-y-6">
+      {/* Lista com scroll */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {Object.entries(lessonsByModule).map(([moduleName, moduleLessons]) => (
             <div key={moduleName} className="space-y-2">
               {/* Nome do módulo */}
@@ -125,25 +128,24 @@ export function LessonsList({ lessons, currentLessonId }: LessonsListProps) {
               </div>
             </div>
           ))}
-        </div>
+      </div>
 
-        {/* Progresso geral */}
-        <div className="pt-4 border-t border-border/50">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progresso do Curso</span>
-              <span className="font-medium">
-                {Math.round((lessons.filter(l => l.watched).length / lessons.length) * 100)}%
-              </span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all"
-                style={{
-                  width: `${(lessons.filter(l => l.watched).length / lessons.length) * 100}%`
-                }}
-              />
-            </div>
+      {/* Progresso geral - Footer fixo */}
+      <div className="p-4 border-t border-border/50 bg-background">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Progresso</span>
+            <span className="font-medium">
+              {Math.round((lessons.filter(l => l.watched).length / lessons.length) * 100)}%
+            </span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{
+                width: `${(lessons.filter(l => l.watched).length / lessons.length) * 100}%`
+              }}
+            />
           </div>
         </div>
       </div>

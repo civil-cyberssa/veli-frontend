@@ -4,14 +4,12 @@ import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { LessonRating } from '@/src/features/lessons/components/lesson-rating'
-import { ActivitiesSidebar } from '@/src/features/lessons/components/activities-sidebar'
 import { LessonsList } from '@/src/features/lessons/components/lessons-list'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
-import { PlayCircle, FileText, Download, Calendar } from 'lucide-react'
+import { PlayCircle, FileText, Download, Calendar, CheckCircle2, Circle } from 'lucide-react'
 
 export default function LessonPage() {
   const params = useParams()
@@ -66,86 +64,76 @@ export default function LessonPage() {
       <LessonOnboarding />
 
       <div className="pb-8">
-        {/* Header com animação */}
-        <div className="mb-6 animate-slide-up">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant="secondary" className="text-xs">
-            {lesson.module.name}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            Aula {lesson.order}
-          </Badge>
-          {lesson.is_weekly && (
-            <Badge variant="default" className="text-xs flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              Semanal
+        {/* Header com informações da aula */}
+        <div className="mb-4 animate-slide-up">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="secondary" className="text-xs">
+              {lesson.module.name}
             </Badge>
-          )}
-          <Badge variant="outline" className="text-xs capitalize">
-            {lesson.lesson_type === 'asynchronous' ? 'Assíncrona' : 'Ao vivo'}
-          </Badge>
+            <Badge variant="outline" className="text-xs">
+              Aula {lesson.order}
+            </Badge>
+            {lesson.is_weekly && (
+              <Badge variant="default" className="text-xs flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Semanal
+              </Badge>
+            )}
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            {lesson.lesson_name}
+          </h1>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {lesson.lesson_name}
-        </h1>
-      </div>
 
-      {/* Layout: Vídeo à esquerda | Lista de Aulas à direita */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna principal: Vídeo */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Vídeo com animação */}
-          <Card className="border-border/50 overflow-hidden animate-scale-in animate-delay-100">
-            <div className="relative aspect-video bg-black">
-              {lesson.content_url ? (
-                <video
-                  controls
-                  className="w-full h-full"
-                  src={lesson.content_url}
-                  poster=""
-                >
-                  Seu navegador não suporta o elemento de vídeo.
-                </video>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center space-y-3">
-                    <PlayCircle className="h-16 w-16 text-muted-foreground/40 mx-auto" />
-                    <p className="text-sm text-muted-foreground">Vídeo não disponível</p>
+        {/* Layout: Vídeo à esquerda (maior) | Lista de Aulas à direita (fixa) */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Coluna principal: Vídeo + Conteúdo adicional */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Vídeo */}
+            <Card className="border-border/50 overflow-hidden animate-scale-in animate-delay-100">
+              <div className="relative aspect-video bg-black">
+                {lesson.content_url ? (
+                  <video
+                    controls
+                    className="w-full h-full"
+                    src={lesson.content_url}
+                    poster=""
+                  >
+                    Seu navegador não suporta o elemento de vídeo.
+                  </video>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center space-y-3">
+                      <PlayCircle className="h-16 w-16 text-muted-foreground/40 mx-auto" />
+                      <p className="text-sm text-muted-foreground">Vídeo não disponível</p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </Card>
+                )}
+              </div>
+            </Card>
 
-          {/* Tabs com conteúdo adicional */}
-          <Tabs defaultValue="rating" className="animate-slide-up animate-delay-200">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="rating">Avaliação</TabsTrigger>
-              <TabsTrigger value="materials">Materiais</TabsTrigger>
-              <TabsTrigger value="activities">Atividades</TabsTrigger>
-            </TabsList>
-
-            {/* Tab: Rating */}
-            <TabsContent value="rating" className="space-y-4">
+            {/* Rating */}
+            <div className="animate-slide-up animate-delay-200">
               <LessonRating
                 initialRating={lesson.rating}
                 onRatingChange={handleRatingChange}
               />
-            </TabsContent>
+            </div>
 
-            {/* Tab: Materiais */}
-            <TabsContent value="materials" className="space-y-4">
+            {/* Conteúdo adicional: Material de Apoio e Exercícios */}
+            <div className="space-y-3 animate-slide-up animate-delay-300">
+              {/* Material de Apoio */}
               {lesson.support_material_url && (
-                <Card className="p-4 border-border/50">
+                <Card className="p-3 border-border/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-primary/10">
-                        <FileText className="h-5 w-5 text-primary" />
+                        <FileText className="h-4 w-4 text-primary" />
                       </div>
                       <div>
                         <h3 className="text-sm font-medium">Material de Apoio</h3>
                         <p className="text-xs text-muted-foreground">
-                          Documento complementar da aula
+                          Documento complementar
                         </p>
                       </div>
                     </div>
@@ -156,7 +144,7 @@ export default function LessonPage() {
                         rel="noopener noreferrer"
                         download
                       >
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="h-4 w-4 mr-1" />
                         Baixar
                       </a>
                     </Button>
@@ -164,57 +152,74 @@ export default function LessonPage() {
                 </Card>
               )}
 
+              {/* Exercício */}
               {lesson.exercise && (
-                <Card className="p-4 border-border/50 bg-muted/30">
+                <Card className="p-3 border-border/50 bg-muted/30">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
-                      <FileText className="h-5 w-5 text-primary" />
+                      <FileText className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-medium mb-1">{lesson.exercise.name}</h3>
+                      <h3 className="text-sm font-medium">{lesson.exercise.name}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Este exercício contém {lesson.exercise.questions_count} questões
+                        {lesson.exercise.questions_count} questões
                       </p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Iniciar
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {/* Atividades Mock */}
+              {lesson.activities && lesson.activities.length > 0 && (
+                <Card className="p-3 border-border/50">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold mb-2">Atividades da Aula</h3>
+                    <div className="space-y-2">
+                      {lesson.activities.slice(0, 3).map((activity) => (
+                        <div
+                          key={activity.id}
+                          className="flex items-center gap-2 text-sm p-2 rounded hover:bg-muted/50 cursor-pointer"
+                        >
+                          {activity.completed ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+                          )}
+                          <span className="text-xs">{activity.title}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </Card>
               )}
+            </div>
+          </div>
 
-              {!lesson.support_material_url && !lesson.exercise && (
-                <Card className="p-8 border-border/50">
-                  <div className="text-center space-y-2">
-                    <FileText className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-                    <p className="text-sm text-muted-foreground">Nenhum material disponível</p>
-                  </div>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* Tab: Atividades */}
-            <TabsContent value="activities">
-              <ActivitiesSidebar activities={lesson.activities || []} />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Sidebar: Lista de Aulas com animação */}
-        <div className="lg:col-span-1 animate-slide-up animate-delay-200">
-          {eventProgress ? (
-            <LessonsList
-              lessons={eventProgress}
-              currentLessonId={lesson.id}
-            />
-          ) : (
-            <Card className="p-6 border-border/50">
-              <div className="text-center space-y-2">
-                <PlayCircle className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-                <p className="text-sm text-muted-foreground">Carregando aulas...</p>
+          {/* Sidebar direita: Lista de Aulas (sticky) */}
+          <div className="lg:col-span-1">
+            <div className="lg:sticky lg:top-4">
+              <div className="animate-slide-up animate-delay-200">
+                {eventProgress ? (
+                  <LessonsList
+                    lessons={eventProgress}
+                    currentLessonId={lesson.id}
+                  />
+                ) : (
+                  <Card className="p-6 border-border/50">
+                    <div className="text-center space-y-2">
+                      <PlayCircle className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+                      <p className="text-sm text-muted-foreground">Carregando aulas...</p>
+                    </div>
+                  </Card>
+                )}
               </div>
-            </Card>
-          )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
     </>
   )
 }
