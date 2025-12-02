@@ -144,9 +144,12 @@ export function VideoPlayer({ url, poster, onProgress, onEnded, autoPlay = false
   }
 
   const handleSeek = (value: number[]) => {
-    if (!videoRef.current) return
-    const seekTime = (value[0] / 100) * duration
-    videoRef.current.currentTime = seekTime
+    const video = videoRef.current
+    const videoDuration = video?.duration || duration
+    if (!video || !videoDuration) return
+
+    const seekTime = (value[0] / 100) * videoDuration
+    video.currentTime = seekTime
     setCurrentTime(seekTime)
   }
 
@@ -272,6 +275,7 @@ export function VideoPlayer({ url, poster, onProgress, onEnded, autoPlay = false
             <Slider
               value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
               onValueChange={handleSeek}
+              onValueCommit={handleSeek}
               max={100}
               step={0.1}
               className="cursor-pointer"

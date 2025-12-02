@@ -6,8 +6,8 @@ import { Search, UserRound } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
 import { ModeToggle } from '@/components/shared/theme-toggle-mode'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
+import { UserDropdown } from '@/components/user-dropdown'
 
 export default function LessonLayout({
   children,
@@ -56,18 +56,32 @@ export default function LessonLayout({
 
           <div className="flex items-center gap-3">
             <ModeToggle />
-            <div className="flex items-center gap-2 rounded-full border px-2 py-1 shadow-sm">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={profilePic} alt={fullName} />
-                <AvatarFallback>
-                  {initials || <UserRound className="h-4 w-4" />}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden flex-col leading-tight sm:flex">
-                <span className="text-sm font-medium text-foreground">{fullName}</span>
-                <span className="text-xs text-muted-foreground">{role}</span>
-              </div>
-            </div>
+            <UserDropdown
+              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+              trigger={
+                <button className="flex items-center gap-2 rounded-full border px-2 py-1 shadow-sm transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                  <div className="flex items-center justify-center h-9 w-9 overflow-hidden rounded-full bg-muted">
+                    {profilePic ? (
+                      <Image
+                        src={profilePic}
+                        alt={fullName}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+                        {initials || <UserRound className="h-4 w-4" />}
+                      </span>
+                    )}
+                  </div>
+                  <div className="hidden flex-col leading-tight text-left sm:flex">
+                    <span className="text-sm font-medium text-foreground">{fullName}</span>
+                    <span className="text-xs text-muted-foreground">{role}</span>
+                  </div>
+                </button>
+              }
+            />
           </div>
         </div>
       </header>
