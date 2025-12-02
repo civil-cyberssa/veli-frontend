@@ -1,11 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { LessonsList } from './lessons-list'
-import { FileText, Download, BookOpen } from 'lucide-react'
+import { FileText, Download, BookOpen, MonitorPlay, Menu, ChevronLeft, ChevronRight } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
+import { cn } from '@/lib/utils'
 
 interface Exercise {
   id: number
@@ -20,50 +21,132 @@ interface LessonSidebarTabsProps {
   exercise?: Exercise
 }
 
+type TabValue = 'conteudo' | 'material' | 'exercicio'
+
 export function LessonSidebarTabs({
   lessons,
   currentLessonId,
   supportMaterialUrl,
   exercise,
 }: LessonSidebarTabsProps) {
-  return (
-    <Card className="border-border/50 overflow-hidden bg-background">
-      <Tabs defaultValue="conteudo" className="w-full">
-        <div className="border-b border-border/50 px-4 pt-4">
-          <TabsList className="w-full grid grid-cols-3 h-auto">
-            <TabsTrigger value="conteudo" className="text-xs">
-              Conteúdo
-            </TabsTrigger>
-            <TabsTrigger
-              value="material"
-              className="text-xs"
-              disabled={!supportMaterialUrl}
-            >
-              Material
-            </TabsTrigger>
-            <TabsTrigger
-              value="exercicio"
-              className="text-xs"
-              disabled={!exercise}
-            >
-              Exercício
-            </TabsTrigger>
-          </TabsList>
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabValue>('conteudo')
+
+  const tabs = [
+    {
+      value: 'conteudo' as TabValue,
+      label: 'Conteúdo',
+      icon: MonitorPlay,
+      disabled: false,
+    },
+    {
+      value: 'material' as TabValue,
+      label: 'Material',
+      icon: FileText,
+      disabled: !supportMaterialUrl,
+    },
+    {
+      value: 'exercicio' as TabValue,
+      label: 'Exercício',
+      icon: BookOpen,
+      disabled: !exercise,
+    },
+  ]
+
+  if (isCollapsed) {
+    return (
+      <Card className="border-border/50 overflow-hidden bg-background w-16 flex flex-col">
+        {/* Header colapsado */}
+        <div className="p-2 border-b border-border/50 flex justify-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsCollapsed(false)}
+            className="h-8 w-8"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
+        {/* Ícones verticais */}
+        <div className="flex flex-col items-center gap-2 py-4">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.value}
+              variant={activeTab === tab.value ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => {
+                if (!tab.disabled) {
+                  setActiveTab(tab.value)
+                  setIsCollapsed(false)
+                }
+              }}
+              disabled={tab.disabled}
+              className={cn(
+                'h-10 w-10',
+                activeTab === tab.value && 'bg-primary text-primary-foreground'
+              )}
+              title={tab.label}
+            >
+              <tab.icon className="h-5 w-5" />
+            </Button>
+          ))}
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="border-border/50 overflow-hidden bg-background">
+      {/* Header com tabs */}
+      <div className="border-b border-border/50 px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold">Navegação</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsCollapsed(true)}
+            className="h-6 w-6"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex gap-1">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.value}
+              variant={activeTab === tab.value ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => !tab.disabled && setActiveTab(tab.value)}
+              disabled={tab.disabled}
+              className={cn(
+                'flex-1 text-xs h-8',
+                activeTab === tab.value && 'bg-primary text-primary-foreground'
+              )}
+            >
+              <tab.icon className="h-4 w-4 mr-1" />
+              {tab.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Conteúdo das tabs */}
+      <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
         {/* Tab: Conteúdo (Lista de Aulas) */}
-        <TabsContent value="conteudo" className="m-0 mt-0">
-          <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+        {activeTab === 'conteudo' && (
+          <div>
             <LessonsList
               lessons={lessons}
               currentLessonId={currentLessonId}
               compact={true}
             />
           </div>
-        </TabsContent>
+        )}
 
         {/* Tab: Material de Apoio */}
-        <TabsContent value="material" className="m-0">
+        {activeTab === 'material' && (
           <div className="p-4 space-y-3">
             {supportMaterialUrl ? (
               <Card className="p-4 border-border/50">
@@ -101,10 +184,10 @@ export function LessonSidebarTabs({
               </div>
             )}
           </div>
-        </TabsContent>
+        )}
 
         {/* Tab: Exercício */}
-        <TabsContent value="exercicio" className="m-0">
+        {activeTab === 'exercicio' && (
           <div className="p-4 space-y-3">
             {exercise ? (
               <Card className="p-4 border-border/50 bg-muted/30">
@@ -134,8 +217,8 @@ export function LessonSidebarTabs({
               </div>
             )}
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </Card>
   )
 }
