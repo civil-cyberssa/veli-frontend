@@ -82,10 +82,8 @@ export default function LessonPage() {
       <LessonOnboarding />
 
       <div className="relative pb-10">
-        <div className="pointer-events-none absolute inset-x-0 top-[-120px] h-72 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.16),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(56,189,248,0.1),transparent_30%)]" />
-
-        {/* Header com animação */}
-        <div className="relative mb-6 animate-slide-up">
+        {/* Header */}
+        <div className="relative mb-6">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Badge variant="secondary" className="text-xs">
               {lesson.module.name}
@@ -106,17 +104,15 @@ export default function LessonPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {lesson.lesson_name}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Conteúdo e exercícios agrupados à direita para você avançar sem perder o ritmo.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Conteúdo e atividades desta aula.</p>
         </div>
 
         {/* Layout: Vídeo à esquerda | Lista de Aulas à direita */}
         <div className="relative grid grid-cols-1 gap-8 lg:grid-cols-[2fr_1fr]">
           {/* Coluna principal: Vídeo */}
           <div className="space-y-6">
-            {/* Vídeo com animação */}
-            <Card className="border-border/60 overflow-hidden bg-gradient-to-b from-background/80 to-background shadow-2xl shadow-primary/10 animate-scale-in animate-delay-100">
+            {/* Vídeo */}
+            <Card className="border-border/60 overflow-hidden">
               <div className="relative aspect-video bg-black">
                 {lesson.content_url ? (
                   <video
@@ -139,7 +135,7 @@ export default function LessonPage() {
             </Card>
 
           {/* Tabs com conteúdo adicional */}
-          <Tabs defaultValue="rating" className="animate-slide-up animate-delay-200">
+          <Tabs defaultValue="rating">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="rating">Avaliação</TabsTrigger>
               <TabsTrigger value="materials">Materiais</TabsTrigger>
@@ -243,8 +239,8 @@ export default function LessonPage() {
           </Tabs>
         </div>
 
-        {/* Sidebar: Lista de Aulas com animação */}
-        <div className="lg:col-span-1 animate-slide-up animate-delay-200">
+        {/* Sidebar: Lista de Aulas */}
+        <div className="lg:col-span-1">
           {eventProgress ? (
             <LessonsList
               lessons={eventProgress}

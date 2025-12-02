@@ -11,7 +11,6 @@ import {
   PlayCircle,
   Sparkles,
   Star,
-  Video,
 } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import {
@@ -100,40 +99,21 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
 
   return (
     <aside className="lg:sticky lg:top-8">
-      <Card className="overflow-hidden border-border/60 bg-gradient-to-b from-background via-background/70 to-background/90 p-4 shadow-xl shadow-primary/5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Conteúdo</p>
-            <h2 className="text-xl font-bold leading-tight">Sua trilha nesta aula</h2>
-            <p className="text-xs text-muted-foreground">
-              Acompanhe a ordem Aula → Exercício → Quiz com o visual inspirado na Rocketseat.
-            </p>
+      <Card className="overflow-hidden border-border/60 bg-background/95 p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Conteúdo</p>
+            <h2 className="text-lg font-bold leading-tight">Cronograma</h2>
           </div>
-          <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-[11px] font-semibold text-primary">
+          <Badge variant="outline" className="text-[11px] font-semibold">
             {completedLessons}/{lessons.length} aulas
           </Badge>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Video className="h-5 w-5" />
-            </div>
-            <div className="space-y-1 text-xs">
-              <p className="font-semibold text-foreground/80">Imersão guiada</p>
-              <p className="text-muted-foreground">
-                Navegue pelo cronograma sem sair da aula: clique para avançar ou abrir o exercício.
-              </p>
-            </div>
-          </div>
         </div>
 
         <Separator className="my-4" />
 
         <TooltipProvider delayDuration={0}>
-          <div className="relative space-y-3 pl-3">
-            <div className="absolute left-2 top-2 bottom-2 w-[2px] bg-gradient-to-b from-primary via-primary/30 to-transparent" />
-
+          <div className="space-y-3">
             {timelineItems.map((item, index) => {
               const isLesson = item.type === 'lesson'
               const isExercise = item.type === 'exercise'
@@ -146,16 +126,10 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
                 : null
 
               const statusClasses = {
-                done: 'bg-green-500 text-white shadow-[0_0_0_4px] shadow-green-500/20',
-                active: 'bg-primary text-white shadow-[0_0_0_4px] shadow-primary/30',
-                pending: 'bg-muted text-muted-foreground',
+                done: 'border-green-500 text-green-500',
+                active: 'border-primary text-primary',
+                pending: 'border-border text-muted-foreground',
               }[item.status]
-
-              const pillTone = {
-                lesson: 'bg-primary/10 text-primary border border-primary/30',
-                exercise: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-                quiz: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
-              }[item.type]
 
               const icon = isLesson ? (
                 item.status === 'done' ? (
@@ -170,26 +144,25 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
               )
 
               return (
-                <div key={`${item.id}-${index}`} className="relative pl-5">
-                  <span
-                    className={`absolute left-[-6px] top-2.5 flex h-6 w-6 items-center justify-center rounded-full ${statusClasses}`}
-                  >
-                    {icon}
-                  </span>
+                <div
+                  key={`${item.id}-${index}`}
+                  className={`rounded-lg border bg-background/80 px-3 py-3 ${
+                    isCurrentLesson ? 'ring-1 ring-primary/40' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border ${statusClasses}`}
+                    >
+                      {icon}
+                    </span>
 
-                  <div
-                    className={`group rounded-xl border transition-all duration-200 ${
-                      isCurrentLesson
-                        ? 'border-primary/60 bg-primary/5 shadow-lg shadow-primary/10'
-                        : 'border-border/60 bg-background/80'
-                    }`}
-                  >
-                    <div className="flex flex-col gap-3 px-4 py-3">
+                    <div className="flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        <span className={`rounded-full px-2 py-1 ${pillTone}`}>
+                        <span className="rounded-full bg-muted px-2 py-1 text-foreground">
                           {isLesson ? 'Aula' : isExercise ? 'Exercício' : 'Quiz'}
                         </span>
-                        <span className="text-muted-foreground/80">
+                        <span>
                           {new Date(item.lesson.scheduled_datetime).toLocaleDateString('pt-BR', {
                             day: '2-digit',
                             month: 'short',
@@ -201,7 +174,7 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
                         <div className="space-y-1">
                           <Link
                             href={`/aulas/${item.lesson.lesson_id}`}
-                            className={`block text-sm font-semibold leading-tight transition-colors hover:text-primary ${
+                            className={`block text-sm font-semibold leading-tight hover:text-primary ${
                               isCurrentLesson ? 'text-primary' : ''
                             }`}
                           >
@@ -210,7 +183,7 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             {item.lesson.rating && isLesson && (
                               <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <Star className="h-3 w-3" />
                                 {item.lesson.rating}/5
                               </span>
                             )}
@@ -257,10 +230,6 @@ export function LessonsList({ lessons, currentLessonId, onExerciseOpen }: Lesson
             })}
           </div>
         </TooltipProvider>
-
-        <div className="pt-4 text-center text-[11px] text-muted-foreground">
-          Fluxo contínuo: Aula → Exercício → Quiz → próxima aula, tudo alinhado ao lado direito.
-        </div>
       </Card>
     </aside>
   )
