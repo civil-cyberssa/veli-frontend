@@ -74,6 +74,9 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
 
   const handleProgress = (state: any) => {
     setPlayed(state.played)
+    if (state.loadedSeconds > 0 && duration === 0) {
+      setDuration(playerRef.current?.getDuration() || 0)
+    }
     onProgress?.({ played: state.played, playedSeconds: state.playedSeconds })
   }
 
@@ -144,9 +147,11 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
           playbackRate={playbackRate}
           width="100%"
           height="100%"
-          onReady={() => setIsReady(true)}
+          onReady={() => {
+            setIsReady(true)
+            setDuration(playerRef.current?.getDuration() || 0)
+          }}
           onProgress={handleProgress}
-          onDuration={setDuration}
           onEnded={onEnded}
         />
 
