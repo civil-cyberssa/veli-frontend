@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation"
 import {
   AudioWaveform,
   SquareTerminal,
+  PlayCircle,
+  MonitorPlay,
+  FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -37,6 +40,29 @@ const baseNavData = {
           url: "/home",
         },
       ],
+    },
+    {
+      title: "Aulas",
+      url: "#",
+      icon: PlayCircle,
+      items: [
+        {
+          title: "Minhas Aulas",
+          url: "/home",
+        },
+      ],
+    },
+    {
+      title: "Conteúdo",
+      url: "#",
+      icon: MonitorPlay,
+      items: [],
+    },
+    {
+      title: "Material",
+      url: "#",
+      icon: FileText,
+      items: [],
     },
   ],
 }

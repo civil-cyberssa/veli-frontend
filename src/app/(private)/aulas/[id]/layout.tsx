@@ -1,56 +1,23 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, Home } from 'lucide-react'
 import { ModeToggle } from '@/components/shared/theme-toggle-mode'
-import { LessonMiniSidebar } from '@/src/features/lessons/components/lesson-mini-sidebar'
 
 export default function LessonLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-
   return (
     <div className="min-h-screen bg-background animate-fade-in">
-      {/* Mini Sidebar colapsável */}
-      <LessonMiniSidebar />
-
       {/* Header compacto */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="w-full max-w-[1920px] mx-auto flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar
-            </Button>
-            <div className="h-4 w-px bg-border" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/home')}
-              className="gap-2"
-            >
-              <Home className="h-4 w-4" />
-              Dashboard
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <ModeToggle />
-          </div>
+      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-14 items-center justify-end px-4">
+          <ModeToggle />
         </div>
       </header>
 
-      {/* Conteúdo principal com animação - Totalmente centralizado */}
-      <main className="w-full max-w-[1920px] mx-auto px-4 py-6 animate-slide-up">
+      {/* Conteúdo principal com animação */}
+      <main className="px-4 py-6 animate-slide-up">
         {children}
       </main>
 
