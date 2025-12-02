@@ -44,6 +44,7 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
   const [isReady, setIsReady] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
 
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null)
 
@@ -69,6 +70,7 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
   }
 
   const handlePlayPause = () => {
+    setHasInteracted(true)
     setPlaying(!playing)
   }
 
@@ -141,18 +143,29 @@ export function VideoPlayer({ url, poster, onProgress, onEnded }: VideoPlayerPro
         <ReactPlayer
           ref={playerRef}
           url={url}
-          playing={playing}
+          playing={playing && hasInteracted}
           volume={volume}
           muted={muted}
           playbackRate={playbackRate}
           width="100%"
           height="100%"
+          progressInterval={1000}
           onReady={() => {
             setIsReady(true)
-            setDuration(playerRef.current?.getDuration() || 0)
+            setTimeout(() => {
+              setDuration(playerRef.current?.getDuration() || 0)
+            }, 100)
           }}
           onProgress={handleProgress}
           onEnded={onEnded}
+          config={{
+            file: {
+              attributes: {
+                preload: 'metadata',
+                playsInline: true,
+              },
+            },
+          }}
         />
 
         {/* Loading spinner */}
