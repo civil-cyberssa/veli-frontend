@@ -1,11 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LessonsList } from './lessons-list'
-import { FileText, Download, BookOpen, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle, Award } from 'lucide-react'
+import { FileText, Download, BookOpen, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { cn } from '@/lib/utils'
 
@@ -74,12 +73,14 @@ function ModuleItem({
   currentLessonId,
   isExpanded,
   onToggle,
+  onSelectLesson,
 }: {
   module: ModuleGroup
   index: number
   currentLessonId: number | null
   isExpanded: boolean
   onToggle: () => void
+  onSelectLesson?: (lessonId: number) => void
 }) {
   const hasCurrentLesson = module.lessons.some((l) => l.lesson_id === currentLessonId)
 
@@ -119,11 +120,11 @@ function ModuleItem({
             const isCurrentLesson = lesson.lesson_id === currentLessonId
 
             return (
-              <Link
+              <button
                 key={lesson.lesson_id}
-                href={`/aulas/${lesson.lesson_id}`}
+                onClick={() => onSelectLesson?.(lesson.lesson_id)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors border-l-2",
+                  "w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors border-l-2",
                   isCurrentLesson
                     ? "bg-primary/10 border-l-primary"
                     : "border-l-transparent"
@@ -140,12 +141,12 @@ function ModuleItem({
 
                 {/* Nome da aula */}
                 <span className={cn(
-                  "text-xs flex-1",
+                  "text-xs flex-1 text-left",
                   isCurrentLesson && "font-medium text-primary"
                 )}>
                   {lesson.lesson_name}
                 </span>
-              </Link>
+              </button>
             )
           })}
         </div>
@@ -260,11 +261,11 @@ export function LessonSidebarTabs({
 
   return (
     <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full">
-      {/* Header - Estilo limpo com apenas título e ícone de menu */}
-      <div className="border-b border-border/50 px-4 py-3">
-        <div className="flex items-center justify-between">
+      {/* Header com tabs - Estilo mais limpo */}
+      <div className="border-b border-border/50">
+        <div className="flex items-center justify-between px-4 py-3">
           <h3 className="text-base font-semibold text-foreground">
-            {tabs.find((tab) => tab.value === activeTab)?.label || 'Conteúdo'}
+            {activeTab === 'conteudo' ? 'Conteúdo' : activeTab === 'material' ? 'Material' : 'Exercício'}
           </h3>
           <Button
             variant="ghost"
@@ -274,6 +275,30 @@ export function LessonSidebarTabs({
           >
             <Menu className="h-5 w-5" />
           </Button>
+        </div>
+
+        {/* Tabs horizontais - estilo minimalista */}
+        <div className="flex border-t border-border/30">
+          {tabs.map((tab, index) => (
+            <button
+              key={tab.value}
+              onClick={() => !tab.disabled && setActiveTab(tab.value)}
+              disabled={tab.disabled}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all relative',
+                'border-r border-border/30 last:border-r-0',
+                activeTab === tab.value
+                  ? 'text-primary bg-primary/5'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                tab.disabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground'
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {activeTab === tab.value && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -290,23 +315,35 @@ export function LessonSidebarTabs({
                 currentLessonId={currentLessonId}
                 isExpanded={expandedModules.has(module.module_id)}
                 onToggle={() => toggleModule(module.module_id)}
+                onSelectLesson={onSelectLesson}
               />
             ))}
 
-            {/* Seção de certificado ao final */}
-            <div className="px-4 py-4 border-t border-border/50">
-              <button
-                className="w-full flex items-center justify-center gap-3 p-4 rounded-lg border border-border/50 hover:bg-accent/50 transition-colors group"
-                disabled
-              >
-                <div className="p-2 rounded-lg bg-muted group-hover:bg-muted/80 transition-colors">
-                  <Award className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  Emitir certificado
-                </span>
-              </button>
-            </div>
+            {/* Seção de Quiz (se houver exercício) */}
+            {exercise && (
+              <div className="border-t border-border/50">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-4 hover:bg-muted/30 transition-colors group"
+                  onClick={() => {
+                    // TODO: Navegar para o quiz
+                    console.log('Abrir quiz:', exercise.id)
+                  }}
+                >
+                  <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-xs text-muted-foreground mb-0.5">
+                      Próximo conteúdo - teste teórico
+                    </p>
+                    <h4 className="text-sm font-medium text-foreground">
+                      {exercise.name}
+                    </h4>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
