@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Star, Check, Bookmark, MonitorCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 interface LessonDescriptionCardProps {
@@ -36,11 +38,18 @@ export function LessonDescriptionCard({
   ratingDisabled = false,
   isCommentSubmitting = false,
 }: LessonDescriptionCardProps) {
+  const { data: session } = useSession();
+  const displayName = useMemo(() => session?.user?.name || "Você", [session]);
+  const displayImage = session?.user?.image || "";
+
   const [rating, setRating] = useState<number>(initialRating || 0);
   const [hoverRating, setHoverRating] = useState<number>(0);
-  const [comment, setComment] = useState(initialComment);
+  const [commentInput, setCommentInput] = useState(initialComment);
+  const [savedComment, setSavedComment] = useState(initialComment);
   const [watched, setWatched] = useState(isWatched);
   const [saved, setSaved] = useState(isSaved);
+
+  const initials = useMemo(() => getInitials(displayName), [displayName]);
 
   // Sincronizar estado local com prop, mas só permitir mudança de false para true
   useEffect(() => {
@@ -54,7 +63,8 @@ export function LessonDescriptionCard({
   }, [initialRating]);
 
   useEffect(() => {
-    setComment(initialComment || "");
+    setCommentInput(initialComment || "");
+    setSavedComment(initialComment || "");
   }, [initialComment]);
 
   const handleRatingClick = (value: number) => {
@@ -78,7 +88,8 @@ export function LessonDescriptionCard({
   const handleSubmitComment = async () => {
     if (disabled || isCommentSubmitting || !onSubmitComment) return;
 
-    await onSubmitComment(comment);
+    await onSubmitComment(commentInput);
+    setSavedComment(commentInput);
   };
 
   return (
@@ -95,29 +106,57 @@ export function LessonDescriptionCard({
             {description}
           </p>
 
-          <div className="mt-6 space-y-3">
-            <label className="text-sm font-medium text-foreground" htmlFor="lesson-comment">
-              Deixe um comentário sobre esta aula
-            </label>
-            <textarea
-              id="lesson-comment"
-              className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Compartilhe seu feedback ou dúvidas sobre a aula"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              disabled={disabled || isCommentSubmitting}
-            />
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={handleSubmitComment}
+          <div className="mt-6 space-y-6">
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-foreground">Seu comentário</h3>
+              <div className="rounded-lg border border-border/50 bg-muted/40 p-3">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={displayImage} alt={displayName} />
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground">{displayName}</p>
+                      <span className="text-xs text-muted-foreground">comentou nesta aula</span>
+                    </div>
+                    {savedComment ? (
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                        {savedComment}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum comentário enviado ainda.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground" htmlFor="lesson-comment">
+                Deixe um comentário sobre esta aula
+              </label>
+              <textarea
+                id="lesson-comment"
+                className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Compartilhe seu feedback ou dúvidas sobre a aula"
+                value={commentInput}
+                onChange={(e) => setCommentInput(e.target.value)}
                 disabled={disabled || isCommentSubmitting}
-                className="min-w-[180px]"
-              >
-                {isCommentSubmitting ? "Enviando..." : "Enviar comentário"}
-              </Button>
+              />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={handleSubmitComment}
+                  disabled={disabled || isCommentSubmitting}
+                  className="min-w-[180px]"
+                >
+                  {isCommentSubmitting ? "Enviando..." : "Enviar comentário"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -215,4 +254,16 @@ export function LessonDescriptionCard({
       </div>
     </div>
   );
+}
+
+function getInitials(name: string) {
+  if (!name) return "?";
+
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return "?";
+
+  const [first, second] = parts;
+  const initials = `${first?.[0] || ""}${second?.[0] || ""}`;
+
+  return initials.toUpperCase() || "?";
 }
