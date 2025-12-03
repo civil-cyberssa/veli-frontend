@@ -16,6 +16,7 @@ interface LessonDescriptionCardProps {
   onMarkAsWatched?: () => void;
   onToggleSave?: () => void;
   disabled?: boolean;
+  ratingDisabled?: boolean;
 }
 
 export function LessonDescriptionCard({
@@ -28,6 +29,7 @@ export function LessonDescriptionCard({
   onMarkAsWatched,
   onToggleSave,
   disabled = false,
+  ratingDisabled = false,
 }: LessonDescriptionCardProps) {
   const [rating, setRating] = useState<number>(initialRating || 0);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -46,7 +48,7 @@ export function LessonDescriptionCard({
   }, [initialRating]);
 
   const handleRatingClick = (value: number) => {
-    if (disabled) return;
+    if (disabled || ratingDisabled) return;
     setRating(value);
     onRatingChange?.(value);
   };
@@ -131,13 +133,13 @@ export function LessonDescriptionCard({
                   <button
                     key={value}
                     type="button"
-                    disabled={disabled}
+                    disabled={disabled || ratingDisabled}
                     onClick={() => handleRatingClick(value)}
-                    onMouseEnter={() => !disabled && setHoverRating(value)}
-                    onMouseLeave={() => !disabled && setHoverRating(0)}
+                    onMouseEnter={() => !(disabled || ratingDisabled) && setHoverRating(value)}
+                    onMouseLeave={() => !(disabled || ratingDisabled) && setHoverRating(0)}
                     className={cn(
                       "group transition-all disabled:cursor-not-allowed disabled:opacity-50",
-                      !disabled && "hover:scale-110 cursor-pointer"
+                      !(disabled || ratingDisabled) && "hover:scale-110 cursor-pointer"
                     )}
                     aria-label={`Avaliar com ${value} estrela${
                       value > 1 ? "s" : ""

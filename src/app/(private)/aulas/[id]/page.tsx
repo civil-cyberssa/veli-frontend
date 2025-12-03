@@ -13,6 +13,7 @@ import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
+import { toast } from 'sonner'
 
 export default function LessonPage() {
   const params = useParams()
@@ -41,6 +42,11 @@ export default function LessonPage() {
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
 
+  const selectedLessonProgress = useMemo(
+    () => eventProgress?.find((lesson) => lesson.lesson_id === selectedLessonId),
+    [eventProgress, selectedLessonId]
+  )
+
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
   useEffect(() => {
@@ -66,7 +72,7 @@ export default function LessonPage() {
   }, [selectedLessonId, refetchLesson, refetchProgress])
 
   const handleRatingChange = async (rating: number) => {
-    if (!selectedLessonId || !eventProgress) return
+    if (!selectedLessonId || !eventProgress || selectedLessonProgress?.rating) return
 
     const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
     if (!currentLesson) return
@@ -94,10 +100,11 @@ export default function LessonPage() {
       // Recarregar o progresso para atualizar a UI
       await refetchProgress()
 
-      console.log('Avaliação salva com sucesso')
+      toast.success('Obrigado pelo feedback!')
     } catch (err) {
       console.error('Erro ao salvar avaliação:', err)
       refetchProgress()
+      toast.error('Não foi possível salvar sua avaliação. Tente novamente.')
     }
   }
 
@@ -252,15 +259,11 @@ export default function LessonPage() {
             {/* Rating */}
             <div className="animate-slide-up animate-delay-200">
               <LessonDescriptionCard
+                key={selectedLessonId ?? 'lesson-card'}
                 title={lesson?.lesson_name}
-                initialRating={
-                  eventProgress?.find((l) => l.lesson_id === selectedLessonId)
-                    ?.rating ?? null
-                }
-                isWatched={
-                  eventProgress?.find((l) => l.lesson_id === selectedLessonId)
-                    ?.watched ?? false
-                }
+                initialRating={selectedLessonProgress?.rating ?? null}
+                isWatched={selectedLessonProgress?.watched ?? false}
+                ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
                 onRatingChange={handleRatingChange}
                 onMarkAsWatched={handleMarkAsWatched}
               />
