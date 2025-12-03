@@ -297,6 +297,7 @@ export default function LessonPage() {
               <LessonDescriptionCard
                 key={selectedLessonId ?? 'lesson-card'}
                 title={lesson?.lesson_name}
+                description={lesson?.description}
                 initialRating={selectedLessonProgress?.rating ?? null}
                 initialComment={selectedLessonProgress?.comment ?? ''}
                 isWatched={selectedLessonProgress?.watched ?? false}
