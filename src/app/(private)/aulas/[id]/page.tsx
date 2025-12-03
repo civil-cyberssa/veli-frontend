@@ -3,15 +3,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
-import { LessonRating } from '@/src/features/lessons/components/lesson-rating'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
+import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 
 export default function LessonPage() {
   const params = useParams()
@@ -104,27 +102,6 @@ export default function LessonPage() {
       <LessonOnboarding />
 
       <div className="pb-8">
-        {/* Header com informações da aula */}
-        <header className="flex items-center justify-between gap-4 border-b border-border/50 py-3">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-              {lesson?.lesson_name || 'Carregando aula...'}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="hidden text-sm text-muted-foreground sm:inline">Reprodução automática</span>
-            <Switch checked={autoplay} onCheckedChange={handleAutoplayChange} aria-label="Reprodução automática" />
-          </div>
-        </header>
 
         {/* Layout: Vídeo à esquerda (maior) | Lista de Aulas à direita (fixa) */}
         <div className={`grid grid-cols-1 gap-4 transition-all duration-300 ${
@@ -163,7 +140,7 @@ export default function LessonPage() {
 
             {/* Rating */}
             <div className="animate-slide-up animate-delay-200">
-              <LessonRating
+              <LessonDescriptionCard
                 initialRating={lesson?.rating ?? null}
                 onRatingChange={handleRatingChange}
               />

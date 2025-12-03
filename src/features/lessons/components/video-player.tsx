@@ -30,7 +30,13 @@ interface VideoPlayerProps {
   autoPlay?: boolean
 }
 
-export function VideoPlayer({ url, poster, onProgress, onEnded, autoPlay = false }: VideoPlayerProps) {
+export function VideoPlayer({ 
+  url, 
+  poster, 
+  onProgress, 
+  onEnded, 
+  autoPlay = false
+}: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<NodeJS.Timeout | null>(null)
@@ -202,10 +208,11 @@ export function VideoPlayer({ url, poster, onProgress, onEnded, autoPlay = false
   const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
   return (
-    <Card className="border-border/50 overflow-hidden bg-black">
+    <div className="border-border/50 overflow-hidden bg-black">
       <div
         ref={containerRef}
-        className="relative aspect-video bg-black"
+        className="relative w-full bg-black flex items-center justify-center"
+        style={{ height: '60vh', minHeight: '400px' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => playing && setShowControls(false)}
       >
@@ -213,182 +220,181 @@ export function VideoPlayer({ url, poster, onProgress, onEnded, autoPlay = false
           ref={videoRef}
           src={url}
           poster={poster}
-          className="w-full h-full"
+          className="w-full h-full object-contain cursor-pointer"
           autoPlay={autoPlay}
-          onLoadedMetadata={(e) => {
-            const target = e.target as HTMLVideoElement
-            setDuration(target.duration)
-            setIsLoading(false)
-          }}
-          onTimeUpdate={(e) => {
-            const target = e.target as HTMLVideoElement
-            setCurrentTime(target.currentTime)
-          }}
-          onEnded={() => {
-            setPlaying(false)
-            onEnded?.()
-          }}
-          onWaiting={() => setIsLoading(true)}
-          onCanPlay={() => {
-            setIsLoading(false)
+          onClick={handlePlayPause}
+            onLoadedMetadata={(e) => {
+              const target = e.target as HTMLVideoElement
+              setDuration(target.duration)
+              setIsLoading(false)
+            }}
+            onTimeUpdate={(e) => {
+              const target = e.target as HTMLVideoElement
+              setCurrentTime(target.currentTime)
+            }}
+            onEnded={() => {
+              setPlaying(false)
+              onEnded?.()
+            }}
+            onWaiting={() => setIsLoading(true)}
+            onCanPlay={() => {
+              setIsLoading(false)
 
-            if (autoPlay && !playing) {
-              const playPromise = videoRef.current?.play()
-              if (playPromise) {
-                playPromise
-                  .then(() => setPlaying(true))
-                  .catch(() => setPlaying(false))
+              if (autoPlay && !playing) {
+                const playPromise = videoRef.current?.play()
+                if (playPromise) {
+                  playPromise
+                    .then(() => setPlaying(true))
+                    .catch(() => setPlaying(false))
+                }
               }
-            }
-          }}
-          playsInline
-        />
+            }}
+            playsInline
+          />
 
-        {/* Loading spinner */}
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
-            <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-          </div>
-        )}
-
-        {/* Center play button */}
-        {!playing && !isLoading && (
-          <div
-            className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer transition-opacity hover:bg-black/30"
-            onClick={handlePlayPause}
-          >
-            <div className="h-20 w-20 rounded-full bg-primary/90 flex items-center justify-center shadow-2xl hover:bg-primary transition-colors">
-              <Play className="h-10 w-10 text-primary-foreground ml-1" />
+          {/* Loading spinner */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
+              <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
             </div>
-          </div>
-        )}
-
-        {/* Controls */}
-        <div
-          className={cn(
-            'absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 transition-opacity duration-300',
-            showControls || !playing ? 'opacity-100' : 'opacity-0'
           )}
-        >
-          {/* Progress bar */}
-          <div className="mb-4">
-            <Slider
-              value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
-              onValueChange={handleSeek}
-              onValueCommit={handleSeek}
-              max={100}
-              step={0.1}
-              className="cursor-pointer"
-            />
-            <div className="flex items-center justify-between text-xs text-white mt-1">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
+
+          {/* Center play button */}
+          {!playing && !isLoading && (
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer transition-opacity hover:bg-black/30"
+              onClick={handlePlayPause}
+            >
             </div>
-          </div>
+          )}
 
-          {/* Control buttons */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {/* Play/Pause */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handlePlayPause}
-                className="text-white hover:text-white hover:bg-white/20"
-              >
-                {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-              </Button>
-
-              {/* Skip backward */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={skipBackward}
-                className="text-white hover:text-white hover:bg-white/20"
-              >
-                <SkipBack className="h-4 w-4" />
-              </Button>
-
-              {/* Skip forward */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={skipForward}
-                className="text-white hover:text-white hover:bg-white/20"
-              >
-                <SkipForward className="h-4 w-4" />
-              </Button>
-
-              {/* Volume */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleMute}
-                  className="text-white hover:text-white hover:bg-white/20"
-                >
-                  {muted || volume === 0 ? (
-                    <VolumeX className="h-4 w-4" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                </Button>
-                <div className="w-20 hidden sm:block">
-                  <Slider
-                    value={[muted ? 0 : volume * 100]}
-                    onValueChange={handleVolumeChange}
-                    max={100}
-                    step={1}
-                  />
-                </div>
+          {/* Controls */}
+          <div
+            className={cn(
+              'absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 transition-opacity duration-300',
+              showControls || !playing ? 'opacity-100' : 'opacity-0'
+            )}
+          >
+            {/* Progress bar */}
+            <div className="mb-4">
+              <Slider
+                value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
+                onValueChange={handleSeek}
+                onValueCommit={handleSeek}
+                max={100}
+                step={0.1}
+                className="cursor-pointer"
+              />
+              <div className="flex items-center justify-between text-xs text-white mt-1">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Playback speed */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+            {/* Control buttons */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {/* Play/Pause */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePlayPause}
+                  className="text-white hover:text-white hover:bg-white/20 cursor-pointer"
+                >
+                  {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                </Button>
+
+                {/* Skip backward */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={skipBackward}
+                  className="text-white hover:text-white hover:bg-white/20 cursor-pointer"
+                >
+                  <SkipBack className="h-4 w-4" />
+                </Button>
+
+                {/* Skip forward */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={skipForward}
+                  className="text-white hover:text-white hover:bg-white/20 cursor-pointer"
+                >
+                  <SkipForward className="h-4 w-4" />
+                </Button>
+
+                {/* Volume */}
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="text-white hover:text-white hover:bg-white/20 text-xs"
+                    size="icon"
+                    onClick={toggleMute}
+                    className="text-white hover:text-white hover:bg-white/20 cursor-pointer"
                   >
-                    {playbackRate}x
+                    {muted || volume === 0 ? (
+                      <VolumeX className="h-4 w-4" />
+                    ) : (
+                      <Volume2 className="h-4 w-4" />
+                    )}
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {playbackRates.map((rate) => (
-                    <DropdownMenuItem
-                      key={rate}
-                      onClick={() => setPlaybackRate(rate)}
-                      className={cn(
-                        'cursor-pointer',
-                        rate === playbackRate && 'bg-primary text-primary-foreground'
-                      )}
-                    >
-                      {rate}x
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <div className="w-20 hidden sm:block">
+                    <Slider
+                      value={[muted ? 0 : volume * 100]}
+                      onValueChange={handleVolumeChange}
+                      max={100}
+                      step={1}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
 
-              {/* Fullscreen */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleFullscreen}
-                className="text-white hover:text-white hover:bg-white/20"
-              >
-                {isFullscreen ? (
-                  <Minimize className="h-4 w-4" />
-                ) : (
-                  <Maximize className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Playback speed */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-white hover:text-white hover:bg-white/20 text-xs cursor-pointer"
+                    >
+                      {playbackRate}x
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {playbackRates.map((rate) => (
+                      <DropdownMenuItem
+                        key={rate}
+                        onClick={() => setPlaybackRate(rate)}
+                        className={cn(
+                          'cursor-pointer',
+                          rate === playbackRate && 'bg-primary text-primary-foreground'
+                        )}
+                      >
+                        {rate}x
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Fullscreen */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleFullscreen}
+                  className="text-white hover:text-white hover:bg-white/20 cursor-pointer"
+                >
+                  {isFullscreen ? (
+                    <Minimize className="h-4 w-4" />
+                  ) : (
+                    <Maximize className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
+            </div>
         </div>
       </div>
-    </Card>
-  )
+    )
 }

@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle, BookOpen } from 'lucide-react'
+import { FileText, Download, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle, BookOpen, Video } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { cn } from '@/lib/utils'
 
 
-interface Exercise {
+interface Quiz {
   id: number
   name: string
   questions_count: number
@@ -18,7 +18,7 @@ interface LessonSidebarTabsProps {
   lessons: LessonProgress[]
   currentLessonId: number | null
   supportMaterialUrl?: string
-  exercise?: Exercise
+  quiz?: Quiz
   onCollapsedChange?: (collapsed: boolean) => void
   onSelectLesson?: (lessonId: number) => void
 }
@@ -107,26 +107,26 @@ function ModuleItem({
 
   return (
     <div className={cn(
-      "transition-all rounded-lg mb-3",
+      "transition-all rounded-lg mb-2",
       isCurrentModule
-        ? "border border-primary/30 bg-primary/5"
-        : "border border-transparent hover:border-border/50"
+        ? "border border-border/40"
+        : "border border-transparent"
     )}>
       {/* Header do módulo */}
       <button
         onClick={onToggle}
         className={cn(
-          "w-full px-4 py-3.5 flex items-center gap-3 transition-all rounded-lg",
+          "w-full px-3 py-3 flex items-center gap-3 transition-all rounded-lg cursor-pointer",
           isCurrentModule
-            ? "hover:bg-primary/10"
+            ? "hover:bg-muted/30"
             : "hover:bg-muted/20"
         )}
       >
         {/* Número do módulo */}
         <div className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
+          "flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-medium transition-colors",
           isCurrentModule
-            ? "bg-primary text-primary-foreground"
+            ? "bg-primary/10 text-primary"
             : "bg-muted text-muted-foreground"
         )}>
           {index + 1}
@@ -135,12 +135,12 @@ function ModuleItem({
         {/* Info do módulo */}
         <div className="flex-1 text-left">
           <h4 className={cn(
-            "text-sm font-medium leading-tight mb-1",
-            isCurrentModule && "text-primary"
+            "text-sm font-medium leading-tight",
+            isCurrentModule && "text-foreground"
           )}>
             {module.module_name}
           </h4>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {module.lessons.length} aulas • {module.total_duration}
           </p>
         </div>
@@ -150,14 +150,14 @@ function ModuleItem({
           className={cn(
             "h-4 w-4 transition-transform duration-200",
             isExpanded && "rotate-180",
-            isCurrentModule ? "text-primary" : "text-muted-foreground"
+            "text-muted-foreground"
           )}
         />
       </button>
 
       {/* Lista de aulas (expansível) */}
       {isExpanded && (
-        <div className="px-3 pb-3 pt-2 space-y-1">
+        <div className="px-2 pb-2 pt-1 space-y-0.5">
           {module.lessons.map((lesson, lessonIndex) => {
             const isCurrentLesson = lesson.lesson_id === currentLessonId
             // Duração estimada: varia entre 5-15 minutos
@@ -168,27 +168,34 @@ function ModuleItem({
                 key={lesson.lesson_id}
                 onClick={() => onSelectLesson?.(lesson.lesson_id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3 rounded-md transition-all",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all cursor-pointer",
                   isCurrentLesson
-                    ? "bg-primary/10 hover:bg-primary/15"
-                    : "hover:bg-muted/40"
+                    ? "bg-muted/40"
+                    : "hover:bg-muted/30"
                 )}
               >
-                {/* Ícone de status */}
-                <div className="flex-shrink-0">
-                  {lesson.watched ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : isCurrentLesson ? (
-                    <PlayCircle className="h-4 w-4 text-primary" />
+                {/* Ícone de status - 3 estados com animação */}
+                <div className="flex-shrink-0 relative">
+                  {isCurrentLesson ? (
+                    <>
+                      <PlayCircle className="h-4 w-4 text-primary animate-pulse relative z-10" />
+                      <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" style={{ animationDuration: '1.5s' }} />
+                    </>
+                  ) : lesson.watched ? (
+                    <CheckCircle2 className="h-4 w-4 text-success" />
                   ) : (
-                    <Circle className="h-4 w-4 text-muted-foreground/40" />
+                    <Circle className="h-4 w-4 text-muted-foreground/30" />
                   )}
                 </div>
 
                 {/* Nome da aula */}
                 <span className={cn(
-                  "text-xs flex-1 text-left leading-snug",
-                  isCurrentLesson ? "font-semibold text-primary" : "text-foreground"
+                  "text-sm flex-1 text-left leading-snug",
+                  isCurrentLesson 
+                    ? "font-medium text-foreground" 
+                    : lesson.watched 
+                    ? "text-foreground/80" 
+                    : "text-muted-foreground"
                 )}>
                   {lesson.lesson_name}
                 </span>
@@ -196,7 +203,9 @@ function ModuleItem({
                 {/* Duração */}
                 <span className={cn(
                   "text-xs flex-shrink-0 font-mono",
-                  isCurrentLesson ? "text-primary/70" : "text-muted-foreground/60"
+                  isCurrentLesson 
+                    ? "text-muted-foreground" 
+                    : "text-muted-foreground/60"
                 )}>
                   {formatDuration(estimatedDuration)}
                 </span>
@@ -207,24 +216,24 @@ function ModuleItem({
           {/* Quiz do módulo (se existir) */}
           {module.quiz && (
             <button
-              className="w-full flex items-center gap-3 px-3 py-3.5 rounded-md transition-all bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 mt-3"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-md transition-all bg-secondary/5 hover:bg-secondary/10 border border-secondary/20 mt-3 cursor-pointer"
               onClick={() => {
                 // TODO: Abrir quiz
                 console.log('Abrir quiz:', module.quiz?.id)
               }}
             >
-              <div className="p-2 rounded-md bg-amber-500/20 shrink-0">
-                <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+              <div className="p-1.5 rounded-md bg-secondary/15 shrink-0">
+                <BookOpen className="h-4 w-4 text-secondary" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-xs text-amber-700 dark:text-amber-500/80 leading-tight font-medium">
-                  Próximo conteúdo - teste teórico
+                <p className="text-xs text-muted-foreground leading-tight mb-0.5">
+                  Quiz do módulo
                 </p>
-                <h4 className="text-sm font-semibold text-foreground leading-tight mt-1">
+                <h4 className="text-sm font-medium text-foreground leading-tight">
                   {module.quiz.name}
                 </h4>
               </div>
-              <ChevronRight className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           )}
         </div>
@@ -237,7 +246,7 @@ export function LessonSidebarTabs({
   lessons,
   currentLessonId,
   supportMaterialUrl,
-  exercise,
+  quiz,
   onCollapsedChange,
   onSelectLesson,
 }: LessonSidebarTabsProps) {
@@ -287,14 +296,14 @@ export function LessonSidebarTabs({
 
   if (isCollapsed) {
     return (
-      <Card className="border-border/50 overflow-hidden bg-background w-16 flex flex-col h-full shadow-md">
+      <Card className="border-border/50 overflow-hidden bg-background w-16 flex flex-col h-full">
         {/* Header colapsado */}
-        <div className="p-2 border-b border-border/50 flex justify-center bg-muted/30">
+        <div className="p-2 border-b border-border/50 flex justify-center bg-muted/20">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleCollapsedChange(false)}
-            className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors"
+            className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -315,17 +324,17 @@ export function LessonSidebarTabs({
               }}
               disabled={tab.disabled}
               className={cn(
-                'h-12 w-12 rounded-lg transition-all relative',
+                'h-11 w-11 rounded-lg transition-all relative',
                 activeTab === tab.value
-                  ? 'bg-primary/15 text-primary shadow-sm'
-                  : 'hover:bg-accent/50',
-                tab.disabled && 'opacity-40'
+                  ? 'bg-primary/10 text-primary'
+                  : 'hover:bg-muted/40',
+                tab.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
               )}
               title={tab.label}
             >
               <tab.icon className="h-5 w-5" />
               {activeTab === tab.value && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-r-full" />
               )}
             </Button>
           ))}
@@ -336,23 +345,23 @@ export function LessonSidebarTabs({
 
   return (
     <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full">
-      {/* Header com tabs - Estilo mais limpo */}
+      {/* Header com tabs */}
       <div className="border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3.5">
-          <h3 className="text-base font-semibold text-foreground">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h3 className="text-2xl font-semibold text-foreground">
             {activeTab === 'conteudo' ? 'Conteúdo' : 'Material'}
           </h3>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleCollapsedChange(true)}
-            className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
+            className="h-8 w-8 hover:bg-muted/40 transition-colors cursor-pointer"
           >
             <Menu className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Tabs horizontais - estilo minimalista */}
+        {/* Tabs horizontais */}
         <div className="flex">
           {tabs.map((tab) => (
             <button
@@ -360,11 +369,11 @@ export function LessonSidebarTabs({
               onClick={() => !tab.disabled && setActiveTab(tab.value)}
               disabled={tab.disabled}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all relative',
+                'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-all relative',
                 activeTab === tab.value
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground',
-                tab.disabled && 'opacity-40 cursor-not-allowed'
+                tab.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
               )}
             >
               <tab.icon className="h-4 w-4" />
@@ -377,7 +386,7 @@ export function LessonSidebarTabs({
       </div>
 
       {/* Conteúdo das tabs */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3">
         {/* Tab: Conteúdo (Módulos Agrupados) */}
         {activeTab === 'conteudo' && (
           <div>
@@ -397,15 +406,15 @@ export function LessonSidebarTabs({
 
         {/* Tab: Material de Apoio */}
         {activeTab === 'material' && (
-          <div className="p-4">
+          <div className="p-3">
             {supportMaterialUrl ? (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-border/50 bg-card">
-                  <div className="p-2.5 rounded-lg bg-primary/10 shrink-0">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-card">
+                  <div className="p-2 rounded-md bg-primary/10 shrink-0">
                     <FileText className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground mb-1">
+                    <h4 className="text-sm font-medium text-foreground mb-0.5">
                       Material de Apoio
                     </h4>
                     <p className="text-xs text-muted-foreground">
@@ -416,7 +425,7 @@ export function LessonSidebarTabs({
 
                 <Button
                   variant="default"
-                  className="w-full h-11"
+                  className="w-full h-10 cursor-pointer"
                   asChild
                 >
                   <a
@@ -432,8 +441,8 @@ export function LessonSidebarTabs({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="p-3 rounded-full bg-muted/50 mb-3">
-                  <FileText className="h-6 w-6 text-muted-foreground/40" />
+                <div className="p-3 rounded-full bg-muted/30 mb-3">
+                  <FileText className="h-6 w-6 text-muted-foreground/30" />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Nenhum material disponível
