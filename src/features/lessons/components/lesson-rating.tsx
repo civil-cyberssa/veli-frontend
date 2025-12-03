@@ -26,7 +26,7 @@ interface LessonDescriptionCardProps {
 
 export function LessonDescriptionCard({
   title = "Meu primeiro algoritmo",
-  description = "Neste vídeo, aprendemos a criar nosso primeiro código no Scratch.",
+  description = "Neste vídeo, aprendemos a criar nosso primeiro código no Scratch, s algoritmos, sequências lógicas de passos para resolver problemas. Programar envolve entender e processar dados para gerar saídas úteis, como nas redes sociais.",
   initialRating = null,
   initialComment = "",
   courseName,
