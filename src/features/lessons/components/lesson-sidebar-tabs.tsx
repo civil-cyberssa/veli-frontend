@@ -107,7 +107,7 @@ function ModuleItem({
 
   return (
     <div className={cn(
-      "transition-all rounded-lg mb-2",
+      "transition-all rounded-lg mb-3",
       isCurrentModule
         ? "border border-primary/30 bg-primary/5"
         : "border border-transparent hover:border-border/50"
@@ -116,7 +116,7 @@ function ModuleItem({
       <button
         onClick={onToggle}
         className={cn(
-          "w-full px-4 py-3 flex items-center gap-3 transition-all rounded-lg",
+          "w-full px-4 py-3.5 flex items-center gap-3 transition-all rounded-lg",
           isCurrentModule
             ? "hover:bg-primary/10"
             : "hover:bg-muted/20"
@@ -124,7 +124,7 @@ function ModuleItem({
       >
         {/* Número do módulo */}
         <div className={cn(
-          "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
+          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
           isCurrentModule
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground"
@@ -135,12 +135,12 @@ function ModuleItem({
         {/* Info do módulo */}
         <div className="flex-1 text-left">
           <h4 className={cn(
-            "text-sm font-medium leading-tight",
+            "text-sm font-medium leading-tight mb-1",
             isCurrentModule && "text-primary"
           )}>
             {module.module_name}
           </h4>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground">
             {module.lessons.length} aulas • {module.total_duration}
           </p>
         </div>
@@ -157,7 +157,7 @@ function ModuleItem({
 
       {/* Lista de aulas (expansível) */}
       {isExpanded && (
-        <div className="px-2 pb-2 pt-1">
+        <div className="px-3 pb-3 pt-2 space-y-1">
           {module.lessons.map((lesson, lessonIndex) => {
             const isCurrentLesson = lesson.lesson_id === currentLessonId
             // Duração estimada: varia entre 5-15 minutos
@@ -168,7 +168,7 @@ function ModuleItem({
                 key={lesson.lesson_id}
                 onClick={() => onSelectLesson?.(lesson.lesson_id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all mb-1 last:mb-0",
+                  "w-full flex items-center gap-3 px-3 py-3 rounded-md transition-all",
                   isCurrentLesson
                     ? "bg-primary/10 hover:bg-primary/15"
                     : "hover:bg-muted/40"
@@ -207,24 +207,24 @@ function ModuleItem({
           {/* Quiz do módulo (se existir) */}
           {module.quiz && (
             <button
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-md transition-all bg-primary/5 hover:bg-primary/10 border border-primary/20 mt-2"
+              className="w-full flex items-center gap-3 px-3 py-3.5 rounded-md transition-all bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 mt-3"
               onClick={() => {
                 // TODO: Abrir quiz
                 console.log('Abrir quiz:', module.quiz?.id)
               }}
             >
-              <div className="p-1.5 rounded-md bg-primary/10 shrink-0">
-                <BookOpen className="h-3.5 w-3.5 text-primary" />
+              <div className="p-2 rounded-md bg-amber-500/20 shrink-0">
+                <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-xs text-primary/70 leading-tight">
+                <p className="text-xs text-amber-700 dark:text-amber-500/80 leading-tight font-medium">
                   Próximo conteúdo - teste teórico
                 </p>
-                <h4 className="text-xs font-semibold text-foreground leading-tight mt-0.5">
+                <h4 className="text-sm font-semibold text-foreground leading-tight mt-1">
                   {module.quiz.name}
                 </h4>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-primary" />
+              <ChevronRight className="h-4 w-4 text-amber-600 dark:text-amber-500" />
             </button>
           )}
         </div>
@@ -338,7 +338,7 @@ export function LessonSidebarTabs({
     <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full">
       {/* Header com tabs - Estilo mais limpo */}
       <div className="border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3.5">
           <h3 className="text-base font-semibold text-foreground">
             {activeTab === 'conteudo' ? 'Conteúdo' : 'Material'}
           </h3>
@@ -360,7 +360,7 @@ export function LessonSidebarTabs({
               onClick={() => !tab.disabled && setActiveTab(tab.value)}
               disabled={tab.disabled}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-all relative',
+                'flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all relative',
                 activeTab === tab.value
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground',
@@ -377,7 +377,7 @@ export function LessonSidebarTabs({
       </div>
 
       {/* Conteúdo das tabs */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto p-4">
         {/* Tab: Conteúdo (Módulos Agrupados) */}
         {activeTab === 'conteudo' && (
           <div>
