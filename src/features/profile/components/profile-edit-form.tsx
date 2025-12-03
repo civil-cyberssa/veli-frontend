@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Controller, useForm } from "react-hook-form"
@@ -36,28 +36,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { LocationAutocomplete } from "./location-autocomplete"
-
-const getFlagEmoji = (country?: string) => {
-  if (!country) return ""
-
-  const normalized = country.trim().toUpperCase()
-  const mapped =
-    normalized === "BRASIL" || normalized === "BRAZIL"
-      ? "BR"
-      : normalized === "PORTUGAL"
-        ? "PT"
-        : normalized.length === 2
-          ? normalized
-          : ""
-
-  if (!mapped) return ""
-
-  const codePoints = mapped
-    .split("")
-    .map((char) => 127397 + char.charCodeAt(0))
-
-  return String.fromCodePoint(...codePoints)
-}
 
 export function ProfileEditForm() {
   const router = useRouter()
@@ -100,11 +78,6 @@ export function ProfileEditForm() {
   // Watch form values for display purposes
   const formData = watch()
   const { errors, isSubmitting } = formState
-
-  const phoneCountryFlag = useMemo(
-    () => getFlagEmoji(formData.country || studentData?.user?.country),
-    [formData.country, studentData?.user?.country]
-  )
 
   // Preenche o formulário quando os dados são carregados
   useEffect(() => {
@@ -623,31 +596,16 @@ export function ProfileEditForm() {
                 <Label htmlFor="phone" className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
                   Telefone
-                  {phoneCountryFlag && (
-                    <span className="ml-auto inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                      <span className="text-base leading-none">{phoneCountryFlag}</span>
-                      <span className="max-w-[120px] truncate">
-                        {formData.country || studentData?.user?.country}
-                      </span>
-                    </span>
-                  )}
                 </Label>
-                <div className="relative">
-                  {phoneCountryFlag && (
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg">
-                      {phoneCountryFlag}
-                    </span>
-                  )}
-                  <Input
-                    id="phone"
-                    type="tel"
-                    {...register("phone")}
-                    onChange={handlePhoneChange}
-                    placeholder="(00) 00000-0000"
-                    maxLength={15}
-                    className={`transition-all focus:scale-[1.02] ${phoneCountryFlag ? 'pl-10' : ''} ${errors.phone ? 'border-destructive' : ''}`}
-                  />
-                </div>
+                <Input
+                  id="phone"
+                  type="tel"
+                  {...register("phone")}
+                  onChange={handlePhoneChange}
+                  placeholder="(00) 00000-0000"
+                  maxLength={15}
+                  className={`transition-all focus:scale-[1.02] ${errors.phone ? 'border-destructive' : ''}`}
+                />
                 {errors.phone ? (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
