@@ -108,6 +108,42 @@ export default function LessonPage() {
     }
   }
 
+  const handleCommentSubmit = async (comment: string) => {
+    if (!selectedLessonId || !eventProgress) return
+
+    const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
+    if (!currentLesson) return
+
+    try {
+      await refetchProgress(
+        (currentLessons) =>
+          currentLessons?.map((lesson) =>
+            lesson.lesson_id === selectedLessonId
+              ? {
+                  ...lesson,
+                  comment,
+                }
+              : lesson
+          ) ?? currentLessons,
+        { revalidate: false }
+      )
+
+      await updateRating({
+        eventId: currentLesson.event_id,
+        lessonId: selectedLessonId,
+        comment,
+      })
+
+      await refetchProgress()
+
+      toast.success('Obrigado pelo comentário!')
+    } catch (err) {
+      console.error('Erro ao salvar comentário:', err)
+      refetchProgress()
+      toast.error('Não foi possível salvar seu comentário. Tente novamente.')
+    }
+  }
+
   const handleMarkAsWatched = async () => {
     if (!selectedLessonId || !eventProgress) return
 
@@ -262,10 +298,13 @@ export default function LessonPage() {
                 key={selectedLessonId ?? 'lesson-card'}
                 title={lesson?.lesson_name}
                 initialRating={selectedLessonProgress?.rating ?? null}
+                initialComment={selectedLessonProgress?.comment ?? ''}
                 isWatched={selectedLessonProgress?.watched ?? false}
                 ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
                 onRatingChange={handleRatingChange}
+                onSubmitComment={handleCommentSubmit}
                 onMarkAsWatched={handleMarkAsWatched}
+                isCommentSubmitting={isUpdatingRating}
               />
             </div>
 

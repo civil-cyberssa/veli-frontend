@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Star, Check, Bookmark, MonitorCheck } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,29 +9,36 @@ interface LessonDescriptionCardProps {
   title?: string;
   description?: string;
   initialRating?: number | null;
+  initialComment?: string;
   isWatched?: boolean;
   isSaved?: boolean;
   onRatingChange?: (rating: number) => void;
+  onSubmitComment?: (comment: string) => Promise<void> | void;
   onMarkAsWatched?: () => void;
   onToggleSave?: () => void;
   disabled?: boolean;
   ratingDisabled?: boolean;
+  isCommentSubmitting?: boolean;
 }
 
 export function LessonDescriptionCard({
   title = "Meu primeiro algoritmo",
   description = "Neste vídeo, aprendemos a criar nosso primeiro código no Scratch, resolvendo problemas através de blocos de programação. A tarefa era fazer um gatinho dizer e perguntar o nome do usuário. Exploramos os blocos de movimento, aparência, eventos, sensores e operadores para manipular dados e criar interações. Compreendemos a importância dos algoritmos, sequências lógicas de passos para resolver problemas. Programar envolve entender e processar dados para gerar saídas úteis, como nas redes sociais.",
   initialRating = null,
+  initialComment = "",
   isWatched = false,
   isSaved = false,
   onRatingChange,
+  onSubmitComment,
   onMarkAsWatched,
   onToggleSave,
   disabled = false,
   ratingDisabled = false,
+  isCommentSubmitting = false,
 }: LessonDescriptionCardProps) {
   const [rating, setRating] = useState<number>(initialRating || 0);
   const [hoverRating, setHoverRating] = useState<number>(0);
+  const [comment, setComment] = useState(initialComment);
   const [watched, setWatched] = useState(isWatched);
   const [saved, setSaved] = useState(isSaved);
 
@@ -46,6 +52,10 @@ export function LessonDescriptionCard({
   useEffect(() => {
     setRating(initialRating || 0);
   }, [initialRating]);
+
+  useEffect(() => {
+    setComment(initialComment || "");
+  }, [initialComment]);
 
   const handleRatingClick = (value: number) => {
     if (disabled || ratingDisabled) return;
@@ -65,6 +75,12 @@ export function LessonDescriptionCard({
     onToggleSave?.();
   };
 
+  const handleSubmitComment = async () => {
+    if (disabled || isCommentSubmitting || !onSubmitComment) return;
+
+    await onSubmitComment(comment);
+  };
+
   return (
     <div className="space-y-6 p-2">
       {/* Título */}
@@ -78,6 +94,32 @@ export function LessonDescriptionCard({
           <p className="text-sm text-muted-foreground leading-relaxed mt-4">
             {description}
           </p>
+
+          <div className="mt-6 space-y-3">
+            <label className="text-sm font-medium text-foreground" htmlFor="lesson-comment">
+              Deixe um comentário sobre esta aula
+            </label>
+            <textarea
+              id="lesson-comment"
+              className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="Compartilhe seu feedback ou dúvidas sobre a aula"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              disabled={disabled || isCommentSubmitting}
+            />
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={handleSubmitComment}
+                disabled={disabled || isCommentSubmitting}
+                className="min-w-[180px]"
+              >
+                {isCommentSubmitting ? "Enviando..." : "Enviar comentário"}
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Coluna direita: Card com Rating e Ações */}
