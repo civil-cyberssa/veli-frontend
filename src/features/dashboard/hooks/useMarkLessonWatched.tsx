@@ -29,14 +29,18 @@ export function useMarkLessonWatched(): UseMarkLessonWatchedReturn {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/student-portal/event-progress/${eventId}/lessons/${lessonId}/mark-watched/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/student-portal/event-progress/update/${eventId}/`,
         {
-          method: 'POST',
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access}`,
           },
           credentials: 'include',
+          body: JSON.stringify({
+            lesson_id: lessonId,
+            watched: true,
+          }),
         }
       )
 
