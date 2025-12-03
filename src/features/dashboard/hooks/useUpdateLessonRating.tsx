@@ -30,7 +30,9 @@ export function useUpdateLessonRating(): UseUpdateLessonRatingReturn {
     setError(null)
 
     try {
-      const body: any = {}
+      const body: any = {
+        lesson_id: lessonId,
+      }
 
       if (rating !== undefined) {
         body.rating = rating
@@ -41,7 +43,7 @@ export function useUpdateLessonRating(): UseUpdateLessonRatingReturn {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/student-portal/event-progress/${eventId}/lessons/${lessonId}/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/student-portal/event-progress/update/${eventId}/`,
         {
           method: 'PATCH',
           headers: {
