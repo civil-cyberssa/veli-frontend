@@ -41,6 +41,10 @@ export function LessonDescriptionCard({
     }
   }, [isWatched, watched]);
 
+  useEffect(() => {
+    setRating(initialRating || 0);
+  }, [initialRating]);
+
   const handleRatingClick = (value: number) => {
     if (disabled) return;
     setRating(value);

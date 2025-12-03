@@ -72,6 +72,19 @@ export default function LessonPage() {
     if (!currentLesson) return
 
     try {
+      await refetchProgress(
+        (currentLessons) =>
+          currentLessons?.map((lesson) =>
+            lesson.lesson_id === selectedLessonId
+              ? {
+                  ...lesson,
+                  rating,
+                }
+              : lesson
+          ) ?? currentLessons,
+        { revalidate: false }
+      )
+
       await updateRating({
         eventId: currentLesson.event_id,
         lessonId: selectedLessonId,
@@ -84,6 +97,7 @@ export default function LessonPage() {
       console.log('Avaliação salva com sucesso')
     } catch (err) {
       console.error('Erro ao salvar avaliação:', err)
+      refetchProgress()
     }
   }
 
