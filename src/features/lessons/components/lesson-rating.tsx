@@ -42,10 +42,7 @@ export function LessonDescriptionCard({
 }: LessonDescriptionCardProps) {
   const { data: session } = useSession();
   const displayName = useMemo(
-    () =>
-      session?.student_full_name ||
-      session?.user?.name ||
-      "Você",
+    () => session?.user?.name || session?.student_full_name || "Aluno",
     [session]
   );
   const displayImage = session?.profile_pic_url || session?.user?.image || "";
@@ -59,6 +56,7 @@ export function LessonDescriptionCard({
   const [watched, setWatched] = useState(isWatched);
   const [saved, setSaved] = useState(isSaved);
 
+  const isCommentEmpty = !commentInput.trim();
   const initials = useMemo(() => getInitials(displayName), [displayName]);
 
   // Sincronizar estado local com prop, mas só permitir mudança de false para true
@@ -96,7 +94,7 @@ export function LessonDescriptionCard({
   };
 
   const handleSubmitComment = async () => {
-    if (disabled || isCommentSubmitting || !onSubmitComment) return;
+    if (disabled || isCommentSubmitting || !onSubmitComment || isCommentEmpty) return;
 
     await onSubmitComment(commentInput);
     setSavedComment(commentInput);
@@ -166,14 +164,23 @@ export function LessonDescriptionCard({
                 value={commentInput}
                 onChange={(e) => setCommentInput(e.target.value)}
                 disabled={disabled || isCommentSubmitting}
+                maxLength={500}
               />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  {isCommentEmpty
+                    ? "Digite algo para enviar seu comentário."
+                    : "Pronto para enviar seu feedback."}
+                </span>
+                <span>{commentInput.length}/500</span>
+              </div>
               <div className="flex justify-end">
                 <Button
                   type="button"
                   variant="default"
                   size="sm"
                   onClick={handleSubmitComment}
-                  disabled={disabled || isCommentSubmitting}
+                  disabled={disabled || isCommentSubmitting || isCommentEmpty}
                   className="min-w-[180px]"
                 >
                   {isCommentSubmitting ? "Enviando..." : "Enviar comentário"}
