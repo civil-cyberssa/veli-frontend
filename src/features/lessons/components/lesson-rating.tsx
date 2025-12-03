@@ -26,7 +26,7 @@ interface LessonDescriptionCardProps {
 
 export function LessonDescriptionCard({
   title = "Meu primeiro algoritmo",
-  description = "Neste vídeo, aprendemos a criar nosso primeiro código no Scratch, resolvendo problemas através de blocos de programação. A tarefa era fazer um gatinho dizer e perguntar o nome do usuário. Exploramos os blocos de movimento, aparência, eventos, sensores e operadores para manipular dados e criar interações. Compreendemos a importância dos algoritmos, sequências lógicas de passos para resolver problemas. Programar envolve entender e processar dados para gerar saídas úteis, como nas redes sociais.",
+  description = "Neste vídeo, aprendemos a criar nosso primeiro código no Scratch.",
   initialRating = null,
   initialComment = "",
   courseName,
