@@ -27,8 +27,15 @@ export default function LessonPage() {
     setAutoplay(checked)
   }
   const { data: eventProgress, isLoading: isProgressLoading, refetch: refetchProgress } = useEventProgress(courseId)
-  const { data: lesson, isLoading, error } = useLesson(
-    selectedLessonId ? String(selectedLessonId) : null
+
+  // Buscar o event_id da lição selecionada
+  const selectedLessonEventId = selectedLessonId
+    ? eventProgress?.find((l) => l.lesson_id === selectedLessonId)?.event_id
+    : undefined
+
+  const { data: lesson, isLoading, error, refetch: refetchLesson } = useLesson(
+    selectedLessonId ? String(selectedLessonId) : null,
+    selectedLessonEventId
   )
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
 
@@ -94,8 +101,9 @@ export default function LessonPage() {
 
   const handleCloseQuiz = () => {
     setQuizState(null)
-    // Refetch para atualizar o score se necessário
+    // Refetch para atualizar o score e o status de conclusão
     refetchProgress()
+    refetchLesson()
   }
 
   const isLessonLoading = (isLoading || isProgressLoading || !selectedLessonId) && !lesson
