@@ -58,6 +58,13 @@ export default function LessonPage() {
     }
   }, [eventProgress, selectedLessonId])
 
+  useEffect(() => {
+    if (!selectedLessonId) return
+
+    refetchLesson()
+    refetchProgress()
+  }, [selectedLessonId, refetchLesson, refetchProgress])
+
   const handleRatingChange = async (rating: number) => {
     if (!selectedLessonId || !eventProgress) return
 
