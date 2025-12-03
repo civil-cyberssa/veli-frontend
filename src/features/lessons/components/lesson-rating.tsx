@@ -53,6 +53,7 @@ export function LessonDescriptionCard({
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [commentInput, setCommentInput] = useState(initialComment);
   const [savedComment, setSavedComment] = useState(initialComment);
+  const [isEditingComment, setIsEditingComment] = useState(!initialComment);
   const [watched, setWatched] = useState(isWatched);
   const [saved, setSaved] = useState(isSaved);
 
@@ -73,6 +74,7 @@ export function LessonDescriptionCard({
   useEffect(() => {
     setCommentInput(initialComment || "");
     setSavedComment(initialComment || "");
+    setIsEditingComment(!initialComment);
   }, [initialComment]);
 
   const handleRatingClick = (value: number) => {
@@ -96,8 +98,12 @@ export function LessonDescriptionCard({
   const handleSubmitComment = async () => {
     if (disabled || isCommentSubmitting || !onSubmitComment || isCommentEmpty) return;
 
-    await onSubmitComment(commentInput);
-    setSavedComment(commentInput);
+    const trimmedComment = commentInput.trim();
+
+    await onSubmitComment(trimmedComment);
+    setSavedComment(trimmedComment);
+    setCommentInput("");
+    setIsEditingComment(false);
   };
 
   return (
@@ -154,38 +160,83 @@ export function LessonDescriptionCard({
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground" htmlFor="lesson-comment">
-                Deixe um comentário sobre esta aula
-              </label>
-              <textarea
-                id="lesson-comment"
-                className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Compartilhe seu feedback ou dúvidas sobre a aula"
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                disabled={disabled || isCommentSubmitting}
-                maxLength={500}
-              />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {isCommentEmpty
-                    ? "Digite algo para enviar seu comentário."
-                    : "Pronto para enviar seu feedback."}
-                </span>
-                <span>{commentInput.length}/500</span>
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm font-medium text-foreground" htmlFor="lesson-comment">
+                  Deixe um comentário sobre esta aula
+                </label>
+                {savedComment && !isEditingComment && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingComment(true);
+                      setCommentInput(savedComment);
+                    }}
+                    disabled={disabled}
+                  >
+                    Editar comentário
+                  </Button>
+                )}
               </div>
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  onClick={handleSubmitComment}
-                  disabled={disabled || isCommentSubmitting || isCommentEmpty}
-                  className="min-w-[180px]"
-                >
-                  {isCommentSubmitting ? "Enviando..." : "Enviar comentário"}
-                </Button>
-              </div>
+
+              {(!savedComment || isEditingComment) && (
+                <>
+                  <textarea
+                    id="lesson-comment"
+                    className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Compartilhe seu feedback ou dúvidas sobre a aula"
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    disabled={disabled || isCommentSubmitting}
+                    maxLength={500}
+                  />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {isCommentEmpty
+                        ? "Digite algo para enviar seu comentário."
+                        : savedComment
+                        ? "Atualize seu comentário enviado."
+                        : "Pronto para enviar seu feedback."}
+                    </span>
+                    <span>{commentInput.length}/500</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    {savedComment && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditingComment(false);
+                          setCommentInput("");
+                        }}
+                        disabled={disabled || isCommentSubmitting}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={handleSubmitComment}
+                      disabled={disabled || isCommentSubmitting || isCommentEmpty}
+                      className="min-w-[180px]"
+                    >
+                      {isCommentSubmitting
+                        ? "Enviando..."
+                        : savedComment
+                        ? "Salvar comentário"
+                        : "Enviar comentário"}
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {savedComment && !isEditingComment && (
+                <p className="text-xs text-muted-foreground">Você já enviou um comentário. Clique em “Editar comentário” para atualizar.</p>
+              )}
             </div>
           </div>
         </div>
