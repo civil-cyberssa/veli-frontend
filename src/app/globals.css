@@ -54,7 +54,7 @@
   --popover-foreground: oklch(0.141 0.005 285.823);
   
   /* 🔴 COR PRIMÁRIA: #F2542D (Laranja/Vermelho) */
-  --primary: oklch(0.656 0.201 34.773);
+  --primary: oklch(86.305% 0.15256 177.535);
   --primary-foreground: oklch(1 0 0);
   
   /* 🔵 COR SECUNDÁRIA: #0f9d9c (Verde-azulado/Turquesa) */
@@ -89,7 +89,7 @@
 }
 
 .dark {
-  --background: oklch(18.264% 0.00204 286.052 / 0.877);
+  --background: oklch(18.264% 0.00204 286.052);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
   --card-foreground: oklch(0.985 0 0);
