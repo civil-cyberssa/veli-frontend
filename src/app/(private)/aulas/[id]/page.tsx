@@ -110,8 +110,20 @@ export default function LessonPage() {
         lessonId: selectedLessonId,
       })
 
-      // Recarregar o progresso para atualizar a UI
-      await refetchProgress()
+      // Atualizar cache local imediatamente e revalidar com a API
+      await refetchProgress(
+        (currentLessons) =>
+          currentLessons?.map((lesson) =>
+            lesson.lesson_id === selectedLessonId
+              ? {
+                  ...lesson,
+                  watched: true,
+                  watched_at: new Date().toISOString(),
+                }
+              : lesson
+          ) ?? currentLessons,
+        { revalidate: true }
+      )
 
       console.log('Aula marcada como assistida com sucesso')
     } catch (err) {

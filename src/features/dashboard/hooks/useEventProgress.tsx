@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import useSWR from 'swr'
+import useSWR, { type KeyedMutator } from 'swr'
 
 export interface LessonProgress {
   event_id: number
@@ -28,7 +28,7 @@ export interface UseEventProgressReturn {
   data: LessonProgress[] | null
   isLoading: boolean
   error: Error | null
-  refetch: () => void
+  refetch: KeyedMutator<LessonProgress[]>
 }
 
 const fetcher = async (url: string, token: string): Promise<LessonProgress[]> => {
@@ -61,9 +61,11 @@ export function useEventProgress(eventId: string | null): UseEventProgressReturn
       : null,
     ([url, token]: [string, string]) => fetcher(url, token),
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      dedupingInterval: 60000, // 1 minuto
+      revalidateIfStale: true,
+      revalidateOnMount: true,
+      dedupingInterval: 0,
     }
   )
 
