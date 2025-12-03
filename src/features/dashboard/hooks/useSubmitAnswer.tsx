@@ -4,14 +4,19 @@ import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 
 interface SubmitAnswerParams {
-  eventId: number
+  subscriptionId: number
+  exerciseId: number
   questionId: number
+  eventId: number
   answer: 'A' | 'B' | 'C' | 'D'
 }
 
 interface SubmitAnswerResponse {
   id: number
-  question_id: number
+  subscription: number
+  exercise: number
+  question: number
+  event: number
   answer: string
   is_correct: boolean
   created_at: string
@@ -29,7 +34,13 @@ export function useSubmitAnswer(): UseSubmitAnswerReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const submitAnswer = async ({ eventId, questionId, answer }: SubmitAnswerParams): Promise<SubmitAnswerResponse> => {
+  const submitAnswer = async ({
+    subscriptionId,
+    exerciseId,
+    questionId,
+    eventId,
+    answer
+  }: SubmitAnswerParams): Promise<SubmitAnswerResponse> => {
     if (!session?.access) {
       throw new Error('Usuário não autenticado')
     }
@@ -39,7 +50,7 @@ export function useSubmitAnswer(): UseSubmitAnswerReturn {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/student-portal/exercises/${eventId}/questions/${questionId}/answer/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/student-portal/exercise-answers/`,
         {
           method: 'POST',
           headers: {
@@ -47,7 +58,13 @@ export function useSubmitAnswer(): UseSubmitAnswerReturn {
             'Authorization': `Bearer ${session.access}`,
           },
           credentials: 'include',
-          body: JSON.stringify({ answer }),
+          body: JSON.stringify({
+            subscription: subscriptionId,
+            exercise: exerciseId,
+            question: questionId,
+            event: eventId,
+            answer,
+          }),
         }
       )
 

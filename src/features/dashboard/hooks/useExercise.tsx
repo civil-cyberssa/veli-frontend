@@ -26,6 +26,7 @@ export interface Answer {
 export interface ExerciseData {
   event_id: number
   lesson_id: number
+  subscription_id?: number
   exercise: {
     id: number
     name: string

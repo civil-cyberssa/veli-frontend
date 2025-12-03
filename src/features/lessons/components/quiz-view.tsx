@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, X, CheckCircle2, XCircle } from 'lucide-react'
+import { X, CheckCircle2, XCircle } from 'lucide-react'
 import { useExercise, Question, Answer } from '@/src/features/dashboard/hooks/useExercise'
 import { useSubmitAnswer } from '@/src/features/dashboard/hooks/useSubmitAnswer'
 
@@ -25,7 +24,6 @@ export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
     isCorrect: boolean
     correctAnswer?: string
   }>>(new Map())
-  const [showResult, setShowResult] = useState(false)
 
   const currentQuestion = exercise?.questions[currentQuestionIndex]
   const totalQuestions = exercise?.questions.length || 0
@@ -62,12 +60,17 @@ export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
   }
 
   const handleSubmitAnswer = async () => {
-    if (!currentQuestion || !selectedAnswer || hasAnsweredCurrent) return
+    if (!currentQuestion || !selectedAnswer || hasAnsweredCurrent || !exercise) return
+
+    // Usar subscription_id do exercício ou valor padrão
+    const subscriptionId = exercise.subscription_id || 1
 
     try {
       const result = await submitAnswer({
-        eventId,
+        subscriptionId,
+        exerciseId: exercise.exercise.id,
         questionId: currentQuestion.id,
+        eventId: exercise.event_id,
         answer: selectedAnswer,
       })
 
@@ -108,48 +111,45 @@ export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
     }
   }
 
-  const handleSkipQuestion = () => {
-    if (!isLastQuestion) {
-      handleNextQuestion()
-    }
-  }
+  const getOptionClassName = (option: 'A' | 'B' | 'C' | 'D') => {
+    const isSelected = selectedAnswer === option
 
-  const getAnswerClassName = (option: 'A' | 'B' | 'C' | 'D') => {
     if (!hasAnsweredCurrent) {
       return cn(
-        'w-full p-4 text-left border-2 rounded-lg transition-all cursor-pointer',
-        'hover:border-primary/50 hover:bg-primary/5',
-        selectedAnswer === option
-          ? 'border-primary bg-primary/10 text-primary'
-          : 'border-border/50 bg-card'
+        'w-full flex items-center justify-between gap-4 p-4 rounded-lg transition-all cursor-pointer group',
+        'bg-card border border-border/50',
+        isSelected
+          ? 'border-primary bg-primary/5'
+          : 'hover:border-border hover:bg-muted/30'
       )
     }
 
     const questionAnswer = answeredQuestions.get(currentQuestion!.id)
-    const isSelected = questionAnswer?.answer === option
     const isCorrectAnswer = questionAnswer?.correctAnswer === option
+    const isUserAnswer = questionAnswer?.answer === option
 
     return cn(
-      'w-full p-4 text-left border-2 rounded-lg transition-all',
-      isCorrectAnswer && 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400',
-      isSelected && !questionAnswer?.isCorrect && 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400',
-      !isSelected && !isCorrectAnswer && 'border-border/30 bg-card/50 opacity-60 cursor-not-allowed'
+      'w-full flex items-center justify-between gap-4 p-4 rounded-lg transition-all',
+      'bg-card border',
+      isCorrectAnswer && 'border-green-500/50 bg-green-500/5',
+      isUserAnswer && !questionAnswer?.isCorrect && 'border-red-500/50 bg-red-500/5',
+      !isCorrectAnswer && !isUserAnswer && 'border-border/30 opacity-60'
     )
   }
 
-  const getAnswerIcon = (option: 'A' | 'B' | 'C' | 'D') => {
+  const getOptionIcon = (option: 'A' | 'B' | 'C' | 'D') => {
     if (!hasAnsweredCurrent) return null
 
     const questionAnswer = answeredQuestions.get(currentQuestion!.id)
-    const isSelected = questionAnswer?.answer === option
     const isCorrectAnswer = questionAnswer?.correctAnswer === option
+    const isUserAnswer = questionAnswer?.answer === option
 
     if (isCorrectAnswer) {
-      return <CheckCircle2 className="h-5 w-5 text-green-500" />
+      return <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
     }
 
-    if (isSelected && !questionAnswer?.isCorrect) {
-      return <XCircle className="h-5 w-5 text-red-500" />
+    if (isUserAnswer && !questionAnswer?.isCorrect) {
+      return <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
     }
 
     return null
@@ -198,7 +198,7 @@ export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
               <div>
                 <h1 className="text-lg font-semibold text-foreground">{exercise.exercise.name}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {answeredQuestions.size} de {totalQuestions} questões respondidas
+                  Questão {currentQuestionIndex + 1} de {totalQuestions}
                 </p>
               </div>
             </div>
@@ -217,86 +217,104 @@ export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
         {/* Content */}
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-3xl space-y-8">
-            {/* Question */}
-            <div className="space-y-6">
-              <div className="text-center space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Questão {currentQuestionIndex + 1} de {totalQuestions}
-                </p>
-                <h2 className="text-2xl font-semibold text-foreground">
-                  {currentQuestion.statement || currentQuestion.name}
-                </h2>
-              </div>
+            {/* Question Title */}
+            <div>
+              <h2 className="text-xl font-normal text-foreground/90 leading-relaxed">
+                {currentQuestion.statement || currentQuestion.name}
+              </h2>
+            </div>
 
-              {/* Options */}
-              <div className="space-y-3">
-                {(['A', 'B', 'C', 'D'] as const).map((option) => (
+            {/* Options */}
+            <div className="space-y-3">
+              {(['A', 'B', 'C', 'D'] as const).map((option, index) => {
+                const isSelected = selectedAnswer === option
+                const answerText = currentQuestion[`answer_${option.toLowerCase()}` as keyof Question] as string
+
+                return (
                   <button
                     key={option}
                     onClick={() => handleSelectAnswer(option)}
                     disabled={hasAnsweredCurrent || isSubmitting}
-                    className={getAnswerClassName(option)}
+                    className={getOptionClassName(option)}
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-current flex items-center justify-center font-semibold">
-                          {option}
-                        </span>
-                        <span className="text-base">
-                          {currentQuestion[`answer_${option.toLowerCase()}` as keyof Question] as string}
-                        </span>
+                    <div className="flex items-center gap-3 flex-1">
+                      {/* Radio Button */}
+                      <div className={cn(
+                        'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0',
+                        isSelected
+                          ? 'border-primary'
+                          : 'border-muted-foreground/30 group-hover:border-muted-foreground/50'
+                      )}>
+                        {isSelected && (
+                          <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                        )}
                       </div>
-                      {getAnswerIcon(option)}
+
+                      {/* Answer Text */}
+                      <span className="text-base text-left text-foreground/90">
+                        {answerText}
+                      </span>
+                    </div>
+
+                    {/* Right side: Number or Icon */}
+                    <div className="flex items-center gap-3">
+                      {getOptionIcon(option)}
+                      <span className={cn(
+                        'text-sm font-medium w-6 h-6 rounded flex items-center justify-center',
+                        'bg-muted/50 text-muted-foreground'
+                      )}>
+                        {index + 1}
+                      </span>
                     </div>
                   </button>
-                ))}
-              </div>
+                )
+              })}
+            </div>
 
-              {/* Submit Button */}
-              {!hasAnsweredCurrent && (
-                <div className="flex gap-3 pt-4">
+            {/* Action Buttons */}
+            {!hasAnsweredCurrent && (
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={!selectedAnswer || isSubmitting}
+                  className="flex-1 h-12 cursor-pointer"
+                  size="lg"
+                >
+                  {isSubmitting ? 'Enviando...' : 'Confirmar resposta'}
+                </Button>
+                {!isLastQuestion && (
                   <Button
-                    onClick={handleSubmitAnswer}
-                    disabled={!selectedAnswer || isSubmitting}
-                    className="flex-1 h-12 cursor-pointer"
+                    onClick={handleNextQuestion}
+                    variant="outline"
+                    className="cursor-pointer"
                     size="lg"
                   >
-                    {isSubmitting ? 'Enviando...' : 'Confirmar resposta'}
+                    Pular questão
                   </Button>
-                  {!isLastQuestion && (
-                    <Button
-                      onClick={handleSkipQuestion}
-                      variant="outline"
-                      className="cursor-pointer"
-                      size="lg"
-                    >
-                      Pular questão
-                    </Button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
+            )}
 
-              {/* Feedback after answering */}
-              {hasAnsweredCurrent && (
-                <div className={cn(
-                  'p-4 rounded-lg border-2',
+            {/* Feedback after answering */}
+            {hasAnsweredCurrent && (
+              <div className={cn(
+                'p-4 rounded-lg border-2 text-center',
+                answeredQuestions.get(currentQuestion.id)?.isCorrect
+                  ? 'bg-green-500/10 border-green-500/30'
+                  : 'bg-red-500/10 border-red-500/30'
+              )}>
+                <p className={cn(
+                  'font-medium',
                   answeredQuestions.get(currentQuestion.id)?.isCorrect
-                    ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-red-500/10 border-red-500/30'
+                    ? 'text-green-700 dark:text-green-400'
+                    : 'text-red-700 dark:text-red-400'
                 )}>
-                  <p className={cn(
-                    'text-center font-medium',
-                    answeredQuestions.get(currentQuestion.id)?.isCorrect
-                      ? 'text-green-700 dark:text-green-400'
-                      : 'text-red-700 dark:text-red-400'
-                  )}>
-                    {answeredQuestions.get(currentQuestion.id)?.isCorrect
-                      ? '✓ Resposta correta!'
-                      : '✗ Resposta incorreta'}
-                  </p>
-                </div>
-              )}
-            </div>
+                  {answeredQuestions.get(currentQuestion.id)?.isCorrect
+                    ? '✓ Resposta correta!'
+                    : '✗ Resposta incorreta'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -304,54 +322,44 @@ export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
         <div className="border-t border-border/50 bg-card/50 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                onClick={handlePreviousQuestion}
-                disabled={currentQuestionIndex === 0}
-                className="gap-2 cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
-
-              {/* Progress dots */}
-              <div className="flex items-center gap-2">
-                {Array.from({ length: totalQuestions }).map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentQuestionIndex(index)}
-                    className={cn(
-                      'h-2 rounded-full transition-all cursor-pointer',
-                      index === currentQuestionIndex ? 'w-8 bg-primary' : 'w-2',
-                      answeredQuestions.has(exercise.questions[index].id)
-                        ? 'bg-green-500'
-                        : index === currentQuestionIndex
-                        ? 'bg-primary'
-                        : 'bg-border'
-                    )}
-                    aria-label={`Ir para questão ${index + 1}`}
-                  />
-                ))}
+              <div className="text-sm text-muted-foreground">
+                <span className="font-mono font-semibold text-foreground">
+                  {String(currentQuestionIndex + 1).padStart(2, '0')}
+                </span>
+                {' / '}
+                <span className="font-mono">
+                  {String(totalQuestions).padStart(2, '0')}
+                </span>
               </div>
 
-              {isLastQuestion && allQuestionsAnswered ? (
+              <div className="flex gap-2">
                 <Button
-                  onClick={onClose}
-                  className="gap-2 cursor-pointer"
+                  variant="outline"
+                  onClick={handlePreviousQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className="cursor-pointer"
                 >
-                  Finalizar
+                  Anterior
                 </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  onClick={handleNextQuestion}
-                  disabled={currentQuestionIndex === totalQuestions - 1}
-                  className="gap-2 cursor-pointer"
-                >
-                  Próxima
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
+
+                {isLastQuestion && allQuestionsAnswered ? (
+                  <Button
+                    onClick={onClose}
+                    className="cursor-pointer"
+                  >
+                    Finalizar
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={handleNextQuestion}
+                    disabled={currentQuestionIndex === totalQuestions - 1}
+                    className="cursor-pointer"
+                  >
+                    Próxima
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
