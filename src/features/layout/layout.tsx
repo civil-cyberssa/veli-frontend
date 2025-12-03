@@ -33,6 +33,14 @@ export default function Layout({children}: {children: React.ReactNode}) {
   const pathname = usePathname()
   const breadcrumb = routeBreadcrumbs[pathname] || routeBreadcrumbs["/home"]
 
+  // Detectar se está no ambiente de aprendizagem (página de aulas)
+  const isLessonPage = pathname.startsWith('/aulas')
+
+  // Se estiver na página de aulas, ocultar completamente o layout com sidebar
+  if (isLessonPage) {
+    return <>{children}</>
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
