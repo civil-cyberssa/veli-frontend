@@ -179,7 +179,7 @@ export function QuizView({ eventId, exerciseName, subscriptionId, onClose }: Qui
   const correctAnswersCount = Array.from(answeredQuestions.values()).filter(a => a.isCorrect).length
 
   return (
-    <div className="fixed inset-0 bg-background z-50 overflow-auto">
+    <div className="fixed inset-0 bg-muted z-50 overflow-auto">
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
