@@ -192,9 +192,10 @@ export function useLesson(
       : null,
     ([url, token, evtId]: [string, string, number | undefined]) => fetcher(url, token, evtId),
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      dedupingInterval: 60000, // 1 minuto
+      revalidateIfStale: true,
+      dedupingInterval: 0,
     }
   )
 
