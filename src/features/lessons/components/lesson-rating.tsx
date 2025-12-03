@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, Check, Bookmark, MonitorCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,13 @@ export function LessonDescriptionCard({
   const [watched, setWatched] = useState(isWatched);
   const [saved, setSaved] = useState(isSaved);
 
+  // Sincronizar estado local com prop, mas só permitir mudança de false para true
+  useEffect(() => {
+    if (isWatched && !watched) {
+      setWatched(true);
+    }
+  }, [isWatched, watched]);
+
   const handleRatingClick = (value: number) => {
     if (disabled) return;
     setRating(value);
@@ -41,8 +48,8 @@ export function LessonDescriptionCard({
   };
 
   const handleMarkAsWatched = () => {
-    if (disabled) return;
-    setWatched(!watched);
+    if (disabled || watched) return; // Não permite desmarcar se já está assistida
+    setWatched(true); // Sempre marca como true, nunca false
     onMarkAsWatched?.();
   };
 
@@ -75,20 +82,20 @@ export function LessonDescriptionCard({
               variant="outline"
               size="default"
               onClick={handleMarkAsWatched}
-              disabled={disabled}
+              disabled={disabled || watched}
               className={cn(
-                "gap-2 transition-all cursor-pointer flex-1 h-10",
-                watched &&
-                  "bg-success/10 border-success/30 text-success hover:bg-success/20"
+                "gap-2 transition-all flex-1 h-10",
+                watched
+                  ? "bg-success/10 border-success/30 text-success hover:bg-success/10 cursor-default"
+                  : "cursor-pointer"
               )}
             >
-              <MonitorCheck
-                className={cn(
-                  "h-4 w-4 text-success",
-                  watched && "animate-in zoom-in-50"
-                )}
-              />
-              Marcar como assistida
+              {watched ? (
+                <Check className="h-4 w-4 text-success animate-in zoom-in-50" />
+              ) : (
+                <MonitorCheck className="h-4 w-4 text-success" />
+              )}
+              {watched ? "Aula assistida" : "Marcar como assistida"}
             </Button>
 
             <Button

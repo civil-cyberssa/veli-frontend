@@ -180,8 +180,14 @@ export default function LessonPage() {
             {/* Rating */}
             <div className="animate-slide-up animate-delay-200">
               <LessonDescriptionCard
+                title={lesson?.lesson_name}
                 initialRating={lesson?.rating ?? null}
+                isWatched={
+                  eventProgress?.find((l) => l.lesson_id === selectedLessonId)
+                    ?.watched ?? false
+                }
                 onRatingChange={handleRatingChange}
+                onMarkAsWatched={handleMarkAsWatched}
               />
             </div>
 
