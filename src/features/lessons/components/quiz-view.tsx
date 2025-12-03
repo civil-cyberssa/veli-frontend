@@ -10,10 +10,11 @@ import { useSubmitAnswer } from '@/src/features/dashboard/hooks/useSubmitAnswer'
 interface QuizViewProps {
   eventId: number
   exerciseName: string
+  subscriptionId: number
   onClose: () => void
 }
 
-export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
+export function QuizView({ eventId, exerciseName, subscriptionId, onClose }: QuizViewProps) {
   const { data: exercise, isLoading, refetch } = useExercise(eventId)
   const { submitAnswer, isLoading: isSubmitting } = useSubmitAnswer()
 
@@ -61,9 +62,6 @@ export function QuizView({ eventId, exerciseName, onClose }: QuizViewProps) {
 
   const handleSubmitAnswer = async () => {
     if (!currentQuestion || !selectedAnswer || hasAnsweredCurrent || !exercise) return
-
-    // Usar subscription_id do exercício ou valor padrão
-    const subscriptionId = exercise.subscription_id || 1
 
     try {
       const result = await submitAnswer({

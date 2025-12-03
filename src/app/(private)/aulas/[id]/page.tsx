@@ -262,6 +262,7 @@ export default function LessonPage() {
         <QuizView
           eventId={quizState.eventId}
           exerciseName={quizState.name}
+          subscriptionId={parseInt(courseId)}
           onClose={handleCloseQuiz}
         />
       )}
