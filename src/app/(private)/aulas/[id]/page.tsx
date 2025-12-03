@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
+import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
@@ -18,14 +19,16 @@ export default function LessonPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [autoplay, setAutoplay] = useState(true)
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
+  const hasMarkedWatched = useRef<Set<number>>(new Set())
 
   const handleAutoplayChange = (checked: boolean) => {
     setAutoplay(checked)
   }
-  const { data: eventProgress, isLoading: isProgressLoading } = useEventProgress(courseId)
+  const { data: eventProgress, isLoading: isProgressLoading, refetch: refetchProgress } = useEventProgress(courseId)
   const { data: lesson, isLoading, error } = useLesson(
     selectedLessonId ? String(selectedLessonId) : null
   )
+  const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
@@ -47,6 +50,40 @@ export default function LessonPage() {
   const handleRatingChange = async (rating: number) => {
     // TODO: Implementar chamada à API para salvar o rating
     console.log('Rating changed to:', rating)
+  }
+
+  const handleMarkAsWatched = async () => {
+    if (!selectedLessonId || !eventProgress) return
+
+    const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
+    if (!currentLesson || currentLesson.watched) {
+      // Já está marcada como assistida, não precisa chamar a API novamente
+      return
+    }
+
+    // Verificar se já tentamos marcar esta aula nesta sessão
+    if (hasMarkedWatched.current.has(selectedLessonId)) {
+      return
+    }
+
+    // Marcar como já processada para evitar chamadas duplicadas
+    hasMarkedWatched.current.add(selectedLessonId)
+
+    try {
+      await markAsWatched({
+        eventId: currentLesson.event_id,
+        lessonId: selectedLessonId,
+      })
+
+      // Recarregar o progresso para atualizar a UI
+      await refetchProgress()
+
+      console.log('Aula marcada como assistida com sucesso')
+    } catch (err) {
+      console.error('Erro ao marcar aula como assistida:', err)
+      // Em caso de erro, remover da lista para permitir nova tentativa
+      hasMarkedWatched.current.delete(selectedLessonId)
+    }
   }
 
   const isLessonLoading = (isLoading || isProgressLoading || !selectedLessonId) && !lesson
@@ -116,12 +153,14 @@ export default function LessonPage() {
                   url={lesson.content_url}
                   autoPlay={autoplay}
                   onProgress={(progress) => {
-                    // TODO: Salvar progresso da aula
-                    console.log('Progress:', progress)
+                    // Marcar como assistida quando atingir 90% do vídeo
+                    if (progress.played >= 0.9) {
+                      handleMarkAsWatched()
+                    }
                   }}
                   onEnded={() => {
-                    // TODO: Marcar aula como concluída
-                    console.log('Video ended')
+                    // Marcar aula como concluída quando o vídeo terminar
+                    handleMarkAsWatched()
                   }}
                 />
               ) : (
