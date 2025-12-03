@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
+import { useUpdateLessonRating } from '@/src/features/dashboard/hooks/useUpdateLessonRating'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
@@ -38,6 +39,7 @@ export default function LessonPage() {
     selectedLessonEventId
   )
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
+  const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
@@ -57,8 +59,25 @@ export default function LessonPage() {
   }, [eventProgress, selectedLessonId])
 
   const handleRatingChange = async (rating: number) => {
-    // TODO: Implementar chamada à API para salvar o rating
-    console.log('Rating changed to:', rating)
+    if (!selectedLessonId || !eventProgress) return
+
+    const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
+    if (!currentLesson) return
+
+    try {
+      await updateRating({
+        eventId: currentLesson.event_id,
+        lessonId: selectedLessonId,
+        rating,
+      })
+
+      // Recarregar o progresso para atualizar a UI
+      await refetchProgress()
+
+      console.log('Avaliação salva com sucesso')
+    } catch (err) {
+      console.error('Erro ao salvar avaliação:', err)
+    }
   }
 
   const handleMarkAsWatched = async () => {
@@ -201,7 +220,10 @@ export default function LessonPage() {
             <div className="animate-slide-up animate-delay-200">
               <LessonDescriptionCard
                 title={lesson?.lesson_name}
-                initialRating={lesson?.rating ?? null}
+                initialRating={
+                  eventProgress?.find((l) => l.lesson_id === selectedLessonId)
+                    ?.rating ?? null
+                }
                 isWatched={
                   eventProgress?.find((l) => l.lesson_id === selectedLessonId)
                     ?.watched ?? false
