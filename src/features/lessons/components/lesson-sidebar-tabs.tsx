@@ -182,7 +182,7 @@ function ModuleItem({
                       <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" style={{ animationDuration: '1.5s' }} />
                     </>
                   ) : lesson.watched ? (
-                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
                   ) : (
                     <Circle className="h-4 w-4 text-muted-foreground/30" />
                   )}
@@ -191,10 +191,10 @@ function ModuleItem({
                 {/* Nome da aula */}
                 <span className={cn(
                   "text-sm flex-1 text-left leading-snug",
-                  isCurrentLesson 
-                    ? "font-medium text-foreground" 
-                    : lesson.watched 
-                    ? "text-foreground/80" 
+                  isCurrentLesson
+                    ? "font-medium text-foreground"
+                    : lesson.watched
+                    ? "text-green-600 dark:text-green-500 font-medium"
                     : "text-muted-foreground"
                 )}>
                   {lesson.lesson_name}
@@ -203,8 +203,10 @@ function ModuleItem({
                 {/* Duração */}
                 <span className={cn(
                   "text-xs flex-shrink-0 font-mono",
-                  isCurrentLesson 
-                    ? "text-muted-foreground" 
+                  isCurrentLesson
+                    ? "text-muted-foreground"
+                    : lesson.watched
+                    ? "text-green-600/70 dark:text-green-500/70"
                     : "text-muted-foreground/60"
                 )}>
                   {formatDuration(estimatedDuration)}
