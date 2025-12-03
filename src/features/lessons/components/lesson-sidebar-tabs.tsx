@@ -21,6 +21,7 @@ interface LessonSidebarTabsProps {
   quiz?: Quiz
   onCollapsedChange?: (collapsed: boolean) => void
   onSelectLesson?: (lessonId: number) => void
+  onOpenQuiz?: (eventId: number, exerciseName: string) => void
 }
 
 type TabValue = 'conteudo' | 'material'
@@ -94,6 +95,7 @@ function ModuleItem({
   isExpanded,
   onToggle,
   onSelectLesson,
+  onOpenQuiz,
 }: {
   module: ModuleGroup
   index: number
@@ -101,6 +103,7 @@ function ModuleItem({
   isExpanded: boolean
   onToggle: () => void
   onSelectLesson?: (lessonId: number) => void
+  onOpenQuiz?: (eventId: number, exerciseName: string) => void
 }) {
   // Verificar se este módulo contém a aula atual
   const isCurrentModule = module.lessons.some((l) => l.lesson_id === currentLessonId)
@@ -220,8 +223,11 @@ function ModuleItem({
             <button
               className="w-full flex items-center gap-3 px-3 py-3 rounded-md transition-all bg-secondary/5 hover:bg-secondary/10 border border-secondary/20 mt-3 cursor-pointer"
               onClick={() => {
-                // TODO: Abrir quiz
-                console.log('Abrir quiz:', module.quiz?.id)
+                // Pegar o event_id da primeira aula do módulo
+                const eventId = module.lessons[0]?.event_id
+                if (eventId && module.quiz) {
+                  onOpenQuiz?.(eventId, module.quiz.name)
+                }
               }}
             >
               <div className="p-1.5 rounded-md bg-secondary/15 shrink-0">
@@ -251,6 +257,7 @@ export function LessonSidebarTabs({
   quiz,
   onCollapsedChange,
   onSelectLesson,
+  onOpenQuiz,
 }: LessonSidebarTabsProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<TabValue>('conteudo')
@@ -401,6 +408,7 @@ export function LessonSidebarTabs({
                 isExpanded={expandedModules.has(module.module_id)}
                 onToggle={() => toggleModule(module.module_id)}
                 onSelectLesson={onSelectLesson}
+                onOpenQuiz={onOpenQuiz}
               />
             ))}
           </div>

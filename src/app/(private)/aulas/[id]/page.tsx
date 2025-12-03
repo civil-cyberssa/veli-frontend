@@ -9,6 +9,7 @@ import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLess
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
+import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 
@@ -19,6 +20,7 @@ export default function LessonPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [autoplay, setAutoplay] = useState(true)
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
+  const [quizState, setQuizState] = useState<{ eventId: number; name: string } | null>(null)
   const hasMarkedWatched = useRef<Set<number>>(new Set())
 
   const handleAutoplayChange = (checked: boolean) => {
@@ -84,6 +86,16 @@ export default function LessonPage() {
       // Em caso de erro, remover da lista para permitir nova tentativa
       hasMarkedWatched.current.delete(selectedLessonId)
     }
+  }
+
+  const handleOpenQuiz = (eventId: number, exerciseName: string) => {
+    setQuizState({ eventId, name: exerciseName })
+  }
+
+  const handleCloseQuiz = () => {
+    setQuizState(null)
+    // Refetch para atualizar o score se necessário
+    refetchProgress()
   }
 
   const isLessonLoading = (isLoading || isProgressLoading || !selectedLessonId) && !lesson
@@ -226,10 +238,10 @@ export default function LessonPage() {
                   <LessonSidebarTabs
                     lessons={eventProgress}
                     currentLessonId={selectedLessonId}
-                    supportMaterialUrl={lesson.support_material_url}
-                    exercise={lesson.exercise}
+                    supportMaterialUrl={lesson?.support_material_url}
                     onCollapsedChange={setSidebarCollapsed}
                     onSelectLesson={setSelectedLessonId}
+                    onOpenQuiz={handleOpenQuiz}
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
@@ -244,6 +256,15 @@ export default function LessonPage() {
           </div>
         </div>
       </div>
+
+      {/* Quiz Modal/Overlay */}
+      {quizState && (
+        <QuizView
+          eventId={quizState.eventId}
+          exerciseName={quizState.name}
+          onClose={handleCloseQuiz}
+        />
+      )}
     </>
   )
 }
