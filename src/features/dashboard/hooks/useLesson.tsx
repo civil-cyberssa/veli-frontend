@@ -16,6 +16,7 @@ export interface Activity {
 export interface LessonApiResponse {
   lesson_id: number
   lesson_name: string
+  description?: string
   lesson_type: string
   order: number
   module: {
@@ -36,6 +37,7 @@ export interface LessonApiResponse {
 export interface Lesson {
   id: number
   lesson_name: string
+  description?: string
   lesson_type: string
   order: number
   module: {
@@ -64,10 +66,18 @@ export interface UseLessonReturn {
 }
 
 // Função para gerar atividades mock baseadas no exercício
-const generateMockActivities = (exercise?: { id: number; name: string; questions_count: number }): Activity[] => {
+const generateMockActivities = (
+  exercise?: { id: number; name: string; questions_count: number },
+  exerciseStatus?: { answers_count: number; score: number }
+): Activity[] => {
   if (!exercise) return []
 
   const activities: Activity[] = []
+
+  // Verificar se o quiz foi completado (todas as questões foram respondidas)
+  const quizCompleted = exerciseStatus
+    ? exerciseStatus.answers_count === exercise.questions_count
+    : false
 
   // Adicionar material de leitura como primeira atividade
   activities.push({
@@ -84,7 +94,8 @@ const generateMockActivities = (exercise?: { id: number; name: string; questions
     title: exercise.name,
     description: `Exercício com ${exercise.questions_count} questões`,
     type: 'quiz',
-    completed: false,
+    completed: quizCompleted,
+    score: quizCompleted && exerciseStatus ? exerciseStatus.score : undefined,
   })
 
   // Adicionar atividade complementar
@@ -99,7 +110,11 @@ const generateMockActivities = (exercise?: { id: number; name: string; questions
   return activities
 }
 
-const fetcher = async (url: string, token: string): Promise<Lesson | null> => {
+const fetcher = async (
+  url: string,
+  token: string,
+  eventId?: number
+): Promise<Lesson | null> => {
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -119,10 +134,41 @@ const fetcher = async (url: string, token: string): Promise<Lesson | null> => {
 
   const data: LessonApiResponse = await response.json()
 
+  // Buscar status do exercício se existir e se tivermos o event_id
+  let exerciseStatus: { answers_count: number; score: number } | undefined
+
+  if (data.exercise && eventId) {
+    try {
+      const exerciseResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/student-portal/exercises/${eventId}/`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          credentials: 'include',
+        }
+      )
+
+      if (exerciseResponse.ok) {
+        const exerciseData = await exerciseResponse.json()
+        exerciseStatus = {
+          answers_count: exerciseData.answers_count,
+          score: exerciseData.score,
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar status do exercício:', err)
+      // Continuar sem o status do exercício
+    }
+  }
+
   // Processar dados e adicionar mocks
   return {
     id: data.lesson_id,
     lesson_name: data.lesson_name,
+    description: data.description,
     lesson_type: data.lesson_type,
     order: data.order,
     module: data.module,
@@ -133,22 +179,26 @@ const fetcher = async (url: string, token: string): Promise<Lesson | null> => {
     // Mock data (será implementado depois via API)
     rating: null,
     comment: '',
-    activities: generateMockActivities(data.exercise),
+    activities: generateMockActivities(data.exercise, exerciseStatus),
   }
 }
 
-export function useLesson(lessonId: string | null): UseLessonReturn {
+export function useLesson(
+  lessonId: string | null,
+  eventId?: number
+): UseLessonReturn {
   const { data: session, status } = useSession()
 
   const { data, error, mutate, isLoading } = useSWR<Lesson | null>(
     status === 'authenticated' && session?.access && lessonId
-      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/lessons/${lessonId}/`, session.access]
+      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/lessons/${lessonId}/`, session.access, eventId]
       : null,
-    ([url, token]: [string, string]) => fetcher(url, token),
+    ([url, token, evtId]: [string, string, number | undefined]) => fetcher(url, token, evtId),
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      dedupingInterval: 60000, // 1 minuto
+      revalidateIfStale: true,
+      dedupingInterval: 0,
     }
   )
 
