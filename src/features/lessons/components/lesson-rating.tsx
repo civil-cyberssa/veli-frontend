@@ -12,6 +12,7 @@ interface LessonDescriptionCardProps {
   description?: string;
   initialRating?: number | null;
   initialComment?: string;
+  courseName?: string;
   isWatched?: boolean;
   isSaved?: boolean;
   onRatingChange?: (rating: number) => void;
@@ -28,6 +29,7 @@ export function LessonDescriptionCard({
   description = "Neste vídeo, aprendemos a criar nosso primeiro código no Scratch, resolvendo problemas através de blocos de programação. A tarefa era fazer um gatinho dizer e perguntar o nome do usuário. Exploramos os blocos de movimento, aparência, eventos, sensores e operadores para manipular dados e criar interações. Compreendemos a importância dos algoritmos, sequências lógicas de passos para resolver problemas. Programar envolve entender e processar dados para gerar saídas úteis, como nas redes sociais.",
   initialRating = null,
   initialComment = "",
+  courseName,
   isWatched = false,
   isSaved = false,
   onRatingChange,
@@ -39,8 +41,16 @@ export function LessonDescriptionCard({
   isCommentSubmitting = false,
 }: LessonDescriptionCardProps) {
   const { data: session } = useSession();
-  const displayName = useMemo(() => session?.user?.name || "Você", [session]);
-  const displayImage = session?.user?.image || "";
+  const displayName = useMemo(
+    () =>
+      session?.student_full_name ||
+      session?.user?.name ||
+      "Você",
+    [session]
+  );
+  const displayImage = session?.profile_pic_url || session?.user?.image || "";
+  const displayCourse =
+    courseName || session?.languages?.[0]?.name || "Seu curso atual";
 
   const [rating, setRating] = useState<number>(initialRating || 0);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -108,28 +118,40 @@ export function LessonDescriptionCard({
 
           <div className="mt-6 space-y-6">
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-foreground">Seu comentário</h3>
-              <div className="rounded-lg border border-border/50 bg-muted/40 p-3">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={displayImage} alt={displayName} />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
+              <h3 className="text-sm font-medium text-foreground">Seu comentário enviado</h3>
+              <div className="rounded-lg border border-border/60 bg-card/70 p-3 shadow-sm">
+                {savedComment ? (
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-11 w-11">
+                      <AvatarImage src={displayImage} alt={displayName} />
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
 
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-foreground">{displayName}</p>
-                      <span className="text-xs text-muted-foreground">comentou nesta aula</span>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">{displayName}</p>
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          {displayCourse}
+                        </span>
+                        <span className="text-xs text-muted-foreground">comentou nesta aula</span>
+                      </div>
+
+                      <div className="max-w-full rounded-2xl border border-primary/10 bg-primary/5 px-3 py-2">
+                        <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                          {savedComment}
+                        </p>
+                      </div>
                     </div>
-                    {savedComment ? (
-                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
-                        {savedComment}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Nenhum comentário enviado ainda.</p>
-                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={displayImage} alt={displayName} />
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm">Nenhum comentário enviado ainda.</p>
+                  </div>
+                )}
               </div>
             </div>
 

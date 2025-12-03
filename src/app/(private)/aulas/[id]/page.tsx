@@ -7,6 +7,7 @@ import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
 import { useUpdateLessonRating } from '@/src/features/dashboard/hooks/useUpdateLessonRating'
+import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
@@ -41,6 +42,7 @@ export default function LessonPage() {
   )
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
+  const { data: subscriptions } = useSubscriptions()
 
   const selectedLessonProgress = useMemo(
     () => eventProgress?.find((lesson) => lesson.lesson_id === selectedLessonId),
@@ -48,6 +50,19 @@ export default function LessonPage() {
   )
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
+
+  const currentCourseName = useMemo(() => {
+    const subscriptionCourse = subscriptions?.find(
+      (subscription) => subscription.id === Number(courseId)
+    )?.course_name
+
+    return (
+      subscriptionCourse ??
+      selectedLessonProgress?.course_name ??
+      selectedLessonProgress?.module_name ??
+      'Curso atual'
+    )
+  }, [subscriptions, courseId, selectedLessonProgress])
 
   useEffect(() => {
     if (!eventProgress || eventProgress.length === 0) {
@@ -298,6 +313,7 @@ export default function LessonPage() {
                 key={selectedLessonId ?? 'lesson-card'}
                 title={lesson?.lesson_name}
                 description={lesson?.description}
+                courseName={currentCourseName}
                 initialRating={selectedLessonProgress?.rating ?? null}
                 initialComment={selectedLessonProgress?.comment ?? ''}
                 isWatched={selectedLessonProgress?.watched ?? false}
