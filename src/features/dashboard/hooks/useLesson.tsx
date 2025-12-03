@@ -16,7 +16,6 @@ export interface Activity {
 export interface LessonApiResponse {
   lesson_id: number
   lesson_name: string
-  description?: string
   lesson_type: string
   order: number
   module: {
@@ -37,7 +36,6 @@ export interface LessonApiResponse {
 export interface Lesson {
   id: number
   lesson_name: string
-  description?: string
   lesson_type: string
   order: number
   module: {
@@ -168,7 +166,6 @@ const fetcher = async (
   return {
     id: data.lesson_id,
     lesson_name: data.lesson_name,
-    description: data.description,
     lesson_type: data.lesson_type,
     order: data.order,
     module: data.module,
@@ -195,10 +192,9 @@ export function useLesson(
       : null,
     ([url, token, evtId]: [string, string, number | undefined]) => fetcher(url, token, evtId),
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      revalidateIfStale: true,
-      dedupingInterval: 0,
+      dedupingInterval: 60000, // 1 minuto
     }
   )
 

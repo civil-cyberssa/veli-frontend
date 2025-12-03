@@ -7,14 +7,12 @@ import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
 import { useUpdateLessonRating } from '@/src/features/dashboard/hooks/useUpdateLessonRating'
-import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
-import { toast } from 'sonner'
 
 export default function LessonPage() {
   const params = useParams()
@@ -42,27 +40,8 @@ export default function LessonPage() {
   )
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
-  const { data: subscriptions } = useSubscriptions()
-
-  const selectedLessonProgress = useMemo(
-    () => eventProgress?.find((lesson) => lesson.lesson_id === selectedLessonId),
-    [eventProgress, selectedLessonId]
-  )
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
-
-  const currentCourseName = useMemo(() => {
-    const subscriptionCourse = subscriptions?.find(
-      (subscription) => subscription.id === Number(courseId)
-    )?.course_name
-
-    return (
-      subscriptionCourse ??
-      selectedLessonProgress?.course_name ??
-      selectedLessonProgress?.module_name ??
-      'Curso atual'
-    )
-  }, [subscriptions, courseId, selectedLessonProgress])
 
   useEffect(() => {
     if (!eventProgress || eventProgress.length === 0) {
@@ -79,33 +58,13 @@ export default function LessonPage() {
     }
   }, [eventProgress, selectedLessonId])
 
-  useEffect(() => {
-    if (!selectedLessonId) return
-
-    refetchLesson()
-    refetchProgress()
-  }, [selectedLessonId, refetchLesson, refetchProgress])
-
   const handleRatingChange = async (rating: number) => {
-    if (!selectedLessonId || !eventProgress || selectedLessonProgress?.rating) return
+    if (!selectedLessonId || !eventProgress) return
 
     const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
     if (!currentLesson) return
 
     try {
-      await refetchProgress(
-        (currentLessons) =>
-          currentLessons?.map((lesson) =>
-            lesson.lesson_id === selectedLessonId
-              ? {
-                  ...lesson,
-                  rating,
-                }
-              : lesson
-          ) ?? currentLessons,
-        { revalidate: false }
-      )
-
       await updateRating({
         eventId: currentLesson.event_id,
         lessonId: selectedLessonId,
@@ -115,47 +74,9 @@ export default function LessonPage() {
       // Recarregar o progresso para atualizar a UI
       await refetchProgress()
 
-      toast.success('Obrigado pelo feedback!')
+      console.log('Avaliação salva com sucesso')
     } catch (err) {
       console.error('Erro ao salvar avaliação:', err)
-      refetchProgress()
-      toast.error('Não foi possível salvar sua avaliação. Tente novamente.')
-    }
-  }
-
-  const handleCommentSubmit = async (comment: string) => {
-    if (!selectedLessonId || !eventProgress) return
-
-    const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
-    if (!currentLesson) return
-
-    try {
-      await refetchProgress(
-        (currentLessons) =>
-          currentLessons?.map((lesson) =>
-            lesson.lesson_id === selectedLessonId
-              ? {
-                  ...lesson,
-                  comment,
-                }
-              : lesson
-          ) ?? currentLessons,
-        { revalidate: false }
-      )
-
-      await updateRating({
-        eventId: currentLesson.event_id,
-        lessonId: selectedLessonId,
-        comment,
-      })
-
-      await refetchProgress()
-
-      toast.success('Obrigado pelo comentário!')
-    } catch (err) {
-      console.error('Erro ao salvar comentário:', err)
-      refetchProgress()
-      toast.error('Não foi possível salvar seu comentário. Tente novamente.')
     }
   }
 
@@ -182,20 +103,8 @@ export default function LessonPage() {
         lessonId: selectedLessonId,
       })
 
-      // Atualizar cache local imediatamente e revalidar com a API
-      await refetchProgress(
-        (currentLessons) =>
-          currentLessons?.map((lesson) =>
-            lesson.lesson_id === selectedLessonId
-              ? {
-                  ...lesson,
-                  watched: true,
-                  watched_at: new Date().toISOString(),
-                }
-              : lesson
-          ) ?? currentLessons,
-        { revalidate: true }
-      )
+      // Recarregar o progresso para atualizar a UI
+      await refetchProgress()
 
       console.log('Aula marcada como assistida com sucesso')
     } catch (err) {
@@ -310,18 +219,17 @@ export default function LessonPage() {
             {/* Rating */}
             <div className="animate-slide-up animate-delay-200">
               <LessonDescriptionCard
-                key={selectedLessonId ?? 'lesson-card'}
                 title={lesson?.lesson_name}
-                description={lesson?.description}
-                courseName={currentCourseName}
-                initialRating={selectedLessonProgress?.rating ?? null}
-                initialComment={selectedLessonProgress?.comment ?? ''}
-                isWatched={selectedLessonProgress?.watched ?? false}
-                ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
+                initialRating={
+                  eventProgress?.find((l) => l.lesson_id === selectedLessonId)
+                    ?.rating ?? null
+                }
+                isWatched={
+                  eventProgress?.find((l) => l.lesson_id === selectedLessonId)
+                    ?.watched ?? false
+                }
                 onRatingChange={handleRatingChange}
-                onSubmitComment={handleCommentSubmit}
                 onMarkAsWatched={handleMarkAsWatched}
-                isCommentSubmitting={isUpdatingRating}
               />
             </div>
 
