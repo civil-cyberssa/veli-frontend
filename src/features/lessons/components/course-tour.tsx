@@ -235,19 +235,41 @@ export function CourseTour() {
     }
   }
 
+  const highlightPadding = 12
+  const highlightBox = {
+    top: targetRect.top - highlightPadding,
+    left: targetRect.left - highlightPadding,
+    width: targetRect.width + highlightPadding * 2,
+    height: targetRect.height + highlightPadding * 2,
+  }
+
   return (
     <>
-      {/* Overlay escuro */}
-      <div className="fixed inset-0 bg-foreground/70 z-[100] animate-in fade-in duration-300" />
+      {/* Overlay com recorte e blur */}
+      <div
+        className="fixed inset-0 z-[100] animate-in fade-in duration-300"
+        style={{
+          top: 0,
+          left: 0,
+          boxShadow: `0 0 0 9999px hsl(var(--foreground) / 0.65)`,
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          borderRadius: 12,
+          width: highlightBox.width,
+          height: highlightBox.height,
+          transform: `translate(${highlightBox.left}px, ${highlightBox.top}px)`,
+          pointerEvents: 'none',
+        }}
+      />
 
       {/* Highlight do elemento */}
       <div
         className="fixed z-[101] rounded-lg ring-4 ring-primary ring-offset-4 ring-offset-background transition-all duration-300"
         style={{
-          top: targetRect.top - 8,
-          left: targetRect.left - 8,
-          width: targetRect.width + 16,
-          height: targetRect.height + 16,
+          top: highlightBox.top,
+          left: highlightBox.left,
+          width: highlightBox.width,
+          height: highlightBox.height,
           pointerEvents: 'none',
         }}
       />
