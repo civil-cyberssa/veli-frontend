@@ -46,6 +46,8 @@ export function CourseTour() {
   const [isActive, setIsActive] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showWelcome, setShowWelcome] = useState(false)
+  const [targetElement, setTargetElement] = useState<HTMLElement | null>(null)
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
 
   useEffect(() => {
     const tourCompleted = localStorage.getItem(TOUR_COMPLETED_KEY)
@@ -95,12 +97,49 @@ export function CourseTour() {
 
   useEffect(() => {
     if (isActive) {
-      const target = document.querySelector(tourSteps[currentStep].target)
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
+      const target = document.querySelector(
+        tourSteps[currentStep].target,
+      ) as HTMLElement | null
+
+      setTargetElement(target)
+    } else {
+      setTargetElement(null)
+      setTargetRect(null)
     }
   }, [isActive, currentStep])
+
+  useEffect(() => {
+    if (!targetElement) return
+
+    const updateRect = () => {
+      const rect = targetElement.getBoundingClientRect()
+      setTargetRect(rect)
+    }
+
+    const handleScroll = () => {
+      requestAnimationFrame(updateRect)
+    }
+
+    targetElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'center',
+    })
+
+    updateRect()
+
+    const resizeObserver = new ResizeObserver(updateRect)
+    resizeObserver.observe(targetElement)
+
+    window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', updateRect)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', updateRect)
+    }
+  }, [targetElement])
 
   if (!isActive && !showWelcome) {
     return (
@@ -171,11 +210,30 @@ export function CourseTour() {
   }
 
   const step = tourSteps[currentStep]
-  const targetElement = document.querySelector(step.target)
 
-  if (!targetElement) return null
+  if (!targetRect) return null
 
-  const rect = targetElement.getBoundingClientRect()
+  const getPopoverStyle = () => {
+    if (step.position === 'bottom' || step.position === 'top') {
+      return {
+        top:
+          step.position === 'bottom'
+            ? targetRect.bottom + 16
+            : targetRect.top - 16,
+        left: targetRect.left + targetRect.width / 2,
+        transform: step.position === 'top' ? 'translate(-50%, -100%)' : 'translateX(-50%)',
+      }
+    }
+
+    return {
+      top: targetRect.top + targetRect.height / 2,
+      left:
+        step.position === 'left'
+          ? targetRect.left - 360
+          : targetRect.right + 16,
+      transform: 'translateY(-50%)',
+    }
+  }
 
   return (
     <>
@@ -186,10 +244,10 @@ export function CourseTour() {
       <div
         className="fixed z-[101] rounded-lg ring-4 ring-[#F2542D] ring-offset-4 ring-offset-black/70 transition-all duration-300"
         style={{
-          top: rect.top - 8,
-          left: rect.left - 8,
-          width: rect.width + 16,
-          height: rect.height + 16,
+          top: targetRect.top - 8,
+          left: targetRect.left - 8,
+          width: targetRect.width + 16,
+          height: targetRect.height + 16,
           pointerEvents: 'none',
         }}
       />
@@ -198,8 +256,7 @@ export function CourseTour() {
       <div
         className="fixed z-[102] w-80 animate-in fade-in slide-in-from-bottom-4 duration-300"
         style={{
-          top: step.position === 'bottom' ? rect.bottom + 20 : rect.position === 'top' ? rect.top - 200 : rect.top,
-          left: step.position === 'left' ? rect.left - 340 : rect.left,
+          ...getPopoverStyle(),
           maxWidth: 'calc(100vw - 2rem)',
         }}
       >
