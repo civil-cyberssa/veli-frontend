@@ -9,6 +9,9 @@ import { ModeToggle } from '@/components/shared/theme-toggle-mode'
 import { Input } from '@/components/ui/input'
 import { UserDropdown } from '@/components/user-dropdown'
 
+// Estilos do tour interativo
+import '@/src/features/lessons/styles/course-tour.css'
+
 export default function LessonLayout({
   children,
 }: {

@@ -14,6 +14,7 @@ import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
+import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
 
 export default function LessonPage() {
@@ -268,6 +269,9 @@ export default function LessonPage() {
       {/* Onboarding - aparece apenas na primeira vez */}
       <LessonOnboarding />
 
+      {/* Tour Interativo - guia o usuário pela página */}
+      <CourseTour />
+
       <div className="pb-8">
 
         {/* Layout: Vídeo à esquerda (maior) | Lista de Aulas à direita (fixa) */}
@@ -277,7 +281,7 @@ export default function LessonPage() {
           {/* Coluna principal: Vídeo + Conteúdo adicional */}
           <div className={`space-y-4 ${sidebarCollapsed ? '' : 'lg:col-span-3'}`}>
             {/* Vídeo */}
-            <div className="animate-scale-in animate-delay-100">
+            <div className="animate-scale-in animate-delay-100" data-tour="video-player">
               {lesson?.content_url ? (
                 <VideoPlayer
                   url={lesson.content_url}
@@ -308,7 +312,7 @@ export default function LessonPage() {
             </div>
 
             {/* Rating */}
-            <div className="animate-slide-up animate-delay-200">
+            <div className="animate-slide-up animate-delay-200" data-tour="lesson-description">
               <LessonDescriptionCard
                 key={selectedLessonId ?? 'lesson-card'}
                 title={lesson?.lesson_name}
@@ -355,7 +359,7 @@ export default function LessonPage() {
           {/* Sidebar direita: Tabs com Conteúdo, Material e Exercício (sticky) */}
           <div className={sidebarCollapsed ? '' : 'lg:col-span-1'}>
             <div className="lg:sticky lg:top-4">
-              <div className="animate-slide-up animate-delay-200">
+              <div className="animate-slide-up animate-delay-200" data-tour="lesson-sidebar">
                 {eventProgress ? (
                   <LessonSidebarTabs
                     lessons={eventProgress}
