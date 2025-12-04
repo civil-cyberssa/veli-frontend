@@ -243,11 +243,6 @@ export function CourseTour() {
     height: targetRect.height + highlightPadding * 2,
   }
 
-  const highlightCenterX = highlightBox.left + highlightBox.width / 2
-  const highlightCenterY = highlightBox.top + highlightBox.height / 2
-  const maskRadiusX = highlightBox.width / 2
-  const maskRadiusY = highlightBox.height / 2
-
   return (
     <>
       {/* Overlay com recorte e blur invertido (preserva a área em foco limpa) */}
@@ -258,8 +253,17 @@ export function CourseTour() {
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           pointerEvents: 'none',
-          maskImage: `radial-gradient(${maskRadiusX}px ${maskRadiusY}px at ${highlightCenterX}px ${highlightCenterY}px, transparent 0%, transparent 60%, black 64%)`,
-          WebkitMaskImage: `radial-gradient(${maskRadiusX}px ${maskRadiusY}px at ${highlightCenterX}px ${highlightCenterY}px, transparent 0%, transparent 60%, black 64%)`,
+          maskImage: 'linear-gradient(#000, #000), linear-gradient(#000, #000)',
+          maskMode: 'alpha',
+          maskRepeat: 'no-repeat, no-repeat',
+          maskSize: `100% 100%, ${highlightBox.width}px ${highlightBox.height}px`,
+          maskPosition: `0 0, ${highlightBox.left}px ${highlightBox.top}px`,
+          maskComposite: 'exclude',
+          WebkitMaskImage: 'linear-gradient(#000, #000), linear-gradient(#000, #000)',
+          WebkitMaskRepeat: 'no-repeat, no-repeat',
+          WebkitMaskSize: `100% 100%, ${highlightBox.width}px ${highlightBox.height}px`,
+          WebkitMaskPosition: `0 0, ${highlightBox.left}px ${highlightBox.top}px`,
+          WebkitMaskComposite: 'destination-out',
         }}
       />
 
