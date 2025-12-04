@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { useParams, usePathname } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
@@ -94,16 +94,16 @@ export default function Layout({children}: {children: React.ReactNode}) {
                   const isLast = index === breadcrumb.length - 1
 
                   return (
-                    <BreadcrumbItem key={`${item.label}-${index}`}>
-                      {isLast || !item.href ? (
-                        <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
-                      )}
-                      {index < breadcrumb.length - 1 && (
-                        <BreadcrumbSeparator />
-                      )}
-                    </BreadcrumbItem>
+                    <Fragment key={`${item.label}-${index}`}>
+                      <BreadcrumbItem>
+                        {isLast || !item.href ? (
+                          <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {index < breadcrumb.length - 1 && <BreadcrumbSeparator />}
+                    </Fragment>
                   )
                 })}
               </BreadcrumbList>
