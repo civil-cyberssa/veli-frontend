@@ -1,335 +1,262 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { driver } from 'driver.js'
-import 'driver.js/dist/driver.css'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { X, Compass, Video, BookOpen, Star, CheckCircle, FolderOpen, Sparkles } from 'lucide-react'
-
-interface CourseTourProps {
-  /** Executar o tour automaticamente na primeira visita */
-  autoStart?: boolean
-  /** Callback quando o tour é concluído */
-  onComplete?: () => void
-  /** Callback quando o tour é pulado */
-  onSkip?: () => void
-}
+import { X, Compass, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react'
 
 const TOUR_COMPLETED_KEY = 'course-tour-completed'
 const ONBOARDING_COMPLETED_KEY = 'lesson-page-onboarding-seen'
 
-export function CourseTour({
-  autoStart = true,
-  onComplete,
-  onSkip
-}: CourseTourProps) {
+interface TourStep {
+  target: string
+  title: string
+  description: string
+  position: 'top' | 'bottom' | 'left' | 'right'
+}
+
+const tourSteps: TourStep[] = [
+  {
+    target: '[data-tour="video-player"]',
+    title: '🎥 Player de Vídeo',
+    description: 'Assista às aulas aqui. Use os controles para pausar, ajustar volume e velocidade.',
+    position: 'bottom',
+  },
+  {
+    target: '[data-tour="lesson-sidebar"]',
+    title: '📚 Lista de Aulas',
+    description: 'Todas as aulas organizadas por módulos. O ícone verde indica aulas já assistidas.',
+    position: 'left',
+  },
+  {
+    target: '[data-tour="lesson-description"]',
+    title: '📝 Avalie a Aula',
+    description: 'Deixe sua avaliação com estrelas e comentários sobre a aula.',
+    position: 'top',
+  },
+  {
+    target: '[data-tour="mark-watched"]',
+    title: '✅ Marcar como Assistida',
+    description: 'A aula é marcada automaticamente ao assistir 90%, ou clique aqui manualmente.',
+    position: 'top',
+  },
+]
+
+export function CourseTour() {
+  const [isActive, setIsActive] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
   const [showWelcome, setShowWelcome] = useState(false)
-  const [tourCompleted, setTourCompleted] = useState(true)
 
   useEffect(() => {
-    // Verificar se o tour já foi completado
-    const completed = localStorage.getItem(TOUR_COMPLETED_KEY)
-    const onboardingSeen = localStorage.getItem(ONBOARDING_COMPLETED_KEY)
+    const tourCompleted = localStorage.getItem(TOUR_COMPLETED_KEY)
+    const onboardingCompleted = localStorage.getItem(ONBOARDING_COMPLETED_KEY)
 
-    setTourCompleted(!!completed)
-
-    // Só mostrar o tour se o onboarding já foi visto e o tour ainda não foi completado
-    if (!completed && autoStart && onboardingSeen) {
-      // Aguardar um delay para garantir que o onboarding foi fechado
-      const timer = setTimeout(() => {
+    if (!tourCompleted && onboardingCompleted) {
+      setTimeout(() => {
         setShowWelcome(true)
       }, 1500)
-
-      return () => clearTimeout(timer)
     }
-  }, [autoStart])
+  }, [])
 
-  const handleStartTour = () => {
+  const startTour = () => {
     setShowWelcome(false)
-    // Delay para suavizar a transição
-    setTimeout(() => {
-      startDriverTour()
-    }, 300)
+    setIsActive(true)
+    setCurrentStep(0)
   }
 
-  const handleSkip = () => {
+  const skipTour = () => {
     setShowWelcome(false)
+    setIsActive(false)
     localStorage.setItem(TOUR_COMPLETED_KEY, 'true')
-    setTourCompleted(true)
-    onSkip?.()
   }
 
-  const startDriverTour = () => {
-    const driverObj = driver({
-      showProgress: true,
-      animate: true,
-      smoothScroll: true,
-      allowClose: true,
-      overlayOpacity: 0.7,
-
-      popoverClass: 'tour-popover',
-
-      onDestroyStarted: () => {
-        const currentStep = driverObj.getActiveIndex()
-        const totalSteps = driverObj.getConfig()?.steps?.length || 0
-
-        // Se chegou ao final ou pulou
-        if (currentStep === totalSteps - 1 || !driverObj.hasNextStep()) {
-          localStorage.setItem(TOUR_COMPLETED_KEY, 'true')
-          setTourCompleted(true)
-          onComplete?.()
-        } else {
-          localStorage.setItem(TOUR_COMPLETED_KEY, 'true')
-          setTourCompleted(true)
-          onSkip?.()
-        }
-
-        driverObj.destroy()
-      },
-
-      steps: [
-        {
-          element: '[data-tour="video-player"]',
-          popover: {
-            title: '🎥 Player de Vídeo',
-            description: 'Aqui você assiste às aulas. Use os controles para pausar, ajustar volume, velocidade e até assistir em tela cheia.',
-            side: 'bottom',
-            align: 'start',
-          },
-        },
-        {
-          element: '[data-tour="lesson-sidebar"]',
-          popover: {
-            title: '📚 Lista de Aulas',
-            description: 'Aqui estão todas as aulas do curso organizadas por módulos. Clique em qualquer aula para assistir. O ícone verde indica aulas já assistidas.',
-            side: 'left',
-            align: 'start',
-          },
-        },
-        {
-          element: '[data-tour="lesson-description"]',
-          popover: {
-            title: '📝 Informações da Aula',
-            description: 'Veja o título, descrição e avalie a aula com estrelas. Você também pode deixar comentários sobre a aula aqui.',
-            side: 'top',
-            align: 'start',
-          },
-        },
-        {
-          element: '[data-tour="mark-watched"]',
-          popover: {
-            title: '✅ Marcar como Assistida',
-            description: 'Ao assistir 90% do vídeo, a aula é marcada automaticamente como assistida. Você também pode marcar manualmente clicando neste botão.',
-            side: 'top',
-            align: 'start',
-          },
-        },
-        {
-          element: '[data-tour="lesson-sidebar"]',
-          popover: {
-            title: '📎 Material de Apoio',
-            description: 'Na aba "Material", você encontra PDFs e outros arquivos complementares para download. Clique para alternar entre as abas.',
-            side: 'left',
-            align: 'start',
-          },
-        },
-        {
-          element: 'body',
-          popover: {
-            title: '🚀 Pronto para começar!',
-            description: 'Agora você já sabe tudo que precisa. Aproveite o curso e bons estudos!',
-            side: 'bottom',
-            align: 'center',
-          },
-        },
-      ],
-
-      nextBtnText: 'Próximo →',
-      prevBtnText: '← Anterior',
-      doneBtnText: 'Entendi! 🎉',
-    })
-
-    driverObj.drive()
+  const nextStep = () => {
+    if (currentStep < tourSteps.length - 1) {
+      setCurrentStep(currentStep + 1)
+    } else {
+      completeTour()
+    }
   }
 
-  const startTourManually = () => {
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const completeTour = () => {
+    setIsActive(false)
+    localStorage.setItem(TOUR_COMPLETED_KEY, 'true')
+  }
+
+  const restartTour = () => {
     setShowWelcome(true)
   }
 
-  return (
-    <>
-      {/* Tela de Boas-vindas ao Tour */}
-      {showWelcome && (
-        <>
-          {/* Overlay escuro */}
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] animate-fade-in"
-            onClick={handleSkip}
-          />
+  useEffect(() => {
+    if (isActive) {
+      const target = document.querySelector(tourSteps[currentStep].target)
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }, [isActive, currentStep])
 
-          {/* Modal central */}
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-            <Card className="relative w-full max-w-lg p-8 animate-scale-in shadow-2xl border-2">
-              {/* Botão fechar */}
-              <button
-                onClick={handleSkip}
-                className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
+  if (!isActive && !showWelcome) {
+    return (
+      <button
+        onClick={restartTour}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-[#F2542D] px-4 py-3 text-sm font-medium text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+        aria-label="Iniciar tour"
+      >
+        <Compass className="h-4 w-4" />
+        <span className="hidden sm:inline">Tour</span>
+      </button>
+    )
+  }
 
-              {/* Conteúdo */}
-              <div className="text-center space-y-6">
-                {/* Ícone */}
-                <div className="flex justify-center animate-bounce-slow">
-                  <Compass className="h-12 w-12 text-primary" />
+  if (showWelcome) {
+    return (
+      <>
+        {/* Overlay */}
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] animate-in fade-in duration-300"
+          onClick={skipTour}
+        />
+
+        {/* Welcome Card */}
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+          <Card className="relative w-full max-w-md p-6 animate-in zoom-in-95 duration-300 bg-white dark:bg-[#35353a]">
+            <button
+              onClick={skipTour}
+              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="p-3 rounded-full bg-[#F2542D]/10">
+                  <Compass className="h-8 w-8 text-[#F2542D]" />
                 </div>
+              </div>
 
-                {/* Título */}
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-bold tracking-tight">
-                    Tour Interativo da Plataforma
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Vamos te mostrar rapidamente os principais recursos desta página de curso em apenas 30 segundos.
-                  </p>
-                </div>
-
-                {/* Highlight */}
-                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                  <p className="text-sm font-medium text-primary">
-                    💡 Aprenda a navegar pela interface e aproveitar ao máximo sua experiência
-                  </p>
-                </div>
-
-                {/* Preview dos tópicos */}
-                <div className="grid grid-cols-2 gap-3 text-left">
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                    <Video className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <div className="text-xs">
-                      <p className="font-medium">Player</p>
-                      <p className="text-muted-foreground">Controles do vídeo</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                    <BookOpen className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <div className="text-xs">
-                      <p className="font-medium">Aulas</p>
-                      <p className="text-muted-foreground">Lista completa</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                    <Star className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <div className="text-xs">
-                      <p className="font-medium">Avaliação</p>
-                      <p className="text-muted-foreground">Comentários</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                    <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <div className="text-xs">
-                      <p className="font-medium">Progresso</p>
-                      <p className="text-muted-foreground">Marcar assistida</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botões */}
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={handleSkip}
-                    className="flex-1"
-                  >
-                    Pular Tour
-                  </Button>
-                  <Button
-                    onClick={handleStartTour}
-                    className="flex-1 gap-2"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Começar Tour
-                  </Button>
-                </div>
-
-                {/* Tempo estimado */}
-                <p className="text-xs text-muted-foreground">
-                  ⏱️ Duração aproximada: 30 segundos
+              <div>
+                <h2 className="text-xl font-bold mb-2">Tour Rápido</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Conheça os principais recursos desta página em 30 segundos
                 </p>
               </div>
-            </Card>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={skipTour}
+                  className="flex-1"
+                >
+                  Pular
+                </Button>
+                <Button
+                  onClick={startTour}
+                  className="flex-1 bg-[#F2542D] hover:bg-[#F2542D]/90"
+                >
+                  Começar
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </>
+    )
+  }
+
+  const step = tourSteps[currentStep]
+  const targetElement = document.querySelector(step.target)
+
+  if (!targetElement) return null
+
+  const rect = targetElement.getBoundingClientRect()
+
+  return (
+    <>
+      {/* Overlay escuro */}
+      <div className="fixed inset-0 bg-black/70 z-[100] animate-in fade-in duration-300" />
+
+      {/* Highlight do elemento */}
+      <div
+        className="fixed z-[101] rounded-lg ring-4 ring-[#F2542D] ring-offset-4 ring-offset-black/70 transition-all duration-300"
+        style={{
+          top: rect.top - 8,
+          left: rect.left - 8,
+          width: rect.width + 16,
+          height: rect.height + 16,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Popover Card */}
+      <div
+        className="fixed z-[102] w-80 animate-in fade-in slide-in-from-bottom-4 duration-300"
+        style={{
+          top: step.position === 'bottom' ? rect.bottom + 20 : rect.position === 'top' ? rect.top - 200 : rect.top,
+          left: step.position === 'left' ? rect.left - 340 : rect.left,
+          maxWidth: 'calc(100vw - 2rem)',
+        }}
+      >
+        <Card className="p-5 bg-white dark:bg-[#35353a] shadow-2xl border-2 border-gray-200 dark:border-gray-700">
+          <button
+            onClick={skipTour}
+            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          <div className="space-y-3 pr-6">
+            <h3 className="text-lg font-semibold">{step.title}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+              {step.description}
+            </p>
           </div>
 
-          {/* Animações customizadas */}
-          <style jsx global>{`
-            @keyframes bounce-slow {
-              0%, 100% {
-                transform: translateY(0);
-              }
-              50% {
-                transform: translateY(-10px);
-              }
-            }
+          <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <span className="text-xs font-medium text-gray-500">
+              {currentStep + 1} de {tourSteps.length}
+            </span>
 
-            .animate-bounce-slow {
-              animation: bounce-slow 2s ease-in-out infinite;
-            }
-          `}</style>
-        </>
-      )}
+            <div className="flex gap-2">
+              {currentStep > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevStep}
+                  className="gap-1"
+                >
+                  <ArrowLeft className="h-3 w-3" />
+                  Anterior
+                </Button>
+              )}
 
-      {/* Botão flutuante para reiniciar o tour */}
-      {tourCompleted && !showWelcome && (
-        <button
-          onClick={startTourManually}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
-          aria-label="Reiniciar tour"
-          title="Ver tour interativo"
-        >
-          <Compass className="h-4 w-4" />
-          <span className="hidden sm:inline">Tour interativo</span>
-        </button>
-      )}
+              <Button
+                size="sm"
+                onClick={nextStep}
+                className="gap-1 bg-[#F2542D] hover:bg-[#F2542D]/90"
+              >
+                {currentStep === tourSteps.length - 1 ? (
+                  <>
+                    <CheckCircle className="h-3 w-3" />
+                    Concluir
+                  </>
+                ) : (
+                  <>
+                    Próximo
+                    <ArrowRight className="h-3 w-3" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
     </>
   )
-}
-
-/**
- * Hook para controlar o tour programaticamente
- *
- * @example
- * ```tsx
- * const { startTour, resetTour } = useCourseTour()
- *
- * // Iniciar o tour
- * startTour()
- *
- * // Resetar e permitir que o tour apareça novamente
- * resetTour()
- * ```
- */
-export function useCourseTour() {
-  const startTour = () => {
-    // Remover a flag de tour completado temporariamente
-    const wasCompleted = localStorage.getItem(TOUR_COMPLETED_KEY)
-    localStorage.removeItem(TOUR_COMPLETED_KEY)
-
-    // Disparar evento customizado para iniciar o tour
-    window.dispatchEvent(new CustomEvent('start-course-tour'))
-
-    // Restaurar a flag após um delay
-    setTimeout(() => {
-      if (wasCompleted) {
-        localStorage.setItem(TOUR_COMPLETED_KEY, wasCompleted)
-      }
-    }, 100)
-  }
-
-  const resetTour = () => {
-    localStorage.removeItem(TOUR_COMPLETED_KEY)
-    window.location.reload()
-  }
-
-  return { startTour, resetTour }
 }
