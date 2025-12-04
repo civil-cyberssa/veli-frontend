@@ -250,6 +250,7 @@ export function LessonDescriptionCard({
               size="default"
               onClick={handleMarkAsWatched}
               disabled={disabled || watched}
+              data-tour="mark-watched"
               className={cn(
                 "gap-2 transition-all flex-1 h-10",
                 watched
