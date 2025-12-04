@@ -2,11 +2,10 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Search, UserRound } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
 import { ModeToggle } from '@/components/shared/theme-toggle-mode'
-import { Input } from '@/components/ui/input'
 import { UserDropdown } from '@/components/user-dropdown'
 
 export default function LessonLayout({
@@ -42,17 +41,6 @@ export default function LessonLayout({
             />
             <span className="hidden text-base font-semibold leading-none sm:inline">Veli</span>
           </Link>
-
-          <div className="flex flex-1 items-center gap-2 max-w-xl">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar aulas"
-                className="pl-9"
-                aria-label="Buscar aulas"
-              />
-            </div>
-          </div>
 
           <div className="flex items-center gap-3">
             <ModeToggle />

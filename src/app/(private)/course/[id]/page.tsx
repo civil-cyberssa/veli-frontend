@@ -21,7 +21,7 @@ export default function LessonPage() {
   const params = useParams()
   const courseId = params.id as string
   const router = useRouter()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [autoplay, setAutoplay] = useState(true)
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
   const [quizState, setQuizState] = useState<{ eventId: number; name: string } | null>(null)
