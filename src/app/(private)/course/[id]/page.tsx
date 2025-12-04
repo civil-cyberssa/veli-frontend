@@ -26,6 +26,8 @@ export default function LessonPage() {
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
   const [quizState, setQuizState] = useState<{ eventId: number; name: string } | null>(null)
   const hasMarkedWatched = useRef<Set<number>>(new Set())
+  const autoMarkTriggered = useRef(false)
+  const [watchProgress, setWatchProgress] = useState(0)
 
   const handleAutoplayChange = (checked: boolean) => {
     setAutoplay(checked)
@@ -86,6 +88,18 @@ export default function LessonPage() {
     refetchLesson()
     refetchProgress()
   }, [selectedLessonId, refetchLesson, refetchProgress])
+
+  useEffect(() => {
+    setWatchProgress(0)
+    autoMarkTriggered.current = false
+  }, [selectedLessonId])
+
+  useEffect(() => {
+    if (selectedLessonProgress?.watched) {
+      setWatchProgress(1)
+      autoMarkTriggered.current = true
+    }
+  }, [selectedLessonProgress?.watched])
 
   const handleRatingChange = async (rating: number) => {
     if (!selectedLessonId || !eventProgress || selectedLessonProgress?.rating) return
@@ -176,6 +190,7 @@ export default function LessonPage() {
 
     // Marcar como já processada para evitar chamadas duplicadas
     hasMarkedWatched.current.add(selectedLessonId)
+    autoMarkTriggered.current = true
 
     try {
       await markAsWatched({
@@ -203,6 +218,7 @@ export default function LessonPage() {
       console.error('Erro ao marcar aula como assistida:', err)
       // Em caso de erro, remover da lista para permitir nova tentativa
       hasMarkedWatched.current.delete(selectedLessonId)
+      autoMarkTriggered.current = false
     }
   }
 
@@ -287,13 +303,21 @@ export default function LessonPage() {
                   url={lesson.content_url}
                   autoPlay={autoplay}
                   onProgress={(progress) => {
+                    setWatchProgress(progress.played)
+
                     // Marcar como assistida quando atingir 90% do vídeo
-                    if (progress.played >= 0.9) {
+                    if (
+                      !selectedLessonProgress?.watched &&
+                      !autoMarkTriggered.current &&
+                      progress.played >= 0.9
+                    ) {
+                      autoMarkTriggered.current = true
                       handleMarkAsWatched()
                     }
                   }}
                   onEnded={() => {
                     // Marcar aula como concluída quando o vídeo terminar
+                    setWatchProgress(1)
                     handleMarkAsWatched()
                   }}
                 />
@@ -326,6 +350,8 @@ export default function LessonPage() {
                 onSubmitComment={handleCommentSubmit}
                 onMarkAsWatched={handleMarkAsWatched}
                 isCommentSubmitting={isUpdatingRating}
+                watchProgress={watchProgress}
+                isMarkingWatched={isMarkingWatched}
               />
             </div>
 

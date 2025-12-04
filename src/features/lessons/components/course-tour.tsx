@@ -243,22 +243,23 @@ export function CourseTour() {
     height: targetRect.height + highlightPadding * 2,
   }
 
+  const highlightCenterX = highlightBox.left + highlightBox.width / 2
+  const highlightCenterY = highlightBox.top + highlightBox.height / 2
+  const maskRadiusX = highlightBox.width / 2
+  const maskRadiusY = highlightBox.height / 2
+
   return (
     <>
-      {/* Overlay com recorte e blur */}
+      {/* Overlay com recorte e blur invertido (preserva a área em foco limpa) */}
       <div
         className="fixed inset-0 z-[100] animate-in fade-in duration-300"
         style={{
-          top: 0,
-          left: 0,
-          boxShadow: `0 0 0 9999px hsl(var(--foreground) / 0.65)`,
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          borderRadius: 12,
-          width: highlightBox.width,
-          height: highlightBox.height,
-          transform: `translate(${highlightBox.left}px, ${highlightBox.top}px)`,
+          backgroundColor: 'hsl(var(--foreground) / 0.65)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           pointerEvents: 'none',
+          maskImage: `radial-gradient(${maskRadiusX}px ${maskRadiusY}px at ${highlightCenterX}px ${highlightCenterY}px, transparent 0%, transparent 60%, black 64%)`,
+          WebkitMaskImage: `radial-gradient(${maskRadiusX}px ${maskRadiusY}px at ${highlightCenterX}px ${highlightCenterY}px, transparent 0%, transparent 60%, black 64%)`,
         }}
       />
 

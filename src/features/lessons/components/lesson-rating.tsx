@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Star, Check, Bookmark, MonitorCheck } from "lucide-react";
+import { Star, Check, Bookmark, MonitorCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 interface LessonDescriptionCardProps {
   title?: string;
@@ -22,6 +23,8 @@ interface LessonDescriptionCardProps {
   disabled?: boolean;
   ratingDisabled?: boolean;
   isCommentSubmitting?: boolean;
+  watchProgress?: number;
+  isMarkingWatched?: boolean;
 }
 
 export function LessonDescriptionCard({
@@ -39,6 +42,8 @@ export function LessonDescriptionCard({
   disabled = false,
   ratingDisabled = false,
   isCommentSubmitting = false,
+  watchProgress = 0,
+  isMarkingWatched = false,
 }: LessonDescriptionCardProps) {
   const { data: session } = useSession();
   const displayName = useMemo(
@@ -88,6 +93,13 @@ export function LessonDescriptionCard({
     setWatched(true); // Sempre marca como true, nunca false
     onMarkAsWatched?.();
   };
+
+  const completion = Math.min(100, Math.round(watchProgress * 100));
+  const buttonSubtitle = watched
+    ? "Concluída e salva no seu progresso"
+    : completion >= 90
+    ? "Marcando automaticamente ao atingir 90%"
+    : "Será concluída automaticamente ao final";
 
   const handleToggleSave = () => {
     if (disabled) return;
@@ -249,21 +261,51 @@ export function LessonDescriptionCard({
               variant="outline"
               size="default"
               onClick={handleMarkAsWatched}
-              disabled={disabled || watched}
+              disabled={disabled || watched || isMarkingWatched}
               data-tour="mark-watched"
               className={cn(
-                "gap-2 transition-all flex-1 h-10",
+                "gap-3 transition-all flex-1 min-h-[3.25rem] justify-between items-center text-left",
                 watched
                   ? "bg-success/10 border-success/30 text-success hover:bg-success/10 cursor-default"
-                  : "cursor-pointer"
+                  : "cursor-pointer hover:border-primary/50 hover:bg-primary/5"
               )}
             >
-              {watched ? (
-                <Check className="h-4 w-4 text-success animate-in zoom-in-50" />
-              ) : (
-                <MonitorCheck className="h-4 w-4 text-success" />
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-full border",
+                    watched
+                      ? "border-success/30 bg-success/10 text-success"
+                      : "border-primary/30 bg-primary/5 text-primary"
+                  )}
+                >
+                  {watched ? (
+                    <Check className="h-4 w-4" />
+                  ) : isMarkingWatched ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <MonitorCheck className="h-4 w-4" />
+                  )}
+                </span>
+
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">
+                    {watched ? "Aula assistida" : "Marcar como assistida"}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground" aria-live="polite">
+                    {buttonSubtitle}
+                  </span>
+                </div>
+              </div>
+
+              {!watched && (
+                <div className="flex items-center gap-2 w-28">
+                  <span className="text-[11px] text-muted-foreground min-w-[2.5rem] text-right">
+                    {completion}%
+                  </span>
+                  <Progress value={completion} className="h-1.5" />
+                </div>
               )}
-              {watched ? "Aula assistida" : "Marcar como assistida"}
             </Button>
 
             <Button
