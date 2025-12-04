@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useParams, usePathname } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
@@ -35,6 +35,11 @@ export default function Layout({children}: {children: React.ReactNode}) {
   const pathname = usePathname()
   const params = useParams()
   const { data: subscriptions } = useSubscriptions()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!pathname.startsWith("/course/"))
+
+  useEffect(() => {
+    setIsSidebarOpen(!pathname.startsWith("/course/"))
+  }, [pathname])
 
   const courseId = useMemo(() => {
     const rawId = params?.id
@@ -73,7 +78,7 @@ export default function Layout({children}: {children: React.ReactNode}) {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">

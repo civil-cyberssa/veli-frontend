@@ -145,7 +145,7 @@ export function CourseTour() {
     return (
       <button
         onClick={restartTour}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-[#F2542D] px-4 py-3 text-sm font-medium text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg transition-all hover:scale-105 hover:bg-primary/90 hover:shadow-xl active:scale-95"
         aria-label="Iniciar tour"
       >
         <Compass className="h-4 w-4" />
@@ -159,30 +159,30 @@ export function CourseTour() {
       <>
         {/* Overlay */}
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] animate-in fade-in duration-300"
+          className="fixed inset-0 bg-foreground/60 backdrop-blur-sm z-[100] animate-in fade-in duration-300"
           onClick={skipTour}
         />
 
         {/* Welcome Card */}
         <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-          <Card className="relative w-full max-w-md p-6 animate-in zoom-in-95 duration-300 bg-white dark:bg-[#35353a]">
+          <Card className="relative w-full max-w-md p-6 animate-in zoom-in-95 duration-300 bg-card text-card-foreground">
             <button
               onClick={skipTour}
-              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-accent transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="text-center space-y-4">
               <div className="flex justify-center">
-                <div className="p-3 rounded-full bg-[#F2542D]/10">
-                  <Compass className="h-8 w-8 text-[#F2542D]" />
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Compass className="h-8 w-8 text-primary" />
                 </div>
               </div>
 
               <div>
                 <h2 className="text-xl font-bold mb-2">Tour Rápido</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   Conheça os principais recursos desta página em 30 segundos
                 </p>
               </div>
@@ -197,7 +197,7 @@ export function CourseTour() {
                 </Button>
                 <Button
                   onClick={startTour}
-                  className="flex-1 bg-[#F2542D] hover:bg-[#F2542D]/90"
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   Começar
                 </Button>
@@ -238,11 +238,11 @@ export function CourseTour() {
   return (
     <>
       {/* Overlay escuro */}
-      <div className="fixed inset-0 bg-black/70 z-[100] animate-in fade-in duration-300" />
+      <div className="fixed inset-0 bg-foreground/70 z-[100] animate-in fade-in duration-300" />
 
       {/* Highlight do elemento */}
       <div
-        className="fixed z-[101] rounded-lg ring-4 ring-[#F2542D] ring-offset-4 ring-offset-black/70 transition-all duration-300"
+        className="fixed z-[101] rounded-lg ring-4 ring-primary ring-offset-4 ring-offset-background transition-all duration-300"
         style={{
           top: targetRect.top - 8,
           left: targetRect.left - 8,
@@ -260,23 +260,23 @@ export function CourseTour() {
           maxWidth: 'calc(100vw - 2rem)',
         }}
       >
-        <Card className="p-5 bg-white dark:bg-[#35353a] shadow-2xl border-2 border-gray-200 dark:border-gray-700">
+        <Card className="p-5 bg-card text-card-foreground shadow-2xl border-2 border-border">
           <button
             onClick={skipTour}
-            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-accent transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
 
           <div className="space-y-3 pr-6">
             <h3 className="text-lg font-semibold">{step.title}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               {step.description}
             </p>
           </div>
 
-          <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <span className="text-xs font-medium text-gray-500">
+          <div className="flex items-center justify-between mt-5 pt-4 border-t border-border">
+            <span className="text-xs font-medium text-muted-foreground">
               {currentStep + 1} de {tourSteps.length}
             </span>
 
@@ -296,7 +296,7 @@ export function CourseTour() {
               <Button
                 size="sm"
                 onClick={nextStep}
-                className="gap-1 bg-[#F2542D] hover:bg-[#F2542D]/90"
+                className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {currentStep === tourSteps.length - 1 ? (
                   <>
