@@ -7,18 +7,17 @@
    =================================================================== */
 
 .tour-popover.driver-popover {
-  background: hsl(var(--card));
+  background: hsl(var(--popover));
   border: 1px solid hsl(var(--border));
   border-radius: 1rem;
   box-shadow:
     0 0 0 1px hsl(var(--border) / 0.1),
-    0 10px 40px -10px rgba(0, 0, 0, 0.3),
-    0 20px 60px -20px rgba(0, 0, 0, 0.2);
+    0 10px 40px -10px rgba(0, 0, 0, 0.4),
+    0 20px 60px -20px rgba(0, 0, 0, 0.3);
   max-width: 420px;
   padding: 0;
   overflow: hidden;
   animation: tour-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(16px);
 }
 
 /* Subtle gradient overlay for depth */
@@ -32,10 +31,11 @@
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--primary) / 0.3),
+    hsl(var(--primary) / 0.5),
     transparent
   );
   pointer-events: none;
+  z-index: 1;
 }
 
 @keyframes tour-fade-in {
@@ -63,7 +63,7 @@
 
 .tour-popover .driver-popover-title {
   background: transparent;
-  color: hsl(var(--foreground));
+  color: hsl(var(--popover-foreground));
   font-size: 1.125rem;
   font-weight: 600;
   padding: 1.5rem 1.75rem 0.75rem;
@@ -78,7 +78,8 @@
    =================================================================== */
 
 .tour-popover .driver-popover-description {
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--popover-foreground));
+  opacity: 0.9;
   font-size: 0.9375rem;
   line-height: 1.65;
   padding: 0 1.75rem 1.5rem;
@@ -91,14 +92,13 @@
    =================================================================== */
 
 .tour-popover .driver-popover-footer {
-  background: hsl(var(--muted) / 0.3);
+  background: hsl(var(--muted) / 0.5);
   border-top: 1px solid hsl(var(--border));
   padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.875rem;
-  backdrop-filter: blur(8px);
 }
 
 /* ===================================================================
@@ -156,6 +156,7 @@
     transparent
   );
   transition: left 0.5s ease;
+  pointer-events: none;
 }
 
 .tour-popover .driver-popover-btn:hover::before {
@@ -167,8 +168,8 @@
   border-color: hsl(var(--accent-foreground) / 0.2);
   transform: translateY(-2px);
   box-shadow:
-    0 4px 12px -2px hsl(var(--foreground) / 0.1),
-    0 2px 6px -2px hsl(var(--foreground) / 0.05);
+    0 4px 12px -2px hsl(var(--foreground) / 0.15),
+    0 2px 6px -2px hsl(var(--foreground) / 0.1);
 }
 
 .tour-popover .driver-popover-btn:active {
@@ -181,14 +182,15 @@
    =================================================================== */
 
 .tour-popover .driver-popover-prev-btn {
-  background: transparent;
+  background: hsl(var(--secondary));
   border: 1px solid hsl(var(--border));
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--secondary-foreground));
 }
 
 .tour-popover .driver-popover-prev-btn:hover {
-  background: hsl(var(--muted) / 0.5);
-  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  opacity: 0.9;
+  color: hsl(var(--secondary-foreground));
   border-color: hsl(var(--border));
 }
 
@@ -203,8 +205,8 @@
   border-color: hsl(var(--primary));
   font-weight: 600;
   box-shadow:
-    0 2px 8px -2px hsl(var(--primary) / 0.4),
-    0 1px 3px -1px hsl(var(--primary) / 0.3);
+    0 2px 8px -2px hsl(var(--primary) / 0.5),
+    0 1px 3px -1px hsl(var(--primary) / 0.4);
 }
 
 .tour-popover .driver-popover-next-btn::before,
@@ -212,7 +214,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--primary-foreground) / 0.15),
+    hsl(var(--primary-foreground) / 0.2),
     transparent
   );
 }
@@ -223,9 +225,9 @@
   border-color: hsl(var(--primary));
   opacity: 0.95;
   box-shadow:
-    0 6px 16px -4px hsl(var(--primary) / 0.5),
-    0 4px 10px -3px hsl(var(--primary) / 0.4),
-    0 0 0 1px hsl(var(--primary) / 0.1);
+    0 6px 16px -4px hsl(var(--primary) / 0.6),
+    0 4px 10px -3px hsl(var(--primary) / 0.5),
+    0 0 0 1px hsl(var(--primary) / 0.2);
   transform: translateY(-2px);
 }
 
@@ -242,23 +244,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: hsl(var(--muted) / 0.4);
-  border: 1px solid hsl(var(--border) / 0.5);
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--secondary-foreground));
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 0;
   z-index: 10;
-  backdrop-filter: blur(8px);
 }
 
 .tour-popover .driver-popover-close-btn:hover {
-  background: hsl(var(--destructive) / 0.1);
-  border-color: hsl(var(--destructive) / 0.3);
-  color: hsl(var(--destructive));
+  background: hsl(var(--destructive));
+  border-color: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
   transform: scale(1.05);
-  box-shadow: 0 2px 8px -2px hsl(var(--destructive) / 0.2);
+  box-shadow: 0 2px 8px -2px hsl(var(--destructive) / 0.4);
 }
 
 .tour-popover .driver-popover-close-btn:active {
@@ -282,8 +283,8 @@
   box-shadow:
     0 0 0 4px hsl(var(--background)),
     0 0 0 7px hsl(var(--primary)),
-    0 8px 24px -8px hsl(var(--primary) / 0.4),
-    0 16px 48px -16px hsl(var(--primary) / 0.2);
+    0 8px 24px -8px hsl(var(--primary) / 0.5),
+    0 16px 48px -16px hsl(var(--primary) / 0.3);
   position: relative;
   z-index: 10000;
   animation: tour-highlight-pulse 2.5s ease-in-out infinite;
@@ -297,7 +298,7 @@
   border-radius: inherit;
   background: radial-gradient(
     circle at center,
-    hsl(var(--primary) / 0.15),
+    hsl(var(--primary) / 0.2),
     transparent 70%
   );
   pointer-events: none;
@@ -311,18 +312,18 @@
     outline-offset: 6px;
   }
   50% {
-    outline-color: hsl(var(--primary) / 0.7);
+    outline-color: hsl(var(--primary) / 0.8);
     outline-offset: 8px;
   }
 }
 
 @keyframes tour-glow-pulse {
   0%, 100% {
-    opacity: 0.6;
+    opacity: 0.7;
     transform: scale(1);
   }
   50% {
-    opacity: 0.3;
+    opacity: 0.4;
     transform: scale(1.05);
   }
 }
@@ -332,8 +333,8 @@
    =================================================================== */
 
 .driver-overlay {
-  background: hsl(var(--background) / 0.85);
-  backdrop-filter: blur(6px);
+  background: hsl(var(--background) / 0.92);
+  backdrop-filter: blur(8px);
   animation: tour-overlay-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -344,7 +345,7 @@
   }
   to {
     opacity: 1;
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
   }
 }
 
@@ -407,7 +408,7 @@
     box-shadow:
       0 0 0 3px hsl(var(--background)),
       0 0 0 5px hsl(var(--primary)),
-      0 4px 16px -4px hsl(var(--primary) / 0.4);
+      0 4px 16px -4px hsl(var(--primary) / 0.5);
   }
 }
 
@@ -417,32 +418,59 @@
 
 @media (prefers-color-scheme: dark) {
   .driver-overlay {
-    background: hsl(var(--background) / 0.9);
-    backdrop-filter: blur(8px);
+    background: hsl(var(--background) / 0.95);
+    backdrop-filter: blur(10px);
   }
 
   .tour-popover.driver-popover {
     box-shadow:
-      0 0 0 1px hsl(var(--border) / 0.2),
-      0 20px 60px -10px rgba(0, 0, 0, 0.7),
-      0 40px 100px -20px rgba(0, 0, 0, 0.5);
+      0 0 0 1px hsl(var(--border) / 0.3),
+      0 20px 60px -10px rgba(0, 0, 0, 0.8),
+      0 40px 100px -20px rgba(0, 0, 0, 0.6);
   }
 
   .driver-active-element {
     box-shadow:
       0 0 0 4px hsl(var(--background)),
       0 0 0 7px hsl(var(--primary)),
-      0 8px 32px -8px hsl(var(--primary) / 0.6),
-      0 16px 64px -16px hsl(var(--primary) / 0.4);
+      0 8px 32px -8px hsl(var(--primary) / 0.7),
+      0 16px 64px -16px hsl(var(--primary) / 0.5);
   }
 
   /* Enhanced glow in dark mode */
   .driver-active-element::before {
     background: radial-gradient(
       circle at center,
-      hsl(var(--primary) / 0.25),
+      hsl(var(--primary) / 0.3),
       transparent 65%
     );
+  }
+}
+
+/* ===================================================================
+   LIGHT MODE ENHANCEMENTS
+   =================================================================== */
+
+@media (prefers-color-scheme: light) {
+  .tour-popover.driver-popover {
+    background: hsl(var(--popover));
+    box-shadow:
+      0 0 0 1px hsl(var(--border)),
+      0 20px 60px -10px rgba(0, 0, 0, 0.15),
+      0 40px 100px -20px rgba(0, 0, 0, 0.1);
+  }
+
+  .tour-popover .driver-popover-title {
+    color: hsl(var(--popover-foreground));
+  }
+
+  .tour-popover .driver-popover-description {
+    color: hsl(var(--popover-foreground));
+    opacity: 0.85;
+  }
+
+  .driver-overlay {
+    background: hsl(var(--background) / 0.9);
   }
 }
 
@@ -477,6 +505,7 @@
 @media (prefers-contrast: high) {
   .tour-popover.driver-popover {
     border-width: 2px;
+    background: hsl(var(--background));
   }
 
   .driver-active-element {
@@ -486,6 +515,11 @@
 
   .tour-popover .driver-popover-btn {
     border-width: 2px;
+  }
+
+  .tour-popover .driver-popover-title,
+  .tour-popover .driver-popover-description {
+    color: hsl(var(--foreground));
   }
 }
 
