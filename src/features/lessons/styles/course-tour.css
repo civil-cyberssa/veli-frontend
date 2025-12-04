@@ -1,17 +1,18 @@
 /* ===================================================================
-   Custom Styles for Driver.js Tour - Modern & Polished
+   Custom Styles for Driver.js Tour - Fixed Colors
+   Cores fixas baseadas no tema da aplicação
    =================================================================== */
 
 /* ===================================================================
-   POPOVER CONTAINER
+   POPOVER CONTAINER - LIGHT MODE
    =================================================================== */
 
 .tour-popover.driver-popover {
-  background: hsl(var(--popover));
-  border: 1px solid hsl(var(--border));
+  background: oklch(1 0 0); /* White - popover */
+  border: 1px solid oklch(0.92 0.004 286.32); /* border */
   border-radius: 1rem;
   box-shadow:
-    0 0 0 1px hsl(var(--border) / 0.1),
+    0 0 0 1px oklch(0.92 0.004 286.32 / 0.1),
     0 10px 40px -10px rgba(0, 0, 0, 0.4),
     0 20px 60px -20px rgba(0, 0, 0, 0.3);
   max-width: 420px;
@@ -20,7 +21,7 @@
   animation: tour-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Subtle gradient overlay for depth */
+/* Gradient overlay at top */
 .tour-popover.driver-popover::before {
   content: '';
   position: absolute;
@@ -31,7 +32,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--primary) / 0.5),
+    oklch(86.305% 0.15256 177.535 / 0.5), /* primary */
     transparent
   );
   pointer-events: none;
@@ -50,7 +51,7 @@
 }
 
 /* ===================================================================
-   POPOVER ARROW - Hidden for cleaner look
+   POPOVER ARROW
    =================================================================== */
 
 .tour-popover .driver-popover-arrow {
@@ -63,7 +64,7 @@
 
 .tour-popover .driver-popover-title {
   background: transparent;
-  color: hsl(var(--popover-foreground));
+  color: oklch(0.141 0.005 285.823); /* popover-foreground */
   font-size: 1.125rem;
   font-weight: 600;
   padding: 1.5rem 1.75rem 0.75rem;
@@ -78,8 +79,8 @@
    =================================================================== */
 
 .tour-popover .driver-popover-description {
-  color: hsl(var(--popover-foreground));
-  opacity: 0.9;
+  color: oklch(0.141 0.005 285.823); /* popover-foreground */
+  opacity: 0.85;
   font-size: 0.9375rem;
   line-height: 1.65;
   padding: 0 1.75rem 1.5rem;
@@ -92,8 +93,8 @@
    =================================================================== */
 
 .tour-popover .driver-popover-footer {
-  background: hsl(var(--muted) / 0.5);
-  border-top: 1px solid hsl(var(--border));
+  background: oklch(0.967 0.001 286.375 / 0.5); /* muted */
+  border-top: 1px solid oklch(0.92 0.004 286.32); /* border */
   padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
@@ -106,7 +107,7 @@
    =================================================================== */
 
 .tour-popover .driver-popover-progress-text {
-  color: hsl(var(--muted-foreground));
+  color: oklch(0.552 0.016 285.938); /* muted-foreground */
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -131,9 +132,9 @@
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 0.625rem;
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
+  border: 1px solid oklch(0.92 0.004 286.32); /* border */
+  background: oklch(1 0 0); /* background */
+  color: oklch(0.141 0.005 285.823); /* foreground */
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
@@ -141,7 +142,7 @@
   overflow: hidden;
 }
 
-/* Subtle hover shine effect */
+/* Hover shine effect */
 .tour-popover .driver-popover-btn::before {
   content: '';
   position: absolute;
@@ -152,7 +153,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--foreground) / 0.05),
+    oklch(0.141 0.005 285.823 / 0.05),
     transparent
   );
   transition: left 0.5s ease;
@@ -164,12 +165,12 @@
 }
 
 .tour-popover .driver-popover-btn:hover {
-  background: hsl(var(--accent));
-  border-color: hsl(var(--accent-foreground) / 0.2);
+  background: oklch(0.967 0.001 286.375); /* accent */
+  border-color: oklch(0.21 0.006 285.885 / 0.2); /* accent-foreground */
   transform: translateY(-2px);
   box-shadow:
-    0 4px 12px -2px hsl(var(--foreground) / 0.15),
-    0 2px 6px -2px hsl(var(--foreground) / 0.1);
+    0 4px 12px -2px oklch(0.141 0.005 285.823 / 0.15),
+    0 2px 6px -2px oklch(0.141 0.005 285.823 / 0.1);
 }
 
 .tour-popover .driver-popover-btn:active {
@@ -182,16 +183,16 @@
    =================================================================== */
 
 .tour-popover .driver-popover-prev-btn {
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border));
-  color: hsl(var(--secondary-foreground));
+  background: oklch(0.631 0.106 194.024); /* secondary - turquesa */
+  border: 1px solid oklch(0.631 0.106 194.024);
+  color: oklch(1 0 0); /* secondary-foreground - branco */
 }
 
 .tour-popover .driver-popover-prev-btn:hover {
-  background: hsl(var(--secondary));
+  background: oklch(0.631 0.106 194.024);
   opacity: 0.9;
-  color: hsl(var(--secondary-foreground));
-  border-color: hsl(var(--border));
+  color: oklch(1 0 0);
+  border-color: oklch(0.631 0.106 194.024);
 }
 
 /* ===================================================================
@@ -200,13 +201,13 @@
 
 .tour-popover .driver-popover-next-btn,
 .tour-popover .driver-popover-done-btn {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  border-color: hsl(var(--primary));
+  background: oklch(86.305% 0.15256 177.535); /* primary - laranja/vermelho */
+  color: oklch(1 0 0); /* primary-foreground - branco */
+  border-color: oklch(86.305% 0.15256 177.535);
   font-weight: 600;
   box-shadow:
-    0 2px 8px -2px hsl(var(--primary) / 0.5),
-    0 1px 3px -1px hsl(var(--primary) / 0.4);
+    0 2px 8px -2px oklch(86.305% 0.15256 177.535 / 0.5),
+    0 1px 3px -1px oklch(86.305% 0.15256 177.535 / 0.4);
 }
 
 .tour-popover .driver-popover-next-btn::before,
@@ -214,20 +215,20 @@
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--primary-foreground) / 0.2),
+    oklch(1 0 0 / 0.2),
     transparent
   );
 }
 
 .tour-popover .driver-popover-next-btn:hover,
 .tour-popover .driver-popover-done-btn:hover {
-  background: hsl(var(--primary));
-  border-color: hsl(var(--primary));
+  background: oklch(86.305% 0.15256 177.535);
+  border-color: oklch(86.305% 0.15256 177.535);
   opacity: 0.95;
   box-shadow:
-    0 6px 16px -4px hsl(var(--primary) / 0.6),
-    0 4px 10px -3px hsl(var(--primary) / 0.5),
-    0 0 0 1px hsl(var(--primary) / 0.2);
+    0 6px 16px -4px oklch(86.305% 0.15256 177.535 / 0.6),
+    0 4px 10px -3px oklch(86.305% 0.15256 177.535 / 0.5),
+    0 0 0 1px oklch(86.305% 0.15256 177.535 / 0.2);
   transform: translateY(-2px);
 }
 
@@ -244,10 +245,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border));
+  background: oklch(0.967 0.001 286.375); /* muted */
+  border: 1px solid oklch(0.92 0.004 286.32); /* border */
   border-radius: 0.5rem;
-  color: hsl(var(--secondary-foreground));
+  color: oklch(0.552 0.016 285.938); /* muted-foreground */
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 0;
@@ -255,11 +256,11 @@
 }
 
 .tour-popover .driver-popover-close-btn:hover {
-  background: hsl(var(--destructive));
-  border-color: hsl(var(--destructive));
-  color: hsl(var(--destructive-foreground));
+  background: oklch(0.577 0.245 27.325); /* destructive */
+  border-color: oklch(0.577 0.245 27.325);
+  color: oklch(1 0 0); /* branco */
   transform: scale(1.05);
-  box-shadow: 0 2px 8px -2px hsl(var(--destructive) / 0.4);
+  box-shadow: 0 2px 8px -2px oklch(0.577 0.245 27.325 / 0.4);
 }
 
 .tour-popover .driver-popover-close-btn:active {
@@ -276,21 +277,21 @@
    =================================================================== */
 
 .driver-active-element {
-  outline: 3px solid hsl(var(--primary)) !important;
+  outline: 3px solid oklch(86.305% 0.15256 177.535) !important; /* primary */
   outline-offset: 6px;
   border-radius: 0.75rem;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow:
-    0 0 0 4px hsl(var(--background)),
-    0 0 0 7px hsl(var(--primary)),
-    0 8px 24px -8px hsl(var(--primary) / 0.5),
-    0 16px 48px -16px hsl(var(--primary) / 0.3);
+    0 0 0 4px oklch(1 0 0), /* background */
+    0 0 0 7px oklch(86.305% 0.15256 177.535), /* primary */
+    0 8px 24px -8px oklch(86.305% 0.15256 177.535 / 0.5),
+    0 16px 48px -16px oklch(86.305% 0.15256 177.535 / 0.3);
   position: relative;
   z-index: 10000;
   animation: tour-highlight-pulse 2.5s ease-in-out infinite;
 }
 
-/* Subtle glow effect */
+/* Glow effect */
 .driver-active-element::before {
   content: '';
   position: absolute;
@@ -298,7 +299,7 @@
   border-radius: inherit;
   background: radial-gradient(
     circle at center,
-    hsl(var(--primary) / 0.2),
+    oklch(86.305% 0.15256 177.535 / 0.2),
     transparent 70%
   );
   pointer-events: none;
@@ -308,11 +309,11 @@
 
 @keyframes tour-highlight-pulse {
   0%, 100% {
-    outline-color: hsl(var(--primary));
+    outline-color: oklch(86.305% 0.15256 177.535);
     outline-offset: 6px;
   }
   50% {
-    outline-color: hsl(var(--primary) / 0.8);
+    outline-color: oklch(86.305% 0.15256 177.535 / 0.8);
     outline-offset: 8px;
   }
 }
@@ -333,7 +334,7 @@
    =================================================================== */
 
 .driver-overlay {
-  background: hsl(var(--background) / 0.92);
+  background: oklch(1 0 0 / 0.92); /* background branco */
   backdrop-filter: blur(8px);
   animation: tour-overlay-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -350,7 +351,7 @@
 }
 
 /* ===================================================================
-   RESPONSIVE ADJUSTMENTS - Mobile
+   RESPONSIVE - Mobile
    =================================================================== */
 
 @media (max-width: 640px) {
@@ -406,71 +407,147 @@
     outline-width: 2px;
     outline-offset: 4px;
     box-shadow:
-      0 0 0 3px hsl(var(--background)),
-      0 0 0 5px hsl(var(--primary)),
-      0 4px 16px -4px hsl(var(--primary) / 0.5);
+      0 0 0 3px oklch(1 0 0),
+      0 0 0 5px oklch(86.305% 0.15256 177.535),
+      0 4px 16px -4px oklch(86.305% 0.15256 177.535 / 0.5);
   }
 }
 
 /* ===================================================================
-   DARK MODE ENHANCEMENTS
+   DARK MODE
    =================================================================== */
 
 @media (prefers-color-scheme: dark) {
+  /* Overlay dark */
   .driver-overlay {
-    background: hsl(var(--background) / 0.95);
+    background: oklch(18.264% 0.00204 286.052 / 0.95); /* background dark */
     backdrop-filter: blur(10px);
   }
 
+  /* Popover dark */
   .tour-popover.driver-popover {
+    background: oklch(0.21 0.006 285.885); /* popover dark */
+    border-color: oklch(1 0 0 / 10%); /* border dark */
     box-shadow:
-      0 0 0 1px hsl(var(--border) / 0.3),
+      0 0 0 1px oklch(1 0 0 / 0.1),
       0 20px 60px -10px rgba(0, 0, 0, 0.8),
       0 40px 100px -20px rgba(0, 0, 0, 0.6);
   }
 
-  .driver-active-element {
-    box-shadow:
-      0 0 0 4px hsl(var(--background)),
-      0 0 0 7px hsl(var(--primary)),
-      0 8px 32px -8px hsl(var(--primary) / 0.7),
-      0 16px 64px -16px hsl(var(--primary) / 0.5);
+  /* Gradient overlay dark */
+  .tour-popover.driver-popover::before {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      oklch(0.656 0.201 34.773 / 0.5), /* primary dark */
+      transparent
+    );
   }
 
-  /* Enhanced glow in dark mode */
+  /* Title dark */
+  .tour-popover .driver-popover-title {
+    color: oklch(0.985 0 0); /* popover-foreground dark */
+  }
+
+  /* Description dark */
+  .tour-popover .driver-popover-description {
+    color: oklch(0.985 0 0); /* popover-foreground dark */
+    opacity: 0.9;
+  }
+
+  /* Footer dark */
+  .tour-popover .driver-popover-footer {
+    background: oklch(0.274 0.006 286.033 / 0.5); /* muted dark */
+    border-top-color: oklch(1 0 0 / 10%); /* border dark */
+  }
+
+  /* Progress text dark */
+  .tour-popover .driver-popover-progress-text {
+    color: oklch(0.705 0.015 286.067); /* muted-foreground dark */
+  }
+
+  /* Buttons base dark */
+  .tour-popover .driver-popover-btn {
+    background: oklch(18.264% 0.00204 286.052); /* background dark */
+    color: oklch(0.985 0 0); /* foreground dark */
+    border-color: oklch(1 0 0 / 10%); /* border dark */
+  }
+
+  .tour-popover .driver-popover-btn:hover {
+    background: oklch(0.274 0.006 286.033); /* accent dark */
+    border-color: oklch(0.985 0 0 / 0.2); /* accent-foreground dark */
+  }
+
+  /* Previous button dark */
+  .tour-popover .driver-popover-prev-btn {
+    background: oklch(0.631 0.106 194.024); /* secondary dark */
+    border-color: oklch(0.631 0.106 194.024);
+    color: oklch(1 0 0); /* branco */
+  }
+
+  .tour-popover .driver-popover-prev-btn:hover {
+    background: oklch(0.631 0.106 194.024);
+    opacity: 0.9;
+  }
+
+  /* Primary buttons dark */
+  .tour-popover .driver-popover-next-btn,
+  .tour-popover .driver-popover-done-btn {
+    background: oklch(0.656 0.201 34.773); /* primary dark */
+    color: oklch(1 0 0); /* branco */
+    border-color: oklch(0.656 0.201 34.773);
+    box-shadow:
+      0 2px 8px -2px oklch(0.656 0.201 34.773 / 0.5),
+      0 1px 3px -1px oklch(0.656 0.201 34.773 / 0.4);
+  }
+
+  .tour-popover .driver-popover-next-btn:hover,
+  .tour-popover .driver-popover-done-btn:hover {
+    background: oklch(0.656 0.201 34.773);
+    box-shadow:
+      0 6px 16px -4px oklch(0.656 0.201 34.773 / 0.6),
+      0 4px 10px -3px oklch(0.656 0.201 34.773 / 0.5),
+      0 0 0 1px oklch(0.656 0.201 34.773 / 0.2);
+  }
+
+  /* Close button dark */
+  .tour-popover .driver-popover-close-btn {
+    background: oklch(0.274 0.006 286.033); /* muted dark */
+    border-color: oklch(1 0 0 / 10%); /* border dark */
+    color: oklch(0.705 0.015 286.067); /* muted-foreground dark */
+  }
+
+  .tour-popover .driver-popover-close-btn:hover {
+    background: oklch(0.704 0.191 22.216); /* destructive dark */
+    border-color: oklch(0.704 0.191 22.216);
+    color: oklch(1 0 0);
+  }
+
+  /* Highlighted element dark */
+  .driver-active-element {
+    outline-color: oklch(0.656 0.201 34.773) !important; /* primary dark */
+    box-shadow:
+      0 0 0 4px oklch(18.264% 0.00204 286.052), /* background dark */
+      0 0 0 7px oklch(0.656 0.201 34.773), /* primary dark */
+      0 8px 32px -8px oklch(0.656 0.201 34.773 / 0.7),
+      0 16px 64px -16px oklch(0.656 0.201 34.773 / 0.5);
+  }
+
   .driver-active-element::before {
     background: radial-gradient(
       circle at center,
-      hsl(var(--primary) / 0.3),
+      oklch(0.656 0.201 34.773 / 0.3),
       transparent 65%
     );
   }
-}
 
-/* ===================================================================
-   LIGHT MODE ENHANCEMENTS
-   =================================================================== */
-
-@media (prefers-color-scheme: light) {
-  .tour-popover.driver-popover {
-    background: hsl(var(--popover));
-    box-shadow:
-      0 0 0 1px hsl(var(--border)),
-      0 20px 60px -10px rgba(0, 0, 0, 0.15),
-      0 40px 100px -20px rgba(0, 0, 0, 0.1);
-  }
-
-  .tour-popover .driver-popover-title {
-    color: hsl(var(--popover-foreground));
-  }
-
-  .tour-popover .driver-popover-description {
-    color: hsl(var(--popover-foreground));
-    opacity: 0.85;
-  }
-
-  .driver-overlay {
-    background: hsl(var(--background) / 0.9);
+  @keyframes tour-highlight-pulse {
+    0%, 100% {
+      outline-color: oklch(0.656 0.201 34.773);
+    }
+    50% {
+      outline-color: oklch(0.656 0.201 34.773 / 0.8);
+    }
   }
 }
 
@@ -499,48 +576,32 @@
 }
 
 /* ===================================================================
-   HIGH CONTRAST MODE
-   =================================================================== */
-
-@media (prefers-contrast: high) {
-  .tour-popover.driver-popover {
-    border-width: 2px;
-    background: hsl(var(--background));
-  }
-
-  .driver-active-element {
-    outline-width: 4px;
-    outline-offset: 8px;
-  }
-
-  .tour-popover .driver-popover-btn {
-    border-width: 2px;
-  }
-
-  .tour-popover .driver-popover-title,
-  .tour-popover .driver-popover-description {
-    color: hsl(var(--foreground));
-  }
-}
-
-/* ===================================================================
    FOCUS STATES - Keyboard Navigation
    =================================================================== */
 
 .tour-popover .driver-popover-btn:focus-visible {
-  outline: 2px solid hsl(var(--primary));
+  outline: 2px solid oklch(86.305% 0.15256 177.535); /* primary */
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
+  box-shadow: 0 0 0 4px oklch(86.305% 0.15256 177.535 / 0.2);
 }
 
 .tour-popover .driver-popover-close-btn:focus-visible {
-  outline: 2px solid hsl(var(--primary));
+  outline: 2px solid oklch(86.305% 0.15256 177.535);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
+  box-shadow: 0 0 0 4px oklch(86.305% 0.15256 177.535 / 0.2);
+}
+
+/* Dark mode focus */
+@media (prefers-color-scheme: dark) {
+  .tour-popover .driver-popover-btn:focus-visible,
+  .tour-popover .driver-popover-close-btn:focus-visible {
+    outline-color: oklch(0.656 0.201 34.773); /* primary dark */
+    box-shadow: 0 0 0 4px oklch(0.656 0.201 34.773 / 0.2);
+  }
 }
 
 /* ===================================================================
-   LOADING STATE (Optional Enhancement)
+   LOADING STATE
    =================================================================== */
 
 .tour-popover.driver-popover.is-loading {
@@ -556,10 +617,17 @@
   width: 2rem;
   height: 2rem;
   margin: -1rem 0 0 -1rem;
-  border: 2px solid hsl(var(--primary));
+  border: 2px solid oklch(86.305% 0.15256 177.535); /* primary */
   border-top-color: transparent;
   border-radius: 50%;
   animation: tour-spin 0.8s linear infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tour-popover.driver-popover.is-loading::after {
+    border-color: oklch(0.656 0.201 34.773); /* primary dark */
+    border-top-color: transparent;
+  }
 }
 
 @keyframes tour-spin {
