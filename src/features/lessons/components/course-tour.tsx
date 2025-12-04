@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
-import { X } from 'lucide-react'
 
 interface CourseTourProps {
   /** Executar o tour automaticamente na primeira visita */
@@ -70,7 +69,7 @@ export function CourseTour({
         {
           element: 'body',
           popover: {
-            title: '👋 Bem-vindo ao curso!',
+            title: 'Bem-vindo ao curso!',
             description: 'Vamos te mostrar rapidamente como funciona esta página. O tour leva apenas 30 segundos.',
             side: 'bottom',
             align: 'center',

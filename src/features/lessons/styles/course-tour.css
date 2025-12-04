@@ -2,7 +2,7 @@
 
 /* Popover container */
 .tour-popover.driver-popover {
-  background: hsl(var(--background));
+  background: rgb(37, 37, 37);
   border: 1px solid hsl(var(--border));
   border-radius: 0.75rem;
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2);
@@ -29,8 +29,7 @@
 
 /* Popover title */
 .tour-popover .driver-popover-title {
-  background: transparent;
-  color: hsl(var(--foreground));
+  color: white;
   font-size: 1.125rem;
   font-weight: 600;
   padding: 1.25rem 1.5rem 0.75rem;
@@ -40,7 +39,7 @@
 
 /* Popover description */
 .tour-popover .driver-popover-description {
-  color: hsl(var(--muted-foreground));
+  color: white;
   font-size: 0.875rem;
   line-height: 1.6;
   padding: 0 1.5rem 1.25rem;
@@ -49,7 +48,7 @@
 
 /* Footer with buttons */
 .tour-popover .driver-popover-footer {
-  background: transparent;
+  background: rgb(37, 37, 37);
   border-top: 1px solid hsl(var(--border));
   padding: 1rem 1.5rem;
   display: flex;
@@ -79,7 +78,7 @@
   border-radius: 0.5rem;
   border: 1px solid hsl(var(--border));
   background: hsl(var(--background));
-  color: hsl(var(--foreground));
+    color: white;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
