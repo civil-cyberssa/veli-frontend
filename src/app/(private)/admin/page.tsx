@@ -1,16 +1,16 @@
-import { getServerSession } from "next-auth"
+'use client'
 import { redirect } from "next/navigation"
-import authOptions from "@/src/utils/authOptions"
 import { ColorSettings } from "@/src/features/admin/color-settings"
+import { useSession } from "next-auth/react"
 
 export default async function AdminPage() {
-  const session = await getServerSession(authOptions)
+  const { data:session } = useSession()
 
-  if (!session || (session.role as string | undefined)?.toLowerCase() !== "gestor") {
+  if (!session || (session.role as string | undefined)?.toLowerCase() !== "manager") {
     redirect("/home")
   }
 
-  const managerName = session.student_full_name || session.user?.name
+  const managerName = session.student_full_name || "Gestor" 
 
   return (
     <div className="py-8">

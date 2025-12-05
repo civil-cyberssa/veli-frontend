@@ -78,7 +78,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navMainWithActiveState = React.useMemo(() => {
     const items = [...baseNavData.navMain]
 
-    if (role === "gestor") {
+    if (role === "manager") {
       items.push({
         title: "Administração",
         url: "#",
