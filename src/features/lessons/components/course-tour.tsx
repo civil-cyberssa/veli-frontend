@@ -159,7 +159,7 @@ export function CourseTour() {
       <>
         {/* Overlay */}
         <div
-          className="fixed inset-0 bg-foreground/60 backdrop-blur-sm z-[100] animate-in fade-in duration-300"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100] animate-in fade-in duration-300"
           onClick={skipTour}
         />
 
@@ -249,21 +249,8 @@ export function CourseTour() {
       <div
         className="fixed inset-0 z-[100] animate-in fade-in duration-300"
         style={{
-          backgroundColor: 'hsl(var(--foreground) / 0.65)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          pointerEvents: 'none',
-          maskImage: 'linear-gradient(#000, #000), linear-gradient(#000, #000)',
-          maskMode: 'alpha',
-          maskRepeat: 'no-repeat, no-repeat',
-          maskSize: `100% 100%, ${highlightBox.width}px ${highlightBox.height}px`,
-          maskPosition: `0 0, ${highlightBox.left}px ${highlightBox.top}px`,
-          maskComposite: 'exclude',
-          WebkitMaskImage: 'linear-gradient(#000, #000), linear-gradient(#000, #000)',
-          WebkitMaskRepeat: 'no-repeat, no-repeat',
-          WebkitMaskSize: `100% 100%, ${highlightBox.width}px ${highlightBox.height}px`,
-          WebkitMaskPosition: `0 0, ${highlightBox.left}px ${highlightBox.top}px`,
-          WebkitMaskComposite: 'destination-out',
+          backgroundColor: '#0f0f0f23',
+
         }}
       />
 
