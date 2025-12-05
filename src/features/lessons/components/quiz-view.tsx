@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { X, CheckCircle2, XCircle } from 'lucide-react'
 import { useExercise, Question, Answer } from '@/src/features/dashboard/hooks/useExercise'
 import { useSubmitAnswer } from '@/src/features/dashboard/hooks/useSubmitAnswer'
+import { LogoPulseLoader } from '@/components/shared/logo-loader'
 
 interface QuizViewProps {
   eventId: number
@@ -156,10 +157,7 @@ export function QuizView({ eventId, exerciseName, subscriptionId, onClose }: Qui
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-background z-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Carregando exercício...</p>
-        </div>
+        <LogoPulseLoader label="Carregando exercício..." />
       </div>
     )
   }

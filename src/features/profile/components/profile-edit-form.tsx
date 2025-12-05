@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LogoPulseLoader } from "@/components/shared/logo-loader"
 import {
   ArrowLeft,
   Camera,
@@ -372,8 +373,7 @@ export function ProfileEditForm() {
   if (studentLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-muted-foreground">Carregando suas informações...</p>
+        <LogoPulseLoader label="Carregando suas informações..." />
       </div>
     )
   }

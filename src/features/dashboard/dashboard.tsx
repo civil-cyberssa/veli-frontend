@@ -4,6 +4,7 @@ import { Calendar, Clock, ArrowRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { LogoPulseLoader } from "@/components/shared/logo-loader"
 import { WelcomeCard } from "./components/map"
 
 import {
@@ -55,7 +56,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-sm text-muted-foreground">Carregando...</p>
+        <LogoPulseLoader label="Carregando seu painel..." />
       </div>
     )
   }
@@ -150,7 +151,7 @@ export default function Dashboard() {
 
             {loadingNextClass ? (
               <div className="flex items-center justify-center py-8">
-                <p className="text-sm text-muted-foreground">Carregando...</p>
+                <LogoPulseLoader label="Carregando próxima aula..." size={56} />
               </div>
             ) : errorNextClass ? (
               <div className="flex items-center justify-center py-8">

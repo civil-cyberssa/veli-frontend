@@ -25,6 +25,10 @@ const routeBreadcrumbs: Record<string, { label: string; href?: string }[]> = {
     { label: "Área do aluno", href: "#" },
     { label: "Dashboard" },
   ],
+  "/admin": [
+    { label: "Administração", href: "#" },
+    { label: "Cores da marca" },
+  ],
   "/profile/edit": [
     { label: "Perfil", href: "#" },
     { label: "Editar" },

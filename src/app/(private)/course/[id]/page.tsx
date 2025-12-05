@@ -16,6 +16,7 @@ import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
+import { LogoPulseLoader } from '@/components/shared/logo-loader'
 
 export default function LessonPage() {
   const params = useParams()
@@ -238,11 +239,7 @@ export default function LessonPage() {
   if (isLessonLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 animate-fade-in">
-        <div className="relative">
-          <div className="h-12 w-12 rounded-full border-4 border-muted"></div>
-          <div className="absolute top-0 h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-        </div>
-        <p className="text-sm text-muted-foreground mt-4">Carregando aula...</p>
+        <LogoPulseLoader label="Carregando aula..." />
       </div>
     )
   }
@@ -397,10 +394,7 @@ export default function LessonPage() {
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
-                    <div className="text-center space-y-2">
-                      <PlayCircle className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-                      <p className="text-sm text-muted-foreground">Carregando...</p>
-                    </div>
+                    <LogoPulseLoader label="Carregando..." size={56} />
                   </Card>
                 )}
               </div>
