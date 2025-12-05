@@ -140,3 +140,51 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Configurações de densidade */
+.density-compact {
+  --spacing-unit: 0.75rem;
+  --card-padding: 1rem;
+  --text-size: 0.875rem;
+}
+
+.density-comfortable {
+  --spacing-unit: 1rem;
+  --card-padding: 1.5rem;
+  --text-size: 1rem;
+}
+
+.density-spacious {
+  --spacing-unit: 1.5rem;
+  --card-padding: 2rem;
+  --text-size: 1.125rem;
+}
+
+/* Aplicar densidade aos elementos */
+.density-compact [data-slot="card"] {
+  @apply p-4;
+}
+
+.density-comfortable [data-slot="card"] {
+  @apply p-6;
+}
+
+.density-spacious [data-slot="card"] {
+  @apply p-8;
+}
+
+/* Configurações de largura da sidebar */
+.sidebar-narrow {
+  --sidebar-width: 14rem;
+  --sidebar-width-icon: 3rem;
+}
+
+.sidebar-normal {
+  --sidebar-width: 16rem;
+  --sidebar-width-icon: 3rem;
+}
+
+.sidebar-wide {
+  --sidebar-width: 20rem;
+  --sidebar-width-icon: 3rem;
+}

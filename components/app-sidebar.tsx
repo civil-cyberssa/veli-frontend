@@ -10,6 +10,7 @@ import {
   MonitorPlay,
   FileText,
   Palette,
+  Shield,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -24,13 +25,6 @@ import {
 import { NavUser } from "./nav-user"
 
 const baseNavData = {
-  teams: [
-    {
-      name: "Área do Aluno",
-      logo: AudioWaveform,
-      plan: "Portal do Estudante",
-    },
-  ],
   navMain: [
     {
       title: "Área do Aluno",
@@ -74,6 +68,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession()
   const role = (session?.role as string | undefined)?.toLowerCase()
 
+  // Define teams baseado no role
+  const teams = React.useMemo(() => {
+    if (role === "manager") {
+      return [
+        {
+          name: "Área do Admin",
+          logo: Shield,
+          plan: "Painel de Administração",
+        },
+      ]
+    }
+    return [
+      {
+        name: "Área do Aluno",
+        logo: AudioWaveform,
+        plan: "Portal do Estudante",
+      },
+    ]
+  }, [role])
+
   // Calcula dinamicamente o isActive baseado na rota atual
   const navMainWithActiveState = React.useMemo(() => {
     const items = [...baseNavData.navMain]
@@ -110,7 +124,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={baseNavData.teams} />
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainWithActiveState} />
