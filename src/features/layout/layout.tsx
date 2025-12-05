@@ -1,6 +1,7 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { Fragment, useEffect, useMemo, useState } from "react"
+import { useParams, usePathname } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -16,22 +17,61 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription"
 
 // Mapeamento de rotas para breadcrumbs
-const routeBreadcrumbs: Record<string, { parent?: { label: string; href: string }, current: string }> = {
-  "/home": {
-    parent: { label: "Área do aluno", href: "#" },
-    current: "Dashboard"
-  },
-  "/profile/edit": {
-    parent: { label: "Perfil", href: "#" },
-    current: "Editar"
-  },
+const routeBreadcrumbs: Record<string, { label: string; href?: string }[]> = {
+  "/home": [
+    { label: "Área do aluno", href: "#" },
+    { label: "Dashboard" },
+  ],
+  "/admin": [
+    { label: "Administração", href: "#" },
+    { label: "Cores da marca" },
+  ],
+  "/profile/edit": [
+    { label: "Perfil", href: "#" },
+    { label: "Editar" },
+  ],
 }
 
 export default function Layout({children}: {children: React.ReactNode}) {
   const pathname = usePathname()
-  const breadcrumb = routeBreadcrumbs[pathname] || routeBreadcrumbs["/home"]
+  const params = useParams()
+  const { data: subscriptions } = useSubscriptions()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!pathname.startsWith("/course/"))
+
+  useEffect(() => {
+    setIsSidebarOpen(!pathname.startsWith("/course/"))
+  }, [pathname])
+
+  const courseId = useMemo(() => {
+    const rawId = params?.id
+    if (typeof rawId === "string") {
+      const parsed = Number(rawId)
+      return Number.isNaN(parsed) ? null : parsed
+    }
+
+    return null
+  }, [params?.id])
+
+  const courseName = useMemo(() => {
+    if (!courseId || !subscriptions) return null
+    return subscriptions.find((subscription) => subscription.id === courseId)?.course_name ?? null
+  }, [courseId, subscriptions])
+
+  const breadcrumb = useMemo(() => {
+    if (pathname.startsWith("/course/")) {
+      return [
+        { label: "Área do aluno", href: "#" },
+        { label: "Dashboard", href: "/home" },
+        { label: "cursos", href: "#" },
+        { label: courseName ?? "Curso" },
+      ]
+    }
+
+    return routeBreadcrumbs[pathname] || routeBreadcrumbs["/home"]
+  }, [pathname, courseName])
 
   // Detectar se está no ambiente de aprendizagem (página de aulas)
   const isLessonPage = pathname.startsWith('/aulas')
@@ -42,7 +82,7 @@ export default function Layout({children}: {children: React.ReactNode}) {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -54,19 +94,22 @@ export default function Layout({children}: {children: React.ReactNode}) {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                {breadcrumb.parent && (
-                  <>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink href={breadcrumb.parent.href}>
-                        {breadcrumb.parent.label}
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                  </>
-                )}
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{breadcrumb.current}</BreadcrumbPage>
-                </BreadcrumbItem>
+                {breadcrumb.map((item, index) => {
+                  const isLast = index === breadcrumb.length - 1
+
+                  return (
+                    <Fragment key={`${item.label}-${index}`}>
+                      <BreadcrumbItem>
+                        {isLast || !item.href ? (
+                          <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {index < breadcrumb.length - 1 && <BreadcrumbSeparator />}
+                    </Fragment>
+                  )
+                })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>

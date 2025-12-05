@@ -16,6 +16,7 @@ import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
+import { LogoPulseLoader } from '@/components/shared/logo-loader'
 
 export default function LessonPage() {
   const params = useParams()
@@ -26,6 +27,8 @@ export default function LessonPage() {
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
   const [quizState, setQuizState] = useState<{ eventId: number; name: string } | null>(null)
   const hasMarkedWatched = useRef<Set<number>>(new Set())
+  const autoMarkTriggered = useRef(false)
+  const [watchProgress, setWatchProgress] = useState(0)
 
   const handleAutoplayChange = (checked: boolean) => {
     setAutoplay(checked)
@@ -86,6 +89,18 @@ export default function LessonPage() {
     refetchLesson()
     refetchProgress()
   }, [selectedLessonId, refetchLesson, refetchProgress])
+
+  useEffect(() => {
+    setWatchProgress(0)
+    autoMarkTriggered.current = false
+  }, [selectedLessonId])
+
+  useEffect(() => {
+    if (selectedLessonProgress?.watched) {
+      setWatchProgress(1)
+      autoMarkTriggered.current = true
+    }
+  }, [selectedLessonProgress?.watched])
 
   const handleRatingChange = async (rating: number) => {
     if (!selectedLessonId || !eventProgress || selectedLessonProgress?.rating) return
@@ -176,6 +191,7 @@ export default function LessonPage() {
 
     // Marcar como já processada para evitar chamadas duplicadas
     hasMarkedWatched.current.add(selectedLessonId)
+    autoMarkTriggered.current = true
 
     try {
       await markAsWatched({
@@ -203,6 +219,7 @@ export default function LessonPage() {
       console.error('Erro ao marcar aula como assistida:', err)
       // Em caso de erro, remover da lista para permitir nova tentativa
       hasMarkedWatched.current.delete(selectedLessonId)
+      autoMarkTriggered.current = false
     }
   }
 
@@ -222,11 +239,7 @@ export default function LessonPage() {
   if (isLessonLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 animate-fade-in">
-        <div className="relative">
-          <div className="h-12 w-12 rounded-full border-4 border-muted"></div>
-          <div className="absolute top-0 h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-        </div>
-        <p className="text-sm text-muted-foreground mt-4">Carregando aula...</p>
+        <LogoPulseLoader label="Carregando aula..." />
       </div>
     )
   }
@@ -287,13 +300,21 @@ export default function LessonPage() {
                   url={lesson.content_url}
                   autoPlay={autoplay}
                   onProgress={(progress) => {
+                    setWatchProgress(progress.played)
+
                     // Marcar como assistida quando atingir 90% do vídeo
-                    if (progress.played >= 0.9) {
+                    if (
+                      !selectedLessonProgress?.watched &&
+                      !autoMarkTriggered.current &&
+                      progress.played >= 0.9
+                    ) {
+                      autoMarkTriggered.current = true
                       handleMarkAsWatched()
                     }
                   }}
                   onEnded={() => {
                     // Marcar aula como concluída quando o vídeo terminar
+                    setWatchProgress(1)
                     handleMarkAsWatched()
                   }}
                 />
@@ -326,6 +347,8 @@ export default function LessonPage() {
                 onSubmitComment={handleCommentSubmit}
                 onMarkAsWatched={handleMarkAsWatched}
                 isCommentSubmitting={isUpdatingRating}
+                watchProgress={watchProgress}
+                isMarkingWatched={isMarkingWatched}
               />
             </div>
 
@@ -371,10 +394,7 @@ export default function LessonPage() {
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
-                    <div className="text-center space-y-2">
-                      <PlayCircle className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-                      <p className="text-sm text-muted-foreground">Carregando...</p>
-                    </div>
+                    <LogoPulseLoader label="Carregando..." size={56} />
                   </Card>
                 )}
               </div>

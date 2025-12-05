@@ -8,6 +8,7 @@ import React from "react"
 import Link from "next/link"
 import { useNextAsyncLesson } from "../hooks/useNextAsyncLesson"
 import { Badge } from "@/components/ui/badge"
+import { LogoPulseLoader } from "@/components/shared/logo-loader"
 
 export function WelcomeCard() {
   const { data: session } = useSession()
@@ -67,14 +68,9 @@ export function WelcomeCard() {
 
         {/* Card do vídeo */}
         {isLoading ? (
-          <div className="relative overflow-hidden rounded-2xl bg-card shadow-sm animate-pulse">
+          <div className="relative overflow-hidden rounded-2xl bg-card shadow-sm">
             <div className="flex h-72 md:h-80 items-center justify-center bg-muted">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-16 w-16 rounded-full bg-muted-foreground/20 flex items-center justify-center">
-                  <Play className="h-7 w-7 text-muted-foreground/40" />
-                </div>
-                <p className="text-sm text-muted-foreground">Carregando próxima aula...</p>
-              </div>
+              <LogoPulseLoader label="Carregando próxima aula..." />
             </div>
           </div>
         ) : nextLesson ? (

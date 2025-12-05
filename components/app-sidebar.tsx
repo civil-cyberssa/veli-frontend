@@ -2,12 +2,14 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import {
   AudioWaveform,
   SquareTerminal,
   PlayCircle,
   MonitorPlay,
   FileText,
+  Palette,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -69,10 +71,28 @@ const baseNavData = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const role = (session?.role as string | undefined)?.toLowerCase()
 
   // Calcula dinamicamente o isActive baseado na rota atual
   const navMainWithActiveState = React.useMemo(() => {
-    return baseNavData.navMain.map((item) => {
+    const items = [...baseNavData.navMain]
+
+    if (role === "manager") {
+      items.push({
+        title: "Administração",
+        url: "#",
+        icon: Palette,
+        items: [
+          {
+            title: "Cores da marca",
+            url: "/admin",
+          },
+        ],
+      })
+    }
+
+    return items.map((item) => {
       // Verifica se algum sub-item está ativo
       const hasActiveSubItem = item.items?.some((subItem) => pathname === subItem.url)
 
@@ -85,7 +105,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         })),
       }
     })
-  }, [pathname])
+  }, [pathname, role])
 
   return (
     <Sidebar collapsible="icon" {...props}>
