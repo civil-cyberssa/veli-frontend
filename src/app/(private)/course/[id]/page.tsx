@@ -17,6 +17,7 @@ import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 import { LessonCommentsList } from '@/src/features/lessons/components/lesson-comments-list'
+import { LessonResources } from '@/src/features/lessons/components/lesson-resources'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
@@ -357,31 +358,15 @@ export default function LessonPage() {
               />
             </div>
 
-            {/* Atividades da Aula */}
-            {lesson?.activities && lesson.activities.length > 0 && (
-              <div className="animate-slide-up animate-delay-300">
-                <Card className="p-4 border-border/50">
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold">Atividades da Aula</h3>
-                    <div className="space-y-2">
-                      {lesson.activities.slice(0, 3).map((activity) => (
-                        <div
-                          key={activity.id}
-                          className="flex items-center gap-2 text-sm p-2 rounded hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                          {activity.completed ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                          ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-                          )}
-                          <span className="text-xs">{activity.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            )}
+            {/* Recursos da Aula */}
+            <div className="animate-slide-up animate-delay-300">
+              <LessonResources
+                exercise={selectedLessonProgress?.exercise ?? null}
+                exerciseScore={selectedLessonProgress?.exercise_score ?? null}
+                supportMaterialUrl={lesson?.support_material_url}
+                onOpenQuiz={handleOpenQuiz}
+              />
+            </div>
           </div>
 
           {/* Sidebar direita: Tabs com Conteúdo, Material e Exercício (sticky) */}
