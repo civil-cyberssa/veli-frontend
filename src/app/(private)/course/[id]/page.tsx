@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
+import { useAllLessons } from '@/src/features/dashboard/hooks/useAllLessons'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
 import { useUpdateLessonRating } from '@/src/features/dashboard/hooks/useUpdateLessonRating'
@@ -39,15 +40,14 @@ export default function LessonPage() {
   }
   const { data: eventProgress, isLoading: isProgressLoading, refetch: refetchProgress } = useEventProgress(courseId)
 
-  // Buscar o event_id da lição selecionada
-  const selectedLessonEventId = selectedLessonId
-    ? eventProgress?.find((l) => l.lesson_id === selectedLessonId)?.event_id
-    : undefined
+  // Pré-carregar todas as lições de uma vez
+  const { lessons: allLessons, isLoading: isLoadingAllLessons, error, refetch: refetchAllLessons } = useAllLessons(courseId)
 
-  const { data: lesson, isLoading, error, refetch: refetchLesson } = useLesson(
-    selectedLessonId ? String(selectedLessonId) : null,
-    selectedLessonEventId
-  )
+  // Obter a lição atual do Map de lições pré-carregadas
+  const lesson = useMemo(() => {
+    if (!allLessons || !selectedLessonId) return null
+    return allLessons.get(selectedLessonId) || null
+  }, [allLessons, selectedLessonId])
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
   const { data: subscriptions } = useSubscriptions()
@@ -99,9 +99,9 @@ export default function LessonPage() {
   useEffect(() => {
     if (!selectedLessonId) return
 
-    refetchLesson()
+    // Apenas atualizar o progresso, as lições já foram pré-carregadas
     refetchProgress()
-  }, [selectedLessonId, refetchLesson, refetchProgress])
+  }, [selectedLessonId, refetchProgress])
 
   useEffect(() => {
     setWatchProgress(0)
@@ -229,10 +229,10 @@ export default function LessonPage() {
     setQuizState(null)
     // Refetch para atualizar o score e o status de conclusão
     refetchProgress()
-    refetchLesson()
+    refetchAllLessons()
   }
 
-  const isLessonLoading = (isLoading || isProgressLoading || !selectedLessonId) && !lesson
+  const isLessonLoading = (isLoadingAllLessons || isProgressLoading) && !lesson
 
   if (isLessonLoading) {
     return (
@@ -264,7 +264,7 @@ export default function LessonPage() {
     )
   }
 
-  if (!lesson && !isLoading) {
+  if (!lesson && !isLoadingAllLessons && selectedLessonId) {
     return (
       <div className="flex items-center justify-center h-96 animate-fade-in">
         <div className="text-center space-y-2">

@@ -74,7 +74,7 @@ export function WelcomeCard() {
             </div>
           </div>
         ) : nextLesson ? (
-          <Link href={`/course/${nextLesson.module_id}`} className="block">
+          <Link href={`/course/${nextLesson.student_class_id}`} className="block">
             <div className="relative overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer group/card">
               <div className="relative h-72 md:h-80">
                 {/* Vídeo de fundo - usa a própria thumbnail do vídeo */}
