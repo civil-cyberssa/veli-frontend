@@ -8,12 +8,15 @@ import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgres
 import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
 import { useUpdateLessonRating } from '@/src/features/dashboard/hooks/useUpdateLessonRating'
 import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
+import { useCreateLessonComment } from '@/src/features/dashboard/hooks/useCreateLessonComment'
+import { useLessonComments } from '@/src/features/dashboard/hooks/useLessonComments'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
+import { LessonCommentsList } from '@/src/features/lessons/components/lesson-comments-list'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
@@ -47,11 +50,20 @@ export default function LessonPage() {
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
   const { data: subscriptions } = useSubscriptions()
+  const { createComment, isLoading: isCreatingComment } = useCreateLessonComment()
+  const { data: commentsData, refetch: refetchComments } = useLessonComments(selectedLessonId)
 
   const selectedLessonProgress = useMemo(
     () => eventProgress?.find((lesson) => lesson.lesson_id === selectedLessonId),
     [eventProgress, selectedLessonId]
   )
+
+  // Obter o comentário do usuário atual a partir da lista de comentários
+  const currentUserComment = useMemo(() => {
+    if (!commentsData?.results) return selectedLessonProgress?.comment ?? ''
+    const userComment = commentsData.results.find((c) => c.current_user)
+    return userComment?.comment ?? selectedLessonProgress?.comment ?? ''
+  }, [commentsData, selectedLessonProgress])
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
@@ -140,37 +152,22 @@ export default function LessonPage() {
   }
 
   const handleCommentSubmit = async (comment: string) => {
-    if (!selectedLessonId || !eventProgress) return
-
-    const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
-    if (!currentLesson) return
+    if (!selectedLessonId) return
 
     try {
-      await refetchProgress(
-        (currentLessons) =>
-          currentLessons?.map((lesson) =>
-            lesson.lesson_id === selectedLessonId
-              ? {
-                  ...lesson,
-                  comment,
-                }
-              : lesson
-          ) ?? currentLessons,
-        { revalidate: false }
-      )
-
-      await updateRating({
-        eventId: currentLesson.event_id,
+      // Usar o novo endpoint de criação de comentários
+      await createComment({
         lessonId: selectedLessonId,
         comment,
       })
 
+      // Recarregar os comentários e o progresso
+      await refetchComments()
       await refetchProgress()
 
       toast.success('Obrigado pelo comentário!')
     } catch (err) {
       console.error('Erro ao salvar comentário:', err)
-      refetchProgress()
       toast.error('Não foi possível salvar seu comentário. Tente novamente.')
     }
   }
@@ -340,15 +337,23 @@ export default function LessonPage() {
                 description={lesson?.description}
                 courseName={currentCourseName}
                 initialRating={selectedLessonProgress?.rating ?? null}
-                initialComment={selectedLessonProgress?.comment ?? ''}
+                initialComment={currentUserComment}
                 isWatched={selectedLessonProgress?.watched ?? false}
                 ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
                 onRatingChange={handleRatingChange}
                 onSubmitComment={handleCommentSubmit}
                 onMarkAsWatched={handleMarkAsWatched}
-                isCommentSubmitting={isUpdatingRating}
+                isCommentSubmitting={isCreatingComment}
                 watchProgress={watchProgress}
                 isMarkingWatched={isMarkingWatched}
+              />
+            </div>
+
+            {/* Comentários da turma */}
+            <div className="animate-slide-up animate-delay-250">
+              <LessonCommentsList
+                commentsData={commentsData}
+                isLoading={!selectedLessonId}
               />
             </div>
 
