@@ -213,6 +213,11 @@ export default function LessonPage() {
       )
 
       console.log('Aula marcada como assistida com sucesso')
+
+      // Abrir quiz se houver exercício disponível
+      if (currentLesson.exercise && currentLesson.exercise.questions_count > 0) {
+        handleOpenQuiz(currentLesson.exercise.id, currentLesson.exercise.name)
+      }
     } catch (err) {
       console.error('Erro ao marcar aula como assistida:', err)
       // Em caso de erro, remover da lista para permitir nova tentativa

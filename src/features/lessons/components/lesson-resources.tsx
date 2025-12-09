@@ -45,6 +45,79 @@ export function LessonResources({
         </h3>
 
         <div className="space-y-3">
+          {/* Exercício - Destaque no topo */}
+          {hasExercise && (
+            <div className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all ${
+              isExerciseCompleted
+                ? 'border-green-500/30 bg-green-500/5'
+                : 'border-primary/30 bg-primary/5 shadow-sm'
+            }`}>
+              <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                isExerciseCompleted
+                  ? 'bg-green-500/20 ring-2 ring-green-500/30'
+                  : 'bg-primary/20 ring-2 ring-primary/30'
+              }`}>
+                {isExerciseCompleted ? (
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                ) : (
+                  <FileText className="h-6 w-6 text-primary" />
+                )}
+              </div>
+
+              <div className="flex-1 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {exercise.name}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5">
+                    <span className="font-medium">{exercise.questions_count} questões</span>
+                    <span>•</span>
+                    <span>
+                      {isExerciseCompleted ? (
+                        <>
+                          <span className="text-green-600 font-medium">Concluído</span>
+                          {exerciseScore !== null && exerciseScore !== undefined && (
+                            <> • <span className="font-medium">{exerciseScore}% de acerto</span></>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {exercise.answers_count > 0
+                            ? <span className="text-primary font-medium">{exerciseProgress}% concluído ({exercise.answers_count}/{exercise.questions_count})</span>
+                            : <span className="font-medium">Não iniciado</span>}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  variant={isExerciseCompleted ? "outline" : "default"}
+                  size="default"
+                  className="w-full"
+                  onClick={() => onOpenQuiz?.(exercise.id, exercise.name)}
+                >
+                  {isExerciseCompleted ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Revisar Exercício
+                    </>
+                  ) : exercise.answers_count > 0 ? (
+                    <>
+                      <Circle className="h-4 w-4 mr-2" />
+                      Continuar Exercício
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Iniciar Exercício
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Material de Apoio */}
           {hasMaterial && (
             <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card/50">
@@ -70,75 +143,6 @@ export function LessonResources({
                 >
                   <Download className="h-3.5 w-3.5 mr-2" />
                   Baixar Material
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Exercício */}
-          {hasExercise && (
-            <div className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-card/50">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                isExerciseCompleted
-                  ? 'bg-green-500/10'
-                  : 'bg-orange-500/10'
-              }`}>
-                {isExerciseCompleted ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                ) : (
-                  <FileText className="h-5 w-5 text-orange-600" />
-                )}
-              </div>
-
-              <div className="flex-1 space-y-2">
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {exercise.name}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                    <span>{exercise.questions_count} questões</span>
-                    <span>•</span>
-                    <span>
-                      {isExerciseCompleted ? (
-                        <>
-                          Concluído
-                          {exerciseScore !== null && exerciseScore !== undefined && (
-                            <> • {exerciseScore}% de acerto</>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {exercise.answers_count > 0
-                            ? `${exerciseProgress}% concluído (${exercise.answers_count}/${exercise.questions_count})`
-                            : 'Não iniciado'}
-                        </>
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                <Button
-                  variant={isExerciseCompleted ? "outline" : "default"}
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => onOpenQuiz?.(exercise.id, exercise.name)}
-                >
-                  {isExerciseCompleted ? (
-                    <>
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
-                      Revisar Exercício
-                    </>
-                  ) : exercise.answers_count > 0 ? (
-                    <>
-                      <Circle className="h-3.5 w-3.5 mr-2" />
-                      Continuar Exercício
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="h-3.5 w-3.5 mr-2" />
-                      Iniciar Exercício
-                    </>
-                  )}
                 </Button>
               </div>
             </div>
