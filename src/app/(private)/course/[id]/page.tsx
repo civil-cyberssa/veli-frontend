@@ -379,15 +379,7 @@ export default function LessonPage() {
               />
             </div>
 
-            {/* Recursos da Aula */}
-            <div className="animate-slide-up animate-delay-300">
-              <LessonResources
-                exercise={selectedLessonProgress?.exercise ?? null}
-                exerciseScore={selectedLessonProgress?.exercise_score ?? null}
-                supportMaterialUrl={lesson?.support_material_url}
-                onOpenQuiz={handleOpenQuiz}
-              />
-            </div>
+         
           </div>
 
           {/* Sidebar direita: Tabs com Conteúdo, Material e Exercício (sticky) */}

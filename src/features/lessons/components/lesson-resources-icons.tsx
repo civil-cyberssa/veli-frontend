@@ -1,76 +1,157 @@
 "use client";
 
-import { FileText, BookOpen, CheckCircle2 } from "lucide-react";
+import { FileText, BookOpen, CheckCircle2, Clock, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
-interface Exercise {
-  id: number;
-  name: string;
-  questions_count: number;
-  answers_count: number;
-}
-
-interface LessonResourcesIconsProps {
-  exercise?: Exercise | null;
+interface LessonHeaderProps {
+  title: string;
+  description: string;
+  exercise?: {
+    id: number;
+    name: string;
+    questions_count: number;
+    answers_count: number;
+  } | null;
   exerciseScore?: number | null;
   supportMaterialUrl?: string;
   onOpenQuiz?: (exerciseId: number, exerciseName: string) => void;
 }
 
-export function LessonResourcesIcons({
+export function LessonHeader({
+  title,
+  description,
   exercise,
   exerciseScore,
   supportMaterialUrl,
   onOpenQuiz,
-}: LessonResourcesIconsProps) {
+}: LessonHeaderProps) {
   const hasExercise = exercise && exercise.questions_count > 0;
-  const hasMaterial = supportMaterialUrl;
-
-  if (!hasExercise && !hasMaterial) {
-    return null;
-  }
-
   const isExerciseCompleted = exercise && exercise.answers_count === exercise.questions_count;
+  const progressPercentage = exercise
+    ? (exercise.answers_count / exercise.questions_count) * 100
+    : 0;
 
   return (
-    <div className="grid grid-cols-1 gap-2">
-      {/* Quiz Icon */}
-      {hasExercise && (
-        <button
-          onClick={() => onOpenQuiz?.(exercise.id, exercise.name)}
-          className={cn(
-            "flex items-center justify-center p-4 rounded-lg border transition-all hover:scale-105",
-            isExerciseCompleted
-              ? "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/30"
-              : "border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30"
-          )}
-          title={`${exercise.name} - ${exercise.questions_count} questões`}
-        >
-          <div className="relative">
-            {isExerciseCompleted ? (
-              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-500" />
-            ) : (
-              <FileText className="h-8 w-8 text-blue-600 dark:text-blue-500" />
-            )}
-            {isExerciseCompleted && exerciseScore !== null && exerciseScore !== undefined && (
-              <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-[8px] font-bold text-white">
-                {exerciseScore}
-              </div>
-            )}
+    <Card className="border-none shadow-lg bg-gradient-to-br from-background to-muted/20">
+      <CardHeader className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2 flex-1">
+            <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight">
+              {title}
+            </CardTitle>
+            <CardDescription className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              {description}
+            </CardDescription>
           </div>
-        </button>
-      )}
+          
+          {/* Status Badge */}
+          {hasExercise && isExerciseCompleted && (
+            <Badge 
+              variant="default" 
+              className="bg-green-600 hover:bg-green-600 text-white shrink-0"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+              Concluído
+            </Badge>
+          )}
+          {hasExercise && !isExerciseCompleted && exercise.answers_count > 0 && (
+            <Badge variant="secondary" className="shrink-0">
+              Em progresso
+            </Badge>
+          )}
+        </div>
 
-      {/* Material Icon */}
-      {hasMaterial && (
-        <button
-          onClick={() => window.open(supportMaterialUrl, '_blank')}
-          className="flex items-center justify-center p-4 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 hover:scale-105 transition-all dark:border-amber-800 dark:bg-amber-950/30"
-          title="Material de Apoio"
-        >
-          <BookOpen className="h-8 w-8 text-amber-600 dark:text-amber-500" />
-        </button>
-      )}
-    </div>
+        {/* Progress Bar */}
+        {hasExercise && !isExerciseCompleted && (
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progresso do exercício</span>
+              <span className="font-medium">
+                {exercise.answers_count}/{exercise.questions_count} questões
+              </span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+          </div>
+        )}
+      </CardHeader>
+
+      <Separator />
+
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Exercise Button */}
+          {hasExercise && (
+            <Button
+              onClick={() => onOpenQuiz?.(exercise.id, exercise.name)}
+              size="lg"
+              className={cn(
+                "h-auto py-4 justify-start group relative overflow-hidden",
+                isExerciseCompleted
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-primary hover:bg-primary/90"
+              )}
+            >
+              <div className="flex items-center gap-3 relative z-10">
+                {isExerciseCompleted ? (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                )}
+                
+                <div className="flex flex-col items-start text-left">
+                  <span className="font-semibold">
+                    {isExerciseCompleted ? "Revisar Exercício" : "Iniciar Exercício"}
+                  </span>
+                  <span className="text-xs opacity-90">
+                    {isExerciseCompleted
+                      ? `Nota: ${exerciseScore}%`
+                      : `${exercise.questions_count} ${exercise.questions_count === 1 ? 'questão' : 'questões'}`}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Hover effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            </Button>
+          )}
+
+          {/* Material Button */}
+          {supportMaterialUrl && (
+            <Button
+              onClick={() => window.open(supportMaterialUrl, "_blank")}
+              variant="outline"
+              size="lg"
+              className="h-auto py-4 justify-start group border-2 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950/50 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors">
+                  <BookOpen className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                </div>
+                
+                <div className="flex flex-col items-start text-left">
+                  <span className="font-semibold text-foreground">
+                    Material de Apoio
+                  </span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    Abrir em nova aba
+                    <ExternalLink className="h-3 w-3" />
+                  </span>
+                </div>
+              </div>
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

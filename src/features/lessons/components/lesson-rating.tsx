@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { LessonResourcesIcons } from "./lesson-resources-icons";
+import { LessonHeader } from "./lesson-resources-icons";
+
 
 interface Exercise {
   id: number;
@@ -147,19 +148,17 @@ export function LessonDescriptionCard({
           <p className="text-sm text-muted-foreground leading-relaxed mt-4">
             {description}
           </p>
-        </div>
-
-        {/* Coluna direita: Grid com ícones à esquerda e ações/rating à direita */}
-        <div className="grid grid-cols-[auto_1fr] gap-3 items-start">
-          {/* Ícones de recursos */}
-          <div className="pt-1">
-            <LessonResourcesIcons
+                <LessonHeader
               exercise={exercise}
               exerciseScore={exerciseScore}
               supportMaterialUrl={supportMaterialUrl}
               onOpenQuiz={onOpenQuiz}
             />
-          </div>
+        </div>
+
+        {/* Coluna direita: Grid com ícones à esquerda e ações/rating à direita */}
+        <div>
+
 
           {/* Card com Rating e Ações */}
           <div className="space-y-4">
