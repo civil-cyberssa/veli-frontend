@@ -19,6 +19,7 @@ import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 import { LessonCommentsList } from '@/src/features/lessons/components/lesson-comments-list'
 import { LessonResources } from '@/src/features/lessons/components/lesson-resources'
+import { QuizPromptModal } from '@/src/features/lessons/components/quiz-prompt-modal'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
@@ -31,6 +32,11 @@ export default function LessonPage() {
   const [autoplay, setAutoplay] = useState(true)
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
   const [quizState, setQuizState] = useState<{ eventId: number; name: string } | null>(null)
+  const [quizPromptState, setQuizPromptState] = useState<{
+    eventId: number;
+    name: string;
+    questionsCount: number
+  } | null>(null)
   const hasMarkedWatched = useRef<Set<number>>(new Set())
   const autoMarkTriggered = useRef(false)
   const [watchProgress, setWatchProgress] = useState(0)
@@ -214,9 +220,13 @@ export default function LessonPage() {
 
       console.log('Aula marcada como assistida com sucesso')
 
-      // Abrir quiz se houver exercício disponível
+      // Mostrar modal de prompt de quiz se houver exercício disponível
       if (currentLesson.exercise && currentLesson.exercise.questions_count > 0) {
-        handleOpenQuiz(currentLesson.exercise.id, currentLesson.exercise.name)
+        setQuizPromptState({
+          eventId: currentLesson.exercise.id,
+          name: currentLesson.exercise.name,
+          questionsCount: currentLesson.exercise.questions_count,
+        })
       }
     } catch (err) {
       console.error('Erro ao marcar aula como assistida:', err)
@@ -397,6 +407,26 @@ export default function LessonPage() {
           </div>
         </div>
       </div>
+
+      {/* Quiz Prompt Modal */}
+      {quizPromptState && (
+        <QuizPromptModal
+          open={!!quizPromptState}
+          onOpenChange={(open) => !open && setQuizPromptState(null)}
+          exerciseName={quizPromptState.name}
+          questionsCount={quizPromptState.questionsCount}
+          onStartNow={() => {
+            setQuizState({
+              eventId: quizPromptState.eventId,
+              name: quizPromptState.name,
+            })
+            setQuizPromptState(null)
+          }}
+          onLater={() => {
+            setQuizPromptState(null)
+          }}
+        />
+      )}
 
       {/* Quiz Modal/Overlay */}
       {quizState && (
