@@ -362,6 +362,10 @@ export default function LessonPage() {
                 isCommentSubmitting={isCreatingComment}
                 watchProgress={watchProgress}
                 isMarkingWatched={isMarkingWatched}
+                exercise={selectedLessonProgress?.exercise ?? null}
+                exerciseScore={selectedLessonProgress?.exercise_score ?? null}
+                supportMaterialUrl={lesson?.support_material_url}
+                onOpenQuiz={handleOpenQuiz}
               />
             </div>
 

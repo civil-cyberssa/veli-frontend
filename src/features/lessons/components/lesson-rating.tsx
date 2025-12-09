@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { LessonResourcesIcons } from "./lesson-resources-icons";
+
+interface Exercise {
+  id: number;
+  name: string;
+  questions_count: number;
+  answers_count: number;
+}
 
 interface LessonDescriptionCardProps {
   title?: string;
@@ -25,6 +33,10 @@ interface LessonDescriptionCardProps {
   isCommentSubmitting?: boolean;
   watchProgress?: number;
   isMarkingWatched?: boolean;
+  exercise?: Exercise | null;
+  exerciseScore?: number | null;
+  supportMaterialUrl?: string;
+  onOpenQuiz?: (exerciseId: number, exerciseName: string) => void;
 }
 
 export function LessonDescriptionCard({
@@ -44,6 +56,10 @@ export function LessonDescriptionCard({
   isCommentSubmitting = false,
   watchProgress = 0,
   isMarkingWatched = false,
+  exercise,
+  exerciseScore,
+  supportMaterialUrl,
+  onOpenQuiz,
 }: LessonDescriptionCardProps) {
   const { data: session } = useSession();
   const displayName = useMemo(
@@ -133,8 +149,20 @@ export function LessonDescriptionCard({
           </p>
         </div>
 
-        {/* Coluna direita: Card com Rating e Ações */}
-        <div className="space-y-4">
+        {/* Coluna direita: Grid com ícones à esquerda e ações/rating à direita */}
+        <div className="grid grid-cols-[auto_1fr] gap-3 items-start">
+          {/* Ícones de recursos */}
+          <div className="pt-1">
+            <LessonResourcesIcons
+              exercise={exercise}
+              exerciseScore={exerciseScore}
+              supportMaterialUrl={supportMaterialUrl}
+              onOpenQuiz={onOpenQuiz}
+            />
+          </div>
+
+          {/* Card com Rating e Ações */}
+          <div className="space-y-4">
           {/* Botões de ação */}
           <div className="flex items-center gap-2">
             <Button
@@ -252,6 +280,7 @@ export function LessonDescriptionCard({
                 </p>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>
