@@ -370,6 +370,8 @@ export default function LessonPage() {
               <LessonCommentsList
                 commentsData={commentsData}
                 isLoading={!selectedLessonId}
+                onSubmitComment={handleCommentSubmit}
+                isSubmitting={isCreatingComment}
               />
             </div>
 

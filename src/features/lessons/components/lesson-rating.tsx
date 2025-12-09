@@ -131,44 +131,6 @@ export function LessonDescriptionCard({
           <p className="text-sm text-muted-foreground leading-relaxed mt-4">
             {description}
           </p>
-
-          <div className="mt-6">
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground" htmlFor="lesson-comment">
-                Deixe um comentário sobre esta aula
-              </label>
-
-              <textarea
-                id="lesson-comment"
-                className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Compartilhe seu feedback ou dúvidas sobre a aula"
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                disabled={disabled || isCommentSubmitting}
-                maxLength={500}
-              />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {isCommentEmpty
-                    ? "Digite algo para enviar seu comentário."
-                    : "Pronto para enviar seu feedback."}
-                </span>
-                <span>{commentInput.length}/500</span>
-              </div>
-              <div className="flex items-center justify-end">
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  onClick={handleSubmitComment}
-                  disabled={disabled || isCommentSubmitting || isCommentEmpty}
-                  className="min-w-[180px]"
-                >
-                  {isCommentSubmitting ? "Enviando..." : "Enviar comentário"}
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Coluna direita: Card com Rating e Ações */}
