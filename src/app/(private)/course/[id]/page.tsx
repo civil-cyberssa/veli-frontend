@@ -362,6 +362,7 @@ export default function LessonPage() {
                 isCommentSubmitting={isCreatingComment}
                 watchProgress={watchProgress}
                 isMarkingWatched={isMarkingWatched}
+                eventId={selectedLessonProgress?.event_id}
                 exercise={selectedLessonProgress?.exercise ?? null}
                 exerciseScore={selectedLessonProgress?.exercise_score ?? null}
                 supportMaterialUrl={lesson?.support_material_url}

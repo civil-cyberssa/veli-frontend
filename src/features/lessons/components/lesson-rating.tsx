@@ -34,10 +34,11 @@ interface LessonDescriptionCardProps {
   isCommentSubmitting?: boolean;
   watchProgress?: number;
   isMarkingWatched?: boolean;
+  eventId?: number;
   exercise?: Exercise | null;
   exerciseScore?: number | null;
   supportMaterialUrl?: string;
-  onOpenQuiz?: (exerciseId: number, exerciseName: string) => void;
+  onOpenQuiz?: (eventId: number, exerciseName: string) => void;
 }
 
 export function LessonDescriptionCard({
@@ -57,6 +58,7 @@ export function LessonDescriptionCard({
   isCommentSubmitting = false,
   watchProgress = 0,
   isMarkingWatched = false,
+  eventId,
   exercise,
   exerciseScore,
   supportMaterialUrl,
@@ -144,11 +146,10 @@ export function LessonDescriptionCard({
         {/* Coluna esquerda: Descrição */}
 
         <div>
-          <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-            {description}
-          </p>
                 <LessonHeader
+              title={title || ""}
+              description={description || ""}
+              eventId={eventId}
               exercise={exercise}
               exerciseScore={exerciseScore}
               supportMaterialUrl={supportMaterialUrl}

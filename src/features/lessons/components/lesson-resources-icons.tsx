@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 interface LessonHeaderProps {
   title: string;
   description: string;
+  eventId?: number; // ID do evento da aula (necessário para abrir o quiz)
   exercise?: {
     id: number;
     name: string;
@@ -19,12 +20,13 @@ interface LessonHeaderProps {
   } | null;
   exerciseScore?: number | null;
   supportMaterialUrl?: string;
-  onOpenQuiz?: (exerciseId: number, exerciseName: string) => void;
+  onOpenQuiz?: (eventId: number, exerciseName: string) => void;
 }
 
 export function LessonHeader({
   title,
   description,
+  eventId,
   exercise,
   exerciseScore,
   supportMaterialUrl,
@@ -86,9 +88,9 @@ export function LessonHeader({
       <CardContent className="pt-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Exercise Button */}
-          {hasExercise && (
+          {hasExercise && eventId && (
             <Button
-              onClick={() => onOpenQuiz?.(exercise.id, exercise.name)}
+              onClick={() => onOpenQuiz?.(eventId, exercise.name)}
               size="lg"
               className={cn(
                 "h-auto py-4 justify-start group relative overflow-hidden",
