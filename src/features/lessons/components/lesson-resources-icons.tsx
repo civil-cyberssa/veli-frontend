@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, BookOpen, CheckCircle2, Clock, ExternalLink } from "lucide-react";
+import { FileText, BookOpen, CheckCircle2, Clock, ExternalLink, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,44 +87,39 @@ export function LessonHeader({
 
       <CardContent className="pt-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Exercise Button */}
+          {/* Exercise Button - Estilo da sidebar */}
           {hasExercise && eventId && (
-            <Button
+            <button
               onClick={() => onOpenQuiz?.(eventId, exercise.name)}
-              size="lg"
-              className={cn(
-                "h-auto py-4 justify-start group relative overflow-hidden",
-                isExerciseCompleted
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-primary hover:bg-primary/90"
-              )}
+              className="w-full flex flex-col gap-2 px-3 py-3 rounded-md transition-all bg-secondary/5 hover:bg-secondary/10 border border-secondary/20 cursor-pointer"
             >
-              <div className="flex items-center gap-3 relative z-10">
-                {isExerciseCompleted ? (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-                    <CheckCircle2 className="h-5 w-5" />
-                  </div>
-                ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                )}
-                
-                <div className="flex flex-col items-start text-left">
-                  <span className="font-semibold">
-                    {isExerciseCompleted ? "Revisar Exercício" : "Iniciar Exercício"}
-                  </span>
-                  <span className="text-xs opacity-90">
-                    {isExerciseCompleted
-                      ? `Nota: ${exerciseScore}%`
-                      : `${exercise.questions_count} ${exercise.questions_count === 1 ? 'questão' : 'questões'}`}
-                  </span>
+              <div className="flex items-center gap-3 w-full">
+                <div className="p-1.5 rounded-md bg-secondary/15 shrink-0">
+                  <BookOpen className="h-4 w-4 text-secondary" />
                 </div>
+                <div className="flex-1 text-left">
+                  <p className="text-xs text-muted-foreground leading-tight mb-0.5">
+                    Quiz do módulo
+                  </p>
+                  <h4 className="text-sm font-medium text-foreground leading-tight">
+                    {exercise.name}
+                  </h4>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
-              
-              {/* Hover effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-            </Button>
+
+              {/* Badge de resultado se o quiz foi completado */}
+              {isExerciseCompleted && exerciseScore !== null && exerciseScore !== undefined && (
+                <div className="flex items-center gap-2 pl-11">
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-success/10 border border-success/20">
+                    <CheckCircle2 className="h-3 w-3 text-success" />
+                    <span className="text-xs font-medium text-success">
+                      RESULTADO: {exerciseScore}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </button>
           )}
 
           {/* Material Button */}

@@ -394,7 +394,6 @@ export default function LessonPage() {
                     supportMaterialUrl={lesson?.support_material_url}
                     onCollapsedChange={setSidebarCollapsed}
                     onSelectLesson={setSelectedLessonId}
-                    onOpenQuiz={handleOpenQuiz}
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
