@@ -22,6 +22,7 @@ export interface LessonProgress {
     answers_count: number
   } | null
   exercise_score: number | null
+  student_class_id?: number // ID da turma/matrícula do aluno
 }
 
 export interface UseEventProgressReturn {

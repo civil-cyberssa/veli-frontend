@@ -427,11 +427,11 @@ export default function LessonPage() {
       )}
 
       {/* Quiz Modal/Overlay */}
-      {quizState && (
+      {quizState && selectedLessonProgress && (
         <QuizView
           eventId={quizState.eventId}
           exerciseName={quizState.name}
-          subscriptionId={parseInt(courseId)}
+          subscriptionId={selectedLessonProgress.student_class_id ?? parseInt(courseId)}
           onClose={handleCloseQuiz}
         />
       )}
