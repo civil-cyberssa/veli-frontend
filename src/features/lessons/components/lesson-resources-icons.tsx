@@ -114,7 +114,7 @@ export function LessonHeader({
                   <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-success/10 border border-success/20">
                     <CheckCircle2 className="h-3 w-3 text-success" />
                     <span className="text-xs font-medium text-success">
-                      RESULTADO: {exerciseScore}%
+                      NOTA: {exerciseScore.toFixed(1)}/10
                     </span>
                   </div>
                 </div>

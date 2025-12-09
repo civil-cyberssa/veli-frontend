@@ -75,7 +75,7 @@ export function LessonResources({
                 {isExerciseCompleted && exerciseScore !== null && exerciseScore !== undefined && (
                   <div className="text-right">
                     <div className="text-lg font-bold text-green-600 dark:text-green-500">
-                      {exerciseScore}%
+                      {exerciseScore.toFixed(1)}/10
                     </div>
                   </div>
                 )}
