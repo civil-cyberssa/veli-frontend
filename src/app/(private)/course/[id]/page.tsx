@@ -10,6 +10,8 @@ import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLess
 import { useUpdateLessonRating } from '@/src/features/dashboard/hooks/useUpdateLessonRating'
 import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
 import { useCreateLessonComment } from '@/src/features/dashboard/hooks/useCreateLessonComment'
+import { useUpdateLessonComment } from '@/src/features/dashboard/hooks/useUpdateLessonComment'
+import { useDeleteLessonComment } from '@/src/features/dashboard/hooks/useDeleteLessonComment'
 import { useLessonComments } from '@/src/features/dashboard/hooks/useLessonComments'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
@@ -58,6 +60,8 @@ export default function LessonPage() {
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
   const { data: subscriptions } = useSubscriptions()
   const { createComment, isLoading: isCreatingComment } = useCreateLessonComment()
+  const { updateComment } = useUpdateLessonComment()
+  const { deleteComment } = useDeleteLessonComment()
   const { data: commentsData, refetch: refetchComments } = useLessonComments(selectedLessonId)
 
   const selectedLessonProgress = useMemo(
@@ -176,6 +180,37 @@ export default function LessonPage() {
     } catch (err) {
       console.error('Erro ao salvar comentário:', err)
       toast.error('Não foi possível salvar seu comentário. Tente novamente.')
+    }
+  }
+
+  const handleEditComment = async (commentId: number, newComment: string) => {
+    try {
+      await updateComment({
+        commentId,
+        comment: newComment,
+      })
+
+      // Recarregar os comentários
+      await refetchComments()
+
+      toast.success('Comentário atualizado!')
+    } catch (err) {
+      console.error('Erro ao atualizar comentário:', err)
+      toast.error('Não foi possível atualizar seu comentário. Tente novamente.')
+    }
+  }
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      await deleteComment({ commentId })
+
+      // Recarregar os comentários
+      await refetchComments()
+
+      toast.success('Comentário excluído!')
+    } catch (err) {
+      console.error('Erro ao excluir comentário:', err)
+      toast.error('Não foi possível excluir seu comentário. Tente novamente.')
     }
   }
 
@@ -376,6 +411,8 @@ export default function LessonPage() {
                 commentsData={commentsData}
                 isLoading={!selectedLessonId}
                 onSubmitComment={handleCommentSubmit}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
                 isSubmitting={isCreatingComment}
               />
             </div>

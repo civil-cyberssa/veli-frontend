@@ -5,6 +5,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Edit2, X, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CommentInput } from "./comment-input";
 import type { LessonCommentsResponse } from "@/src/features/dashboard/hooks/useLessonComments";
 
@@ -60,8 +70,8 @@ export function LessonCommentsList({
 }: LessonCommentsListProps) {
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
 
   const { myComments, otherComments } = useMemo(() => {
     if (!commentsData?.results) {
@@ -101,27 +111,21 @@ export function LessonCommentsList({
   };
 
   const handleDeleteClick = (commentId: number) => {
-    console.log('Delete clicked:', commentId, 'onDeleteComment:', !!onDeleteComment);
-    setDeletingCommentId(commentId);
+    setCommentToDelete(commentId);
+    setDeleteConfirmOpen(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingCommentId || !onDeleteComment) return;
+    if (!commentToDelete || !onDeleteComment) return;
 
-    setIsDeleting(true);
-    try {
-      console.log('Deleting comment:', deletingCommentId);
-      await onDeleteComment(deletingCommentId);
-      setDeletingCommentId(null);
-    } catch (error) {
-      console.error("Erro ao excluir comentário:", error);
-    } finally {
-      setIsDeleting(false);
-    }
+    await onDeleteComment(commentToDelete);
+    setDeleteConfirmOpen(false);
+    setCommentToDelete(null);
   };
 
   const handleCancelDelete = () => {
-    setDeletingCommentId(null);
+    setDeleteConfirmOpen(false);
+    setCommentToDelete(null);
   };
 
   if (isLoading) {
@@ -155,124 +159,91 @@ export function LessonCommentsList({
             {/* Meus comentários */}
             {myComments.map((myComment) => (
               <div key={myComment.id} className="px-4 py-3 hover:bg-muted/30 transition-colors">
-                <div className="px-0 py-0">
-                  {deletingCommentId === myComment.id ? (
-                    // Confirmação de exclusão
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-foreground">
-                        Tem certeza que deseja excluir este comentário?
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Esta ação não pode ser desfeita.
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={handleConfirmDelete}
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          {isDeleting ? "Excluindo..." : "Confirmar exclusão"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCancelDelete}
-                          disabled={isDeleting}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={myComment.profile_pic_url} alt={myComment.user_name} />
-                        <AvatarFallback className="text-xs">
-                          {getInitials(myComment.user_name)}
-                        </AvatarFallback>
-                      </Avatar>
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={myComment.profile_pic_url} alt={myComment.user_name} />
+                    <AvatarFallback className="text-xs">
+                      {getInitials(myComment.user_name)}
+                    </AvatarFallback>
+                  </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-foreground">
-                              {myComment.user_name}
-                            </p>
-                            <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-medium">
-                              Você
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(myComment.created_at)}
-                            </span>
-                          </div>
-                          {editingCommentId !== myComment.id && (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditClick(myComment.id, myComment.comment)}
-                                className="h-7 px-2"
-                                type="button"
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteClick(myComment.id)}
-                                className="h-7 px-2 hover:bg-destructive/10 hover:text-destructive"
-                                type="button"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-foreground">
+                          {myComment.user_name}
+                        </p>
+                        <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-medium">
+                          Você
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(myComment.created_at)}
+                        </span>
+                      </div>
+                      {editingCommentId !== myComment.id && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClick(myComment.id, myComment.comment)}
+                            className="h-7 px-2"
+                            type="button"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(myComment.id)}
+                            className="h-7 px-2 hover:bg-destructive/10 hover:text-destructive"
+                            type="button"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
-
-                        {editingCommentId === myComment.id ? (
-                          <div className="mt-2 space-y-2">
-                            <textarea
-                              className="w-full min-h-20 rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                              value={editingText}
-                              onChange={(e) => setEditingText(e.target.value)}
-                              maxLength={500}
-                              autoFocus
-                            />
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">
-                                {editingText.length}/500
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={handleSaveEdit}
-                                  disabled={!editingText.trim() || editingText === myComment.comment}
-                                  type="button"
-                                >
-                                  Salvar
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
-                                  onClick={handleCancelEdit}
-                                  type="button"
-                                >
-                                  <X className="h-3 w-3 mr-1" />
-                                  Cancelar
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-foreground mt-1 leading-relaxed break-words">
-                            {myComment.comment}
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  )}
+
+                    {editingCommentId === myComment.id ? (
+                      <div className="mt-2 space-y-2">
+                        <textarea
+                          className="w-full min-h-20 rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                          value={editingText}
+                          onChange={(e) => setEditingText(e.target.value)}
+                          maxLength={500}
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {editingText.length}/500
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={handleSaveEdit}
+                              disabled={!editingText.trim() || editingText === myComment.comment}
+                              type="button"
+                            >
+                              Salvar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleCancelEdit}
+                              type="button"
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-foreground mt-1 leading-relaxed break-words">
+                        {myComment.comment}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -338,6 +309,27 @@ export function LessonCommentsList({
           />
         </div>
       </div>
+
+      {/* Modal de confirmação de exclusão */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir comentário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este comentário? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
