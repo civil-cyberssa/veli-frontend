@@ -72,6 +72,8 @@ export function LessonCommentsList({
   const [editingText, setEditingText] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
+  const [isEditingComment, setIsEditingComment] = useState(false);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
 
   const { myComments, otherComments } = useMemo(() => {
     if (!commentsData?.results) {
@@ -100,6 +102,7 @@ export function LessonCommentsList({
   const handleSaveEdit = async () => {
     if (!editingText.trim() || !editingCommentId || !onEditComment) return;
 
+    setIsEditingComment(true);
     try {
       console.log('Saving edit:', editingCommentId, editingText);
       await onEditComment(editingCommentId, editingText.trim());
@@ -107,6 +110,8 @@ export function LessonCommentsList({
       setEditingText("");
     } catch (error) {
       console.error("Erro ao editar comentário:", error);
+    } finally {
+      setIsEditingComment(false);
     }
   };
 
@@ -118,9 +123,16 @@ export function LessonCommentsList({
   const handleConfirmDelete = async () => {
     if (!commentToDelete || !onDeleteComment) return;
 
-    await onDeleteComment(commentToDelete);
-    setDeleteConfirmOpen(false);
-    setCommentToDelete(null);
+    setIsDeletingComment(true);
+    try {
+      await onDeleteComment(commentToDelete);
+      setDeleteConfirmOpen(false);
+      setCommentToDelete(null);
+    } catch (error) {
+      console.error("Erro ao excluir comentário:", error);
+    } finally {
+      setIsDeletingComment(false);
+    }
   };
 
   const handleCancelDelete = () => {
@@ -221,15 +233,16 @@ export function LessonCommentsList({
                             <Button
                               size="sm"
                               onClick={handleSaveEdit}
-                              disabled={!editingText.trim() || editingText === myComment.comment}
+                              disabled={!editingText.trim() || editingText === myComment.comment || isEditingComment}
                               type="button"
                             >
-                              Salvar
+                              {isEditingComment ? "Salvando..." : "Salvar"}
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={handleCancelEdit}
+                              disabled={isEditingComment}
                               type="button"
                             >
                               <X className="h-3 w-3 mr-1" />
@@ -320,12 +333,15 @@ export function LessonCommentsList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelDelete}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={handleCancelDelete} disabled={isDeletingComment}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
+              disabled={isDeletingComment}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Excluir
+              {isDeletingComment ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, MonitorPlay, Menu, ChevronDown, PlayCircle, CheckCircle2, Circle, ChevronRight } from 'lucide-react'
+import { FileText, Download, MonitorPlay, Menu, ChevronDown, PlayCircle, CheckCircle2, Circle, ChevronRight, HelpCircle } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +16,7 @@ interface LessonSidebarTabsProps {
   onSelectLesson?: (lessonId: number) => void
 }
 
-type TabValue = 'conteudo' | 'material'
+type TabValue = 'conteudo' | 'material' | 'faq'
 
 // Interface para módulo agrupado
 interface ModuleGroup {
@@ -248,6 +248,12 @@ export function LessonSidebarTabs({
       icon: FileText,
       disabled: !supportMaterialUrl,
     },
+    {
+      value: 'faq' as TabValue,
+      label: 'FAQ',
+      icon: HelpCircle,
+      disabled: false,
+    },
   ]
 
   if (isCollapsed) {
@@ -305,7 +311,7 @@ export function LessonSidebarTabs({
       <div className="border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
           <h3 className="text-2xl font-semibold text-foreground">
-            {activeTab === 'conteudo' ? 'Conteúdo' : 'Material'}
+            {activeTab === 'conteudo' ? 'Conteúdo' : activeTab === 'material' ? 'Material' : 'FAQ'}
           </h3>
           <Button
             variant="ghost"
@@ -407,7 +413,103 @@ export function LessonSidebarTabs({
             )}
           </div>
         )}
+
+        {/* Tab: FAQ */}
+        {activeTab === 'faq' && (
+          <div className="space-y-4">
+            {/* FAQ para Alunos */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3 px-1 flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                Para Alunos
+              </h4>
+              <div className="space-y-2">
+                <FAQItem
+                  question="Como acompanhar meu progresso no curso?"
+                  answer="Você pode visualizar seu progresso através do dashboard principal. Cada módulo mostra quantas aulas foram completadas e há uma barra de progresso geral do curso."
+                />
+                <FAQItem
+                  question="Posso baixar as aulas para assistir offline?"
+                  answer="No momento, as aulas estão disponíveis apenas para visualização online. Recomendamos uma conexão estável para melhor experiência."
+                />
+                <FAQItem
+                  question="Como funcionam os exercícios e quizzes?"
+                  answer="Os quizzes aparecem durante a aula e testam seu conhecimento sobre o conteúdo apresentado. Sua pontuação é exibida em uma escala de 0 a 10."
+                />
+                <FAQItem
+                  question="Posso rever aulas que já assisti?"
+                  answer="Sim! Você pode rever qualquer aula quantas vezes quiser. Basta clicar na aula desejada na lista de conteúdo."
+                />
+                <FAQItem
+                  question="Como faço para comentar nas aulas?"
+                  answer="Você pode adicionar comentários usando a caixa de texto abaixo do vídeo. Seus comentários podem ser editados ou excluídos a qualquer momento."
+                />
+              </div>
+            </div>
+
+            {/* FAQ para Professores */}
+            <div className="pt-3 border-t border-border/50">
+              <h4 className="text-sm font-semibold text-foreground mb-3 px-1 flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                Para Professores
+              </h4>
+              <div className="space-y-2">
+                <FAQItem
+                  question="Como adicionar material de apoio às aulas?"
+                  answer="Você pode fazer upload de materiais complementares através do painel administrativo. Os alunos poderão baixar esses materiais na aba 'Material'."
+                />
+                <FAQItem
+                  question="Como visualizar o progresso dos alunos?"
+                  answer="O painel do professor oferece relatórios detalhados sobre o progresso de cada aluno, incluindo aulas assistidas e resultados dos quizzes."
+                />
+                <FAQItem
+                  question="Posso editar ou remover aulas depois de publicadas?"
+                  answer="Sim, você pode editar o conteúdo das aulas a qualquer momento através do painel administrativo. Alterações serão refletidas imediatamente para os alunos."
+                />
+                <FAQItem
+                  question="Como os comentários dos alunos são moderados?"
+                  answer="Todos os comentários são visíveis imediatamente. Como professor, você tem acesso a ferramentas de moderação no painel administrativo."
+                />
+                <FAQItem
+                  question="Qual o formato ideal para os vídeos das aulas?"
+                  answer="Recomendamos vídeos em formato MP4, com resolução mínima de 720p. O tamanho máximo por arquivo é de 2GB."
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Card>
+  )
+}
+
+// Componente auxiliar para itens de FAQ
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <div className="border border-border/40 rounded-lg overflow-hidden bg-card/50">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-muted/20 transition-colors text-left"
+      >
+        <span className="text-sm font-medium text-foreground leading-snug">
+          {question}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 flex-shrink-0 transition-transform duration-200 text-muted-foreground",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+      {isOpen && (
+        <div className="px-4 py-3 border-t border-border/40 bg-muted/10">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {answer}
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
