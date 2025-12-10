@@ -40,6 +40,24 @@ const tourSteps: TourStep[] = [
     description: 'A aula é marcada automaticamente ao assistir 90%, ou clique aqui manualmente.',
     position: 'top',
   },
+  {
+    target: '[data-tour="interaction-tabs"]',
+    title: '💬 Comentários e Perguntas',
+    description: 'Alterne entre Comentários da turma e suas Perguntas ao Professor. Suas perguntas são privadas!',
+    position: 'top',
+  },
+  {
+    target: '[data-tour="comments-section"]',
+    title: '💭 Área de Comentários',
+    description: 'Adicione, edite ou exclua seus comentários. Durante operações, a troca de aba é bloqueada.',
+    position: 'top',
+  },
+  {
+    target: '[data-tour="teacher-questions"]',
+    title: '❓ Pergunte ao Professor',
+    description: 'Faça perguntas privadas ao professor. Apenas você e o professor podem vê-las. Acompanhe o status das respostas.',
+    position: 'top',
+  },
 ]
 
 export function CourseTour() {

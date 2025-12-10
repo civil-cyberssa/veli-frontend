@@ -64,7 +64,7 @@ export function LessonInteractionTabs({
   return (
     <div className="space-y-0">
       {/* Tabs */}
-      <div className="flex border-b border-border/50">
+      <div className="flex border-b border-border/50" data-tour="interaction-tabs">
         {tabs.map((tab) => {
           const isDisabled = isCommentOperating && tab.value !== activeTab
           return (

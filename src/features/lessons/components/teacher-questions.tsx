@@ -118,7 +118,7 @@ export function TeacherQuestions({ lessonId }: TeacherQuestionsProps) {
   const totalQuestions = questions.length
 
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50" data-tour="teacher-questions">
       <div className="divide-y divide-border/50">
         {/* Header */}
         <div className="px-4 py-3">
