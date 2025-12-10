@@ -27,11 +27,12 @@ interface Question {
   }
 }
 
-// Dados mockados
+// Dados mockados - apenas perguntas do próprio usuário (current_user: true)
+// Em produção, a API filtrará para retornar apenas perguntas do usuário logado
 const MOCK_QUESTIONS: Question[] = [
   {
     id: 1,
-    user_name: 'Maria Silva',
+    user_name: 'Você',
     user_id: 2,
     profile_pic_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
     question: 'Professor, poderia explicar melhor a diferença entre const e let em JavaScript?',
@@ -40,33 +41,33 @@ const MOCK_QUESTIONS: Question[] = [
     answer: {
       teacher_name: 'Prof. João Santos',
       teacher_profile_pic_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Joao',
-      answer: 'Ótima pergunta, Maria! A diferença principal é que "const" cria uma constante (valor não pode ser reatribuído), enquanto "let" permite reatribuição. Use "const" sempre que possível para evitar mudanças acidentais no código.',
+      answer: 'Ótima pergunta! A diferença principal é que "const" cria uma constante (valor não pode ser reatribuído), enquanto "let" permite reatribuição. Use "const" sempre que possível para evitar mudanças acidentais no código.',
       answered_at: '2025-12-09T15:45:00-03:00',
     },
   },
   {
     id: 2,
-    user_name: 'Pedro Costa',
-    user_id: 3,
-    profile_pic_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Pedro',
-    question: 'Como posso praticar mais os conceitos apresentados nesta aula?',
-    created_at: '2025-12-08T10:20:00-03:00',
-    current_user: false,
+    user_name: 'Você',
+    user_id: 2,
+    profile_pic_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
+    question: 'Existe alguma ferramenta que o senhor recomenda para debug de código JavaScript?',
+    created_at: '2025-12-07T09:15:00-03:00',
+    current_user: true,
     answer: {
       teacher_name: 'Prof. João Santos',
       teacher_profile_pic_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Joao',
-      answer: 'Recomendo que você faça os exercícios do material complementar e também pratique no site FreeCodeCamp. A prática é essencial para fixar o conteúdo!',
-      answered_at: '2025-12-08T16:30:00-03:00',
+      answer: 'Sim! Recomendo usar o Chrome DevTools para debugging. Além disso, ferramentas como o VS Code têm excelentes recursos de debug integrados. Para aprender mais sobre debugging, sugiro explorar a documentação oficial do Chrome DevTools.',
+      answered_at: '2025-12-07T14:20:00-03:00',
     },
   },
   {
     id: 3,
-    user_name: 'Ana Oliveira',
-    user_id: 4,
-    profile_pic_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana',
-    question: 'Existe alguma ferramenta que o senhor recomenda para debug de código?',
-    created_at: '2025-12-07T09:15:00-03:00',
-    current_user: false,
+    user_name: 'Você',
+    user_id: 2,
+    profile_pic_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
+    question: 'Como posso praticar mais os conceitos apresentados nesta aula?',
+    created_at: '2025-12-06T10:20:00-03:00',
+    current_user: true,
   },
 ]
 
@@ -122,10 +123,10 @@ export function TeacherQuestions({ lessonId }: TeacherQuestionsProps) {
         {/* Header */}
         <div className="px-4 py-3">
           <h3 className="text-sm font-semibold text-foreground">
-            Perguntas ao Professor
+            Suas Perguntas ao Professor
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {totalQuestions} {totalQuestions === 1 ? 'pergunta' : 'perguntas'}
+            {totalQuestions} {totalQuestions === 1 ? 'pergunta' : 'perguntas'} • Apenas você e o professor podem ver
           </p>
         </div>
 
@@ -255,10 +256,10 @@ export function TeacherQuestions({ lessonId }: TeacherQuestionsProps) {
                 <MessageCircle className="h-6 w-6 text-muted-foreground/30" />
               </div>
               <p className="text-sm text-muted-foreground mb-1">
-                Nenhuma pergunta ainda
+                Você ainda não fez nenhuma pergunta
               </p>
               <p className="text-xs text-muted-foreground">
-                Seja o primeiro a fazer uma pergunta ao professor
+                Suas perguntas são privadas - apenas você e o professor podem vê-las
               </p>
             </div>
           </div>

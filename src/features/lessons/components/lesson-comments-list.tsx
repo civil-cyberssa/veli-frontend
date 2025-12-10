@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ interface LessonCommentsListProps {
   onEditComment?: (commentId: number, newComment: string) => Promise<void>;
   onDeleteComment?: (commentId: number) => Promise<void>;
   isSubmitting?: boolean;
+  onOperationStateChange?: (isOperating: boolean) => void;
 }
 
 function getInitials(name: string) {
@@ -67,6 +68,7 @@ export function LessonCommentsList({
   onEditComment,
   onDeleteComment,
   isSubmitting = false,
+  onOperationStateChange,
 }: LessonCommentsListProps) {
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -87,6 +89,12 @@ export function LessonCommentsList({
   }, [commentsData]);
 
   const totalComments = myComments.length + otherComments.length;
+
+  // Notificar o parent quando há operações em andamento
+  useEffect(() => {
+    const isOperating = isEditingComment || isDeletingComment || isSubmitting;
+    onOperationStateChange?.(isOperating);
+  }, [isEditingComment, isDeletingComment, isSubmitting, onOperationStateChange]);
 
   const handleEditClick = (commentId: number, currentText: string) => {
     console.log('Edit clicked:', commentId, currentText, 'onEditComment:', !!onEditComment);
