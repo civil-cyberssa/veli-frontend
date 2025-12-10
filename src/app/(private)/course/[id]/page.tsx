@@ -19,7 +19,7 @@ import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
-import { LessonCommentsList } from '@/src/features/lessons/components/lesson-comments-list'
+import { LessonInteractionTabs } from '@/src/features/lessons/components/lesson-interaction-tabs'
 import { LessonResources } from '@/src/features/lessons/components/lesson-resources'
 import { QuizPromptModal } from '@/src/features/lessons/components/quiz-prompt-modal'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
@@ -405,15 +405,16 @@ export default function LessonPage() {
               />
             </div>
 
-            {/* Comentários da turma */}
+            {/* Comentários e Perguntas ao Professor */}
             <div className="animate-slide-up animate-delay-250">
-              <LessonCommentsList
+              <LessonInteractionTabs
                 commentsData={commentsData}
-                isLoading={!selectedLessonId}
+                isLoadingComments={!selectedLessonId}
                 onSubmitComment={handleCommentSubmit}
                 onEditComment={handleEditComment}
                 onDeleteComment={handleDeleteComment}
-                isSubmitting={isCreatingComment}
+                isSubmittingComment={isCreatingComment}
+                lessonId={selectedLessonId || 0}
               />
             </div>
 
