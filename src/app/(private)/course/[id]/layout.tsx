@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 
 import { ModeToggle } from '@/components/shared/theme-toggle-mode'
 import { UserDropdown } from '@/components/user-dropdown'
+import { Footer } from '@/src/components/footer'
 
 export default function LessonLayout({
   children,
@@ -27,12 +28,14 @@ export default function LessonLayout({
     .toUpperCase()
 
   return (
-    <div className="min-h-screen bg-background animate-fade-in">
+    <div className="min-h-screen bg-background animate-fade-in flex flex-col">
 
 
-      <main className="px-4 py-6 animate-slide-up">
+      <main className="flex-1 px-4 py-6 animate-slide-up">
         {children}
       </main>
+
+      <Footer />
 
       <style jsx global>{`
         @keyframes fade-in {
