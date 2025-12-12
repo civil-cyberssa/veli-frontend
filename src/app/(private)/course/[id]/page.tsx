@@ -4,16 +4,24 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
+import { useAllLessons } from '@/src/features/dashboard/hooks/useAllLessons'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
 import { useUpdateLessonRating } from '@/src/features/dashboard/hooks/useUpdateLessonRating'
 import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
+import { useCreateLessonComment } from '@/src/features/dashboard/hooks/useCreateLessonComment'
+import { useUpdateLessonComment } from '@/src/features/dashboard/hooks/useUpdateLessonComment'
+import { useDeleteLessonComment } from '@/src/features/dashboard/hooks/useDeleteLessonComment'
+import { useLessonComments } from '@/src/features/dashboard/hooks/useLessonComments'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
+import { LessonInteractionTabs } from '@/src/features/lessons/components/lesson-interaction-tabs'
+import { LessonResources } from '@/src/features/lessons/components/lesson-resources'
+import { QuizPromptModal } from '@/src/features/lessons/components/quiz-prompt-modal'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
@@ -26,6 +34,11 @@ export default function LessonPage() {
   const [autoplay, setAutoplay] = useState(true)
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
   const [quizState, setQuizState] = useState<{ eventId: number; name: string } | null>(null)
+  const [quizPromptState, setQuizPromptState] = useState<{
+    eventId: number;
+    name: string;
+    questionsCount: number
+  } | null>(null)
   const hasMarkedWatched = useRef<Set<number>>(new Set())
   const autoMarkTriggered = useRef(false)
   const [watchProgress, setWatchProgress] = useState(0)
@@ -35,23 +48,33 @@ export default function LessonPage() {
   }
   const { data: eventProgress, isLoading: isProgressLoading, refetch: refetchProgress } = useEventProgress(courseId)
 
-  // Buscar o event_id da lição selecionada
-  const selectedLessonEventId = selectedLessonId
-    ? eventProgress?.find((l) => l.lesson_id === selectedLessonId)?.event_id
-    : undefined
+  // Pré-carregar todas as lições de uma vez
+  const { lessons: allLessons, isLoading: isLoadingAllLessons, error, refetch: refetchAllLessons } = useAllLessons(courseId)
 
-  const { data: lesson, isLoading, error, refetch: refetchLesson } = useLesson(
-    selectedLessonId ? String(selectedLessonId) : null,
-    selectedLessonEventId
-  )
+  // Obter a lição atual do Map de lições pré-carregadas
+  const lesson = useMemo(() => {
+    if (!allLessons || !selectedLessonId) return null
+    return allLessons.get(selectedLessonId) || null
+  }, [allLessons, selectedLessonId])
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
   const { data: subscriptions } = useSubscriptions()
+  const { createComment, isLoading: isCreatingComment } = useCreateLessonComment()
+  const { updateComment } = useUpdateLessonComment()
+  const { deleteComment } = useDeleteLessonComment()
+  const { data: commentsData, refetch: refetchComments } = useLessonComments(selectedLessonId)
 
   const selectedLessonProgress = useMemo(
     () => eventProgress?.find((lesson) => lesson.lesson_id === selectedLessonId),
     [eventProgress, selectedLessonId]
   )
+
+  // Obter o comentário do usuário atual a partir da lista de comentários
+  const currentUserComment = useMemo(() => {
+    if (!commentsData?.results) return selectedLessonProgress?.comment ?? ''
+    const userComment = commentsData.results.find((c) => c.current_user)
+    return userComment?.comment ?? selectedLessonProgress?.comment ?? ''
+  }, [commentsData, selectedLessonProgress])
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
@@ -86,9 +109,9 @@ export default function LessonPage() {
   useEffect(() => {
     if (!selectedLessonId) return
 
-    refetchLesson()
+    // Apenas atualizar o progresso, as lições já foram pré-carregadas
     refetchProgress()
-  }, [selectedLessonId, refetchLesson, refetchProgress])
+  }, [selectedLessonId, refetchProgress])
 
   useEffect(() => {
     setWatchProgress(0)
@@ -140,38 +163,54 @@ export default function LessonPage() {
   }
 
   const handleCommentSubmit = async (comment: string) => {
-    if (!selectedLessonId || !eventProgress) return
-
-    const currentLesson = eventProgress.find((l) => l.lesson_id === selectedLessonId)
-    if (!currentLesson) return
+    if (!selectedLessonId) return
 
     try {
-      await refetchProgress(
-        (currentLessons) =>
-          currentLessons?.map((lesson) =>
-            lesson.lesson_id === selectedLessonId
-              ? {
-                  ...lesson,
-                  comment,
-                }
-              : lesson
-          ) ?? currentLessons,
-        { revalidate: false }
-      )
-
-      await updateRating({
-        eventId: currentLesson.event_id,
+      // Usar o novo endpoint de criação de comentários
+      await createComment({
         lessonId: selectedLessonId,
         comment,
       })
 
+      // Recarregar os comentários e o progresso
+      await refetchComments()
       await refetchProgress()
 
       toast.success('Obrigado pelo comentário!')
     } catch (err) {
       console.error('Erro ao salvar comentário:', err)
-      refetchProgress()
       toast.error('Não foi possível salvar seu comentário. Tente novamente.')
+    }
+  }
+
+  const handleEditComment = async (commentId: number, newComment: string) => {
+    try {
+      await updateComment({
+        commentId,
+        comment: newComment,
+      })
+
+      // Recarregar os comentários
+      await refetchComments()
+
+      toast.success('Comentário atualizado!')
+    } catch (err) {
+      console.error('Erro ao atualizar comentário:', err)
+      toast.error('Não foi possível atualizar seu comentário. Tente novamente.')
+    }
+  }
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      await deleteComment({ commentId })
+
+      // Recarregar os comentários
+      await refetchComments()
+
+      toast.success('Comentário excluído!')
+    } catch (err) {
+      console.error('Erro ao excluir comentário:', err)
+      toast.error('Não foi possível excluir seu comentário. Tente novamente.')
     }
   }
 
@@ -215,6 +254,15 @@ export default function LessonPage() {
       )
 
       console.log('Aula marcada como assistida com sucesso')
+
+      // Mostrar modal de prompt de quiz se houver exercício disponível
+      if (currentLesson.exercise && currentLesson.exercise.questions_count > 0) {
+        setQuizPromptState({
+          eventId: currentLesson.exercise.id,
+          name: currentLesson.exercise.name,
+          questionsCount: currentLesson.exercise.questions_count,
+        })
+      }
     } catch (err) {
       console.error('Erro ao marcar aula como assistida:', err)
       // Em caso de erro, remover da lista para permitir nova tentativa
@@ -231,10 +279,10 @@ export default function LessonPage() {
     setQuizState(null)
     // Refetch para atualizar o score e o status de conclusão
     refetchProgress()
-    refetchLesson()
+    refetchAllLessons()
   }
 
-  const isLessonLoading = (isLoading || isProgressLoading || !selectedLessonId) && !lesson
+  const isLessonLoading = (isLoadingAllLessons || isProgressLoading) && !lesson
 
   if (isLessonLoading) {
     return (
@@ -266,7 +314,7 @@ export default function LessonPage() {
     )
   }
 
-  if (!lesson && !isLoading) {
+  if (!lesson && !isLoadingAllLessons && selectedLessonId) {
     return (
       <div className="flex items-center justify-center h-96 animate-fade-in">
         <div className="text-center space-y-2">
@@ -340,43 +388,37 @@ export default function LessonPage() {
                 description={lesson?.description}
                 courseName={currentCourseName}
                 initialRating={selectedLessonProgress?.rating ?? null}
-                initialComment={selectedLessonProgress?.comment ?? ''}
+                initialComment={currentUserComment}
                 isWatched={selectedLessonProgress?.watched ?? false}
                 ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
                 onRatingChange={handleRatingChange}
                 onSubmitComment={handleCommentSubmit}
                 onMarkAsWatched={handleMarkAsWatched}
-                isCommentSubmitting={isUpdatingRating}
+                isCommentSubmitting={isCreatingComment}
                 watchProgress={watchProgress}
                 isMarkingWatched={isMarkingWatched}
+                eventId={selectedLessonProgress?.event_id}
+                exercise={selectedLessonProgress?.exercise ?? null}
+                exerciseScore={selectedLessonProgress?.exercise_score ?? null}
+                supportMaterialUrl={lesson?.support_material_url}
+                onOpenQuiz={handleOpenQuiz}
               />
             </div>
 
-            {/* Atividades da Aula */}
-            {lesson?.activities && lesson.activities.length > 0 && (
-              <div className="animate-slide-up animate-delay-300">
-                <Card className="p-4 border-border/50">
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold">Atividades da Aula</h3>
-                    <div className="space-y-2">
-                      {lesson.activities.slice(0, 3).map((activity) => (
-                        <div
-                          key={activity.id}
-                          className="flex items-center gap-2 text-sm p-2 rounded hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                          {activity.completed ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                          ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-                          )}
-                          <span className="text-xs">{activity.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            )}
+            {/* Comentários e Perguntas ao Professor */}
+            <div className="animate-slide-up animate-delay-250">
+              <LessonInteractionTabs
+                commentsData={commentsData}
+                isLoadingComments={!selectedLessonId}
+                onSubmitComment={handleCommentSubmit}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
+                isSubmittingComment={isCreatingComment}
+                lessonId={selectedLessonId || 0}
+              />
+            </div>
+
+         
           </div>
 
           {/* Sidebar direita: Tabs com Conteúdo, Material e Exercício (sticky) */}
@@ -390,7 +432,6 @@ export default function LessonPage() {
                     supportMaterialUrl={lesson?.support_material_url}
                     onCollapsedChange={setSidebarCollapsed}
                     onSelectLesson={setSelectedLessonId}
-                    onOpenQuiz={handleOpenQuiz}
                   />
                 ) : (
                   <Card className="p-6 border-border/50">
@@ -403,12 +444,32 @@ export default function LessonPage() {
         </div>
       </div>
 
+      {/* Quiz Prompt Modal */}
+      {quizPromptState && (
+        <QuizPromptModal
+          open={!!quizPromptState}
+          onOpenChange={(open) => !open && setQuizPromptState(null)}
+          exerciseName={quizPromptState.name}
+          questionsCount={quizPromptState.questionsCount}
+          onStartNow={() => {
+            setQuizState({
+              eventId: quizPromptState.eventId,
+              name: quizPromptState.name,
+            })
+            setQuizPromptState(null)
+          }}
+          onLater={() => {
+            setQuizPromptState(null)
+          }}
+        />
+      )}
+
       {/* Quiz Modal/Overlay */}
-      {quizState && (
+      {quizState && selectedLessonProgress && (
         <QuizView
           eventId={quizState.eventId}
           exerciseName={quizState.name}
-          subscriptionId={parseInt(courseId)}
+          subscriptionId={selectedLessonProgress.student_class_id ?? parseInt(courseId)}
           onClose={handleCloseQuiz}
         />
       )}

@@ -7,6 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { LessonHeader } from "./lesson-resources-icons";
+
+
+interface Exercise {
+  id: number;
+  name: string;
+  questions_count: number;
+  answers_count: number;
+}
 
 interface LessonDescriptionCardProps {
   title?: string;
@@ -25,6 +34,11 @@ interface LessonDescriptionCardProps {
   isCommentSubmitting?: boolean;
   watchProgress?: number;
   isMarkingWatched?: boolean;
+  eventId?: number;
+  exercise?: Exercise | null;
+  exerciseScore?: number | null;
+  supportMaterialUrl?: string;
+  onOpenQuiz?: (eventId: number, exerciseName: string) => void;
 }
 
 export function LessonDescriptionCard({
@@ -44,6 +58,11 @@ export function LessonDescriptionCard({
   isCommentSubmitting = false,
   watchProgress = 0,
   isMarkingWatched = false,
+  eventId,
+  exercise,
+  exerciseScore,
+  supportMaterialUrl,
+  onOpenQuiz,
 }: LessonDescriptionCardProps) {
   const { data: session } = useSession();
   const displayName = useMemo(
@@ -127,134 +146,23 @@ export function LessonDescriptionCard({
         {/* Coluna esquerda: Descrição */}
 
         <div>
-          <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-            {description}
-          </p>
-
-          <div className="mt-6 space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-foreground">Seu comentário enviado</h3>
-              <div className="rounded-lg border border-border/60 bg-card/70 p-3 shadow-sm">
-                {savedComment ? (
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-11 w-11">
-                      <AvatarImage src={displayImage} alt={displayName} />
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{displayName}</p>
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                          {displayCourse}
-                        </span>
-                        <span className="text-xs text-muted-foreground">comentou nesta aula</span>
-                      </div>
-
-                      <div className="max-w-full rounded-2xl border border-primary/10 bg-primary/5 px-3 py-2">
-                        <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
-                          {savedComment}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={displayImage} alt={displayName} />
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm">Nenhum comentário enviado ainda.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <label className="text-sm font-medium text-foreground" htmlFor="lesson-comment">
-                  Deixe um comentário sobre esta aula
-                </label>
-                {savedComment && !isEditingComment && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingComment(true);
-                      setCommentInput(savedComment);
-                    }}
-                    disabled={disabled}
-                  >
-                    Editar comentário
-                  </Button>
-                )}
-              </div>
-
-              {(!savedComment || isEditingComment) && (
-                <>
-                  <textarea
-                    id="lesson-comment"
-                    className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Compartilhe seu feedback ou dúvidas sobre a aula"
-                    value={commentInput}
-                    onChange={(e) => setCommentInput(e.target.value)}
-                    disabled={disabled || isCommentSubmitting}
-                    maxLength={500}
-                  />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {isCommentEmpty
-                        ? "Digite algo para enviar seu comentário."
-                        : savedComment
-                        ? "Atualize seu comentário enviado."
-                        : "Pronto para enviar seu feedback."}
-                    </span>
-                    <span>{commentInput.length}/500</span>
-                  </div>
-                  <div className="flex items-center justify-end gap-2">
-                    {savedComment && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setIsEditingComment(false);
-                          setCommentInput("");
-                        }}
-                        disabled={disabled || isCommentSubmitting}
-                      >
-                        Cancelar
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      onClick={handleSubmitComment}
-                      disabled={disabled || isCommentSubmitting || isCommentEmpty}
-                      className="min-w-[180px]"
-                    >
-                      {isCommentSubmitting
-                        ? "Enviando..."
-                        : savedComment
-                        ? "Salvar comentário"
-                        : "Enviar comentário"}
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {savedComment && !isEditingComment && (
-                <p className="text-xs text-muted-foreground">Você já enviou um comentário. Clique em “Editar comentário” para atualizar.</p>
-              )}
-            </div>
-          </div>
+                <LessonHeader
+              title={title || ""}
+              description={description || ""}
+              eventId={eventId}
+              exercise={exercise}
+              exerciseScore={exerciseScore}
+              supportMaterialUrl={supportMaterialUrl}
+              onOpenQuiz={onOpenQuiz}
+            />
         </div>
 
-        {/* Coluna direita: Card com Rating e Ações */}
-        <div className="space-y-4">
+        {/* Coluna direita: Grid com ícones à esquerda e ações/rating à direita */}
+        <div>
+
+
+          {/* Card com Rating e Ações */}
+          <div className="space-y-4">
           {/* Botões de ação */}
           <div className="flex items-center gap-2">
             <Button
@@ -372,6 +280,7 @@ export function LessonDescriptionCard({
                 </p>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>

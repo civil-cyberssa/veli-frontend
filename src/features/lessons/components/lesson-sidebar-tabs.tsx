@@ -3,25 +3,17 @@
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, MonitorPlay, Menu, ChevronLeft, ChevronRight, ChevronDown, PlayCircle, CheckCircle2, Circle, BookOpen, Video } from 'lucide-react'
+import { FileText, Download, MonitorPlay, Menu, ChevronDown, PlayCircle, CheckCircle2, Circle, ChevronRight } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { cn } from '@/lib/utils'
 
-
-interface Quiz {
-  id: number
-  name: string
-  questions_count: number
-}
 
 interface LessonSidebarTabsProps {
   lessons: LessonProgress[]
   currentLessonId: number | null
   supportMaterialUrl?: string
-  quiz?: Quiz
   onCollapsedChange?: (collapsed: boolean) => void
   onSelectLesson?: (lessonId: number) => void
-  onOpenQuiz?: (eventId: number, exerciseName: string) => void
 }
 
 type TabValue = 'conteudo' | 'material'
@@ -32,11 +24,6 @@ interface ModuleGroup {
   module_name: string
   lessons: LessonProgress[]
   total_duration: string
-  quiz?: {
-    id: number
-    name: string
-    questions_count: number
-  }
 }
 
 // Função para formatar duração em MM:SS
@@ -62,15 +49,6 @@ function groupLessonsByModule(lessons: LessonProgress[]): ModuleGroup[] {
 
     const module = modulesMap.get(lesson.module_id)!
     module.lessons.push(lesson)
-
-    // Se a aula tem quiz, adicionar ao módulo
-    if (lesson.exercise && !module.quiz) {
-      module.quiz = {
-        id: lesson.exercise.id,
-        name: lesson.exercise.name,
-        questions_count: lesson.exercise.questions_count,
-      }
-    }
   })
 
   // Calcular duração total de cada módulo
@@ -95,7 +73,6 @@ function ModuleItem({
   isExpanded,
   onToggle,
   onSelectLesson,
-  onOpenQuiz,
 }: {
   module: ModuleGroup
   index: number
@@ -103,7 +80,6 @@ function ModuleItem({
   isExpanded: boolean
   onToggle: () => void
   onSelectLesson?: (lessonId: number) => void
-  onOpenQuiz?: (eventId: number, exerciseName: string) => void
 }) {
   // Verificar se este módulo contém a aula atual
   const isCurrentModule = module.lessons.some((l) => l.lesson_id === currentLessonId)
@@ -217,60 +193,6 @@ function ModuleItem({
               </button>
             )
           })}
-
-          {/* Quiz do módulo (se existir) */}
-          {module.quiz && (
-            <button
-              className="w-full flex flex-col gap-2 px-3 py-3 rounded-md transition-all bg-secondary/5 hover:bg-secondary/10 border border-secondary/20 mt-3 cursor-pointer"
-              onClick={() => {
-                // Pegar o event_id da primeira aula do módulo
-                const eventId = module.lessons[0]?.event_id
-                if (eventId && module.quiz) {
-                  onOpenQuiz?.(eventId, module.quiz.name)
-                }
-              }}
-            >
-              <div className="flex items-center gap-3 w-full">
-                <div className="p-1.5 rounded-md bg-secondary/15 shrink-0">
-                  <BookOpen className="h-4 w-4 text-secondary" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-xs text-muted-foreground leading-tight mb-0.5">
-                    Quiz do módulo
-                  </p>
-                  <h4 className="text-sm font-medium text-foreground leading-tight">
-                    {module.quiz.name}
-                  </h4>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-
-              {/* Badge de resultado se o quiz foi completado */}
-              {(() => {
-                // Buscar exercise_score da primeira aula que tem exercise
-                const lessonWithExercise = module.lessons.find(l => l.exercise?.id === module.quiz?.id)
-                const score = lessonWithExercise?.exercise_score
-                const answersCount = lessonWithExercise?.exercise?.answers_count || 0
-                const questionsCount = module.quiz.questions_count
-                const isCompleted = answersCount === questionsCount && answersCount > 0
-
-                if (isCompleted && score !== null && score !== undefined) {
-                  const percentage = Math.round((score / questionsCount) * 100)
-                  return (
-                    <div className="flex items-center gap-2 pl-11">
-                      <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-success/10 border border-success/20">
-                        <CheckCircle2 className="h-3 w-3 text-success" />
-                        <span className="text-xs font-medium text-success">
-                          RESULTADO: {percentage}%
-                        </span>
-                      </div>
-                    </div>
-                  )
-                }
-                return null
-              })()}
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -281,10 +203,8 @@ export function LessonSidebarTabs({
   lessons,
   currentLessonId,
   supportMaterialUrl,
-  quiz,
   onCollapsedChange,
   onSelectLesson,
-  onOpenQuiz,
 }: LessonSidebarTabsProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<TabValue>('conteudo')
@@ -435,7 +355,6 @@ export function LessonSidebarTabs({
                 isExpanded={expandedModules.has(module.module_id)}
                 onToggle={() => toggleModule(module.module_id)}
                 onSelectLesson={onSelectLesson}
-                onOpenQuiz={onOpenQuiz}
               />
             ))}
           </div>
