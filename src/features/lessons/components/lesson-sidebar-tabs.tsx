@@ -37,7 +37,7 @@ function formatDuration(minutes: number): string {
 function groupLessonsByModule(lessons: LessonProgress[]): ModuleGroup[] {
   const modulesMap = new Map<number, ModuleGroup>()
 
-  lessons.forEach((lesson, index) => {
+  lessons.forEach((lesson) => {
     if (!modulesMap.has(lesson.module_id)) {
       modulesMap.set(lesson.module_id, {
         module_id: lesson.module_id,
@@ -47,21 +47,21 @@ function groupLessonsByModule(lessons: LessonProgress[]): ModuleGroup[] {
       })
     }
 
-    const module = modulesMap.get(lesson.module_id)!
-    module.lessons.push(lesson)
+    const moduleGroup = modulesMap.get(lesson.module_id)!
+    moduleGroup.lessons.push(lesson)
   })
 
   // Calcular duração total de cada módulo
-  return Array.from(modulesMap.values()).map((module) => {
-    const totalMinutes = module.lessons.length * 9 // média de 9 minutos por aula
+  return Array.from(modulesMap.values()).map((moduleGroup) => {
+    const totalMinutes = moduleGroup.lessons.length * 9 // média de 9 minutos por aula
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
 
-    module.total_duration = hours > 0
+    moduleGroup.total_duration = hours > 0
       ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
       : `${String(minutes).padStart(2, '0')}:${String(0).padStart(2, '0')}`
 
-    return module
+    return moduleGroup
   })
 }
 

@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { useLesson } from '@/src/features/dashboard/hooks/useLesson'
 import { useAllLessons } from '@/src/features/dashboard/hooks/useAllLessons'
 import { useEventProgress } from '@/src/features/dashboard/hooks/useEventProgress'
 import { useMarkLessonWatched } from '@/src/features/dashboard/hooks/useMarkLessonWatched'
@@ -17,10 +16,9 @@ import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-side
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
 import { QuizView } from '@/src/features/lessons/components/quiz-view'
-import { PlayCircle, CheckCircle2, Circle, ArrowLeft } from 'lucide-react'
+import { PlayCircle } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 import { LessonInteractionTabs } from '@/src/features/lessons/components/lesson-interaction-tabs'
-import { LessonResources } from '@/src/features/lessons/components/lesson-resources'
 import { QuizPromptModal } from '@/src/features/lessons/components/quiz-prompt-modal'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
@@ -29,9 +27,8 @@ import { LogoPulseLoader } from '@/components/shared/logo-loader'
 export default function LessonPage() {
   const params = useParams()
   const courseId = params.id as string
-  const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [autoplay, setAutoplay] = useState(true)
+  const autoplay = true
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
   const [quizState, setQuizState] = useState<{ eventId: number; name: string } | null>(null)
   const [quizPromptState, setQuizPromptState] = useState<{
@@ -42,10 +39,8 @@ export default function LessonPage() {
   const hasMarkedWatched = useRef<Set<number>>(new Set())
   const autoMarkTriggered = useRef(false)
   const [watchProgress, setWatchProgress] = useState(0)
+  const [isTeacherCommentSubmitting, setIsTeacherCommentSubmitting] = useState(false)
 
-  const handleAutoplayChange = (checked: boolean) => {
-    setAutoplay(checked)
-  }
   const { data: eventProgress, isLoading: isProgressLoading, refetch: refetchProgress } = useEventProgress(courseId)
 
   // Pré-carregar todas as lições de uma vez
@@ -68,13 +63,6 @@ export default function LessonPage() {
     () => eventProgress?.find((lesson) => lesson.lesson_id === selectedLessonId),
     [eventProgress, selectedLessonId]
   )
-
-  // Obter o comentário do usuário atual a partir da lista de comentários
-  const currentUserComment = useMemo(() => {
-    if (!commentsData?.results) return selectedLessonProgress?.comment ?? ''
-    const userComment = commentsData.results.find((c) => c.current_user)
-    return userComment?.comment ?? selectedLessonProgress?.comment ?? ''
-  }, [commentsData, selectedLessonProgress])
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
@@ -180,6 +168,28 @@ export default function LessonPage() {
     } catch (err) {
       console.error('Erro ao salvar comentário:', err)
       toast.error('Não foi possível salvar seu comentário. Tente novamente.')
+    }
+  }
+
+  const handleTeacherCommentSubmit = async (comment: string) => {
+    if (!selectedLessonId || !selectedLessonProgress?.event_id) return
+
+    setIsTeacherCommentSubmitting(true)
+
+    try {
+      await updateRating({
+        eventId: selectedLessonProgress.event_id,
+        lessonId: selectedLessonId,
+        comment,
+      })
+
+      await refetchProgress()
+      toast.success('Comentário enviado ao professor!')
+    } catch (err) {
+      console.error('Erro ao enviar comentário ao professor:', err)
+      toast.error('Não foi possível enviar seu comentário ao professor. Tente novamente.')
+    } finally {
+      setIsTeacherCommentSubmitting(false)
     }
   }
 
@@ -388,13 +398,10 @@ export default function LessonPage() {
                 description={lesson?.description}
                 courseName={currentCourseName}
                 initialRating={selectedLessonProgress?.rating ?? null}
-                initialComment={currentUserComment}
                 isWatched={selectedLessonProgress?.watched ?? false}
                 ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
                 onRatingChange={handleRatingChange}
-                onSubmitComment={handleCommentSubmit}
                 onMarkAsWatched={handleMarkAsWatched}
-                isCommentSubmitting={isCreatingComment}
                 watchProgress={watchProgress}
                 isMarkingWatched={isMarkingWatched}
                 eventId={selectedLessonProgress?.event_id}
@@ -402,6 +409,7 @@ export default function LessonPage() {
                 exerciseScore={selectedLessonProgress?.exercise_score ?? null}
                 supportMaterialUrl={lesson?.support_material_url}
                 onOpenQuiz={handleOpenQuiz}
+                teacherAnswer={selectedLessonProgress?.teacher_answer ?? null}
               />
             </div>
 
@@ -415,6 +423,10 @@ export default function LessonPage() {
                 onDeleteComment={handleDeleteComment}
                 isSubmittingComment={isCreatingComment}
                 lessonId={selectedLessonId || 0}
+                teacherComment={selectedLessonProgress?.comment ?? null}
+                teacherAnswer={selectedLessonProgress?.teacher_answer ?? null}
+                onSubmitTeacherComment={handleTeacherCommentSubmit}
+                isTeacherCommentSubmitting={isTeacherCommentSubmitting}
               />
             </div>
 

@@ -18,6 +18,34 @@ export interface City {
   state: string
 }
 
+interface RestCountryResponse {
+  cca2: string
+  name: {
+    common: string
+    translations?: {
+      por?: {
+        common: string
+      }
+    }
+  }
+}
+
+interface IbgeStateResponse {
+  sigla: string
+  nome: string
+}
+
+interface IbgeCityResponse {
+  nome: string
+  microrregiao?: {
+    mesorregiao?: {
+      UF?: {
+        sigla: string
+      }
+    }
+  }
+}
+
 // Cache para evitar chamadas repetidas
 const cache = {
   countries: null as Country[] | null,
@@ -55,8 +83,7 @@ const COUNTRY_NAME_OVERRIDES: Record<string, string> = {
  * Retorna nomes em PT-BR com ordenação alfabética correta
  */
 export async function searchCountries(
-  namePrefix: string,
-  languageCode: string = 'pt'
+  namePrefix: string
 ): Promise<Country[]> {
   if (!namePrefix || namePrefix.length < 2) {
     return []
@@ -68,9 +95,9 @@ export async function searchCountries(
       const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2')
       if (!response.ok) throw new Error('Failed to fetch countries')
 
-      const data = await response.json()
+      const data: RestCountryResponse[] = await response.json()
       cache.countries = data
-        .map((country: any) => {
+        .map((country) => {
           const code = country.cca2
           // Usa override se existir, senão pega tradução PT ou nome em inglês
           const name = COUNTRY_NAME_OVERRIDES[code] ||
@@ -124,8 +151,8 @@ export async function searchRegions(
       )
       if (!response.ok) throw new Error('Failed to fetch states')
 
-      const data = await response.json()
-      cache.states = data.map((state: any) => ({
+      const data: IbgeStateResponse[] = await response.json()
+      cache.states = data.map((state) => ({
         code: state.sigla,
         name: state.nome,
       }))
@@ -197,16 +224,16 @@ export async function searchCities(
       const response = await fetch(url)
       if (!response.ok) throw new Error('Failed to fetch cities')
 
-      const data = await response.json()
+      const data: IbgeCityResponse[] = await response.json()
       const cities = data
-        .filter((city: any) => {
+        .filter((city) => {
           // Validação defensiva: verifica se a estrutura existe
           return city?.nome &&
                  city?.microrregiao?.mesorregiao?.UF?.sigla
         })
-        .map((city: any) => ({
+        .map((city) => ({
           name: city.nome,
-          state: city.microrregiao.mesorregiao.UF.sigla,
+          state: city.microrregiao?.mesorregiao?.UF?.sigla || '',
         }))
 
       cache.cities.set(cacheKey, cities)

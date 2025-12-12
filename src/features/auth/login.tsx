@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import React, { useState, FormEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,7 @@ export default function LoginScreen() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [carouselImages.length]);
 
   useEffect(() => {
     const savedCredentials = localStorage.getItem("userCredentials");
@@ -162,13 +163,16 @@ export default function LoginScreen() {
         {/* Seção do carrossel - oculta em mobile, visível em lg+ */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden min-h-[500px] xl:min-h-[600px]">
           {carouselImages.map((image, index) => (
-            <img
-              key={index}
+            <Image
+              key={image}
               src={image}
               alt={`Slide ${index + 1}`}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+              fill
+              sizes="(min-width: 1280px) 60vw, (min-width: 1024px) 50vw, 100vw"
+              className={`object-cover transition-opacity duration-1000 ${
                 index === currentImageIndex ? "opacity-100" : "opacity-0"
               }`}
+              priority={index === 0}
             />
           ))}
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent"></div>
@@ -180,14 +184,17 @@ export default function LoginScreen() {
           <div className="w-full max-w-sm space-y-6 sm:space-y-7 md:space-y-8">
             {/* Cabeçalho - ajustes responsivos */}
             <div className="text-center space-y-3 sm:space-y-4">
-              <img
+              <Image
                 src={
                   resolvedTheme === "light"
                     ? "/logo/logo.png"
                     : "/logo/logo_white.png"
                 }
+                width={140}
+                height={40}
                 className="w-20 h-auto mx-auto mb-4 sm:w-24 sm:mb-5 md:w-28 md:mb-6 lg:w-32 xl:w-36 transition-all"
                 alt="Logo Veli"
+                priority
               />
 
               <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl font-bold text-foreground tracking-tight leading-tight">
@@ -198,10 +205,12 @@ export default function LoginScreen() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 pt-1 sm:pt-2">
                 <div className="flex -space-x-2">
                   {publicFigures.map((avatar, index) => (
-                    <img
-                      key={index}
+                    <Image
+                      key={avatar}
                       src={avatar}
                       alt={`Usuário ${index + 1}`}
+                      width={40}
+                      height={40}
                       className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full ring-2 ring-background object-cover transition-transform hover:scale-110 hover:z-10"
                     />
                   ))}

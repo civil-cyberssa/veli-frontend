@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { X, CheckCircle2, XCircle } from 'lucide-react'
-import { useExercise, Question, Answer } from '@/src/features/dashboard/hooks/useExercise'
+import { useExercise, Question } from '@/src/features/dashboard/hooks/useExercise'
 import { useSubmitAnswer } from '@/src/features/dashboard/hooks/useSubmitAnswer'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
 
@@ -162,6 +162,8 @@ export function QuizView({ eventId, exerciseName, subscriptionId, onClose }: Qui
     )
   }
 
+  const displayedExerciseName = exercise?.exercise.name ?? exerciseName
+
   if (!exercise || !currentQuestion) {
     return (
       <div className="fixed inset-0 bg-background z-50 flex items-center justify-center">
@@ -192,7 +194,7 @@ export function QuizView({ eventId, exerciseName, subscriptionId, onClose }: Qui
                 <X className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">{exercise.exercise.name}</h1>
+                <h1 className="text-lg font-semibold text-foreground">{displayedExerciseName}</h1>
                 <p className="text-sm text-muted-foreground">
                   Questão {currentQuestionIndex + 1} de {totalQuestions}
                 </p>

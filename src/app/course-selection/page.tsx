@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
@@ -10,7 +11,7 @@ import { LogoPulseLoader } from "@/components/shared/logo-loader"
 
 export default function CourseSelectionPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const {
     data: subscriptions,
     loading,
@@ -194,18 +195,22 @@ export default function CourseSelectionPage() {
 
                     {/* Course Icon melhorado */}
                     <div className="relative flex-shrink-0 z-10">
-                      <div className={`
-                        w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden
+                      <div
+                        className={`
+                        w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden relative
                         transition-all duration-300 ease-out
                         ${isSelected 
                           ? 'ring-4 ring-primary/30 shadow-lg shadow-primary/20' 
                           : 'ring-2 ring-border/50 group-hover:ring-border'
                         }
-                      `}>
-                        <img
+                      `}
+                      >
+                        <Image
                           src={subscription.course_icon}
                           alt={subscription.course_name}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="(min-width: 640px) 5rem, 4rem"
+                          className="object-cover"
                         />
                       </div>
 

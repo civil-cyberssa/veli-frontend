@@ -51,7 +51,7 @@ export function LocationAutocomplete({
         const cities = await searchCities(searchValue, countryCode)
         setSuggestions(cities.map((c) => c.name))
       }
-    } catch (error) {
+    } catch {
       setSuggestions([])
     } finally {
       setIsLoading(false)

@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Calendar, Clock, ArrowRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -88,9 +89,11 @@ export default function Dashboard() {
         {/* Seletor de curso */}
         {subscriptions.length === 1 && selectedSubscription ? (
           <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border/50">
-            <img
+            <Image
               src={selectedSubscription.course_icon}
               alt={selectedSubscription.course_name}
+              width={20}
+              height={20}
               className="h-5 w-5 rounded-full object-cover"
             />
             <span className="text-sm font-medium">{selectedSubscription.course_name}</span>
@@ -113,9 +116,11 @@ export default function Dashboard() {
               {subscriptions.map((subscription) => (
                 <SelectItem key={subscription.id} value={subscription.id.toString()}>
                   <div className="flex items-center gap-2">
-                    <img
+                    <Image
                       src={subscription.course_icon}
                       alt={subscription.course_name}
+                      width={16}
+                      height={16}
                       className="h-4 w-4 rounded-full object-cover"
                     />
                     <span>{subscription.course_name}</span>

@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2 } from "lucide-react"
@@ -43,9 +44,11 @@ export function CourseSelection({ subscriptions, onCourseSelect }: CourseSelecti
             >
               <CardContent className="flex items-center gap-4 p-6">
                 <div className="relative flex-shrink-0">
-                  <img
+                  <Image
                     src={subscription.course_icon}
                     alt={subscription.course_name}
+                    width={64}
+                    height={64}
                     className="h-16 w-16 rounded-full object-cover"
                   />
                   {selectedCourse?.id === subscription.id && (

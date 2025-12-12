@@ -1,6 +1,4 @@
 "use client";
-
-import { Button } from "@/components/ui/button";
 import { FileText, BookOpen, CheckCircle2, Download, Play } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 

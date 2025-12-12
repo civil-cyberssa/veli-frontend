@@ -36,11 +36,11 @@ export interface UseLessonCommentsReturn {
   isLoading: boolean
   error: Error | null
   refetch: () => void
-  createComment: (data: CreateCommentData) => Promise<any>
+  createComment: (data: CreateCommentData) => Promise<LessonComment>
   isCreating: boolean
-  updateComment: (commentId: number, data: UpdateCommentData) => Promise<any>
+  updateComment: (commentId: number, data: UpdateCommentData) => Promise<LessonComment>
   isUpdating: boolean
-  deleteComment: (commentId: number) => Promise<any>
+  deleteComment: (commentId: number) => Promise<{ success: boolean }>
   isDeleting: boolean
 }
 
@@ -69,7 +69,7 @@ const fetcher = async (
 async function createComment(
   url: string,
   { arg }: { arg: { token: string; data: CreateCommentData } }
-) {
+): Promise<LessonComment> {
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -92,7 +92,7 @@ async function createComment(
 async function updateComment(
   url: string,
   { arg }: { arg: { token: string; commentId: number; data: UpdateCommentData } }
-) {
+): Promise<LessonComment> {
   const response = await fetch(`${url}${arg.commentId}/`, {
     method: 'PATCH',
     headers: {
@@ -115,7 +115,7 @@ async function updateComment(
 async function deleteComment(
   url: string,
   { arg }: { arg: { token: string; commentId: number } }
-) {
+): Promise<{ success: boolean }> {
   const response = await fetch(`${url}${arg.commentId}/`, {
     method: 'DELETE',
     headers: {
@@ -129,12 +129,7 @@ async function deleteComment(
     throw new Error(`Erro ao deletar comentário: ${response.status} - ${errorText}`)
   }
 
-  // DELETE geralmente retorna 204 No Content
-  if (response.status === 204) {
-    return { success: true }
-  }
-
-  return await response.json()
+  return { success: true }
 }
 
 export function useLessonComments(

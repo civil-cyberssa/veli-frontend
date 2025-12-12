@@ -10,6 +10,12 @@ interface UpdateLessonRatingParams {
   comment?: string
 }
 
+interface UpdateLessonRatingPayload {
+  lesson_id: number
+  rating?: number | null
+  comment?: string
+}
+
 interface UseUpdateLessonRatingReturn {
   updateRating: (params: UpdateLessonRatingParams) => Promise<void>
   isLoading: boolean
@@ -30,7 +36,7 @@ export function useUpdateLessonRating(): UseUpdateLessonRatingReturn {
     setError(null)
 
     try {
-      const body: any = {
+      const body: UpdateLessonRatingPayload = {
         lesson_id: lessonId,
       }
 
@@ -59,8 +65,9 @@ export function useUpdateLessonRating(): UseUpdateLessonRatingReturn {
         throw new Error(`Erro ao atualizar avaliação: ${response.status}`)
       }
 
-      // Success - retornar data se a API retornar algo útil
-      return await response.json()
+      if (response.status !== 204) {
+        await response.json().catch(() => null)
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Erro desconhecido')
       setError(error)

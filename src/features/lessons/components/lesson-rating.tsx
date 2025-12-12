@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { Star, Check, Bookmark, MonitorCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { LessonHeader } from "./lesson-resources-icons";
@@ -21,17 +19,14 @@ interface LessonDescriptionCardProps {
   title?: string;
   description?: string;
   initialRating?: number | null;
-  initialComment?: string;
   courseName?: string;
   isWatched?: boolean;
   isSaved?: boolean;
   onRatingChange?: (rating: number) => void;
-  onSubmitComment?: (comment: string) => Promise<void> | void;
   onMarkAsWatched?: () => void;
   onToggleSave?: () => void;
   disabled?: boolean;
   ratingDisabled?: boolean;
-  isCommentSubmitting?: boolean;
   watchProgress?: number;
   isMarkingWatched?: boolean;
   eventId?: number;
@@ -39,23 +34,21 @@ interface LessonDescriptionCardProps {
   exerciseScore?: number | null;
   supportMaterialUrl?: string;
   onOpenQuiz?: (eventId: number, exerciseName: string) => void;
+  teacherAnswer?: string | null;
 }
 
 export function LessonDescriptionCard({
   title = "Meu primeiro algoritmo",
   description = "Neste vídeo, aprendemos a criar nosso primeiro código no Scratch, s algoritmos, sequências lógicas de passos para resolver problemas. Programar envolve entender e processar dados para gerar saídas úteis, como nas redes sociais.",
   initialRating = null,
-  initialComment = "",
   courseName,
   isWatched = false,
   isSaved = false,
   onRatingChange,
-  onSubmitComment,
   onMarkAsWatched,
   onToggleSave,
   disabled = false,
   ratingDisabled = false,
-  isCommentSubmitting = false,
   watchProgress = 0,
   isMarkingWatched = false,
   eventId,
@@ -63,26 +56,12 @@ export function LessonDescriptionCard({
   exerciseScore,
   supportMaterialUrl,
   onOpenQuiz,
+  teacherAnswer,
 }: LessonDescriptionCardProps) {
-  const { data: session } = useSession();
-  const displayName = useMemo(
-    () => session?.user?.name || session?.student_full_name || "Aluno",
-    [session]
-  );
-  const displayImage = session?.profile_pic_url || session?.user?.image || "";
-  const displayCourse =
-    courseName || session?.languages?.[0]?.name || "Seu curso atual";
-
   const [rating, setRating] = useState<number>(initialRating || 0);
   const [hoverRating, setHoverRating] = useState<number>(0);
-  const [commentInput, setCommentInput] = useState(initialComment);
-  const [savedComment, setSavedComment] = useState(initialComment);
-  const [isEditingComment, setIsEditingComment] = useState(!initialComment);
   const [watched, setWatched] = useState(isWatched);
   const [saved, setSaved] = useState(isSaved);
-
-  const isCommentEmpty = !commentInput.trim();
-  const initials = useMemo(() => getInitials(displayName), [displayName]);
 
   // Sincronizar estado local com prop, mas só permitir mudança de false para true
   useEffect(() => {
@@ -94,12 +73,6 @@ export function LessonDescriptionCard({
   useEffect(() => {
     setRating(initialRating || 0);
   }, [initialRating]);
-
-  useEffect(() => {
-    setCommentInput(initialComment || "");
-    setSavedComment(initialComment || "");
-    setIsEditingComment(!initialComment);
-  }, [initialComment]);
 
   const handleRatingClick = (value: number) => {
     if (disabled || ratingDisabled) return;
@@ -126,17 +99,6 @@ export function LessonDescriptionCard({
     onToggleSave?.();
   };
 
-  const handleSubmitComment = async () => {
-    if (disabled || isCommentSubmitting || !onSubmitComment || isCommentEmpty) return;
-
-    const trimmedComment = commentInput.trim();
-
-    await onSubmitComment(trimmedComment);
-    setSavedComment(trimmedComment);
-    setCommentInput("");
-    setIsEditingComment(false);
-  };
-
   return (
     <div className="space-y-6 p-2">
       {/* Título */}
@@ -146,7 +108,12 @@ export function LessonDescriptionCard({
         {/* Coluna esquerda: Descrição */}
 
         <div>
-                <LessonHeader
+            {courseName && (
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                {courseName}
+              </p>
+            )}
+            <LessonHeader
               title={title || ""}
               description={description || ""}
               eventId={eventId}
@@ -281,21 +248,20 @@ export function LessonDescriptionCard({
               )}
             </div>
           </div>
+
+          {teacherAnswer && (
+            <div className="p-4 border border-blue-200/60 rounded-lg bg-blue-500/5 space-y-1">
+              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                Resposta do professor
+              </p>
+              <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">
+                {teacherAnswer}
+              </p>
+            </div>
+          )}
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function getInitials(name: string) {
-  if (!name) return "?";
-
-  const parts = name.trim().split(" ").filter(Boolean);
-  if (parts.length === 0) return "?";
-
-  const [first, second] = parts;
-  const initials = `${first?.[0] || ""}${second?.[0] || ""}`;
-
-  return initials.toUpperCase() || "?";
 }

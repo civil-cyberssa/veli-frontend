@@ -1,12 +1,5 @@
 'use client'
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { UserRound } from 'lucide-react'
-import { useSession } from 'next-auth/react'
-
-import { ModeToggle } from '@/components/shared/theme-toggle-mode'
-import { UserDropdown } from '@/components/user-dropdown'
 import { Footer } from '@/src/components/footer'
 
 export default function LessonLayout({
@@ -14,19 +7,6 @@ export default function LessonLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { data: session } = useSession()
-
-  const fullName = session?.student_full_name ?? 'Aluno'
-  const profilePic = session?.profile_pic_url ?? ''
-  const role = session?.role ?? 'Estudante'
-  const initials = fullName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((name) => name[0])
-    .join('')
-    .toUpperCase()
-
   return (
     <div className="min-h-screen bg-background animate-fade-in flex flex-col">
 

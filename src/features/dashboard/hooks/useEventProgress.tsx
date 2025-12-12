@@ -14,7 +14,8 @@ export interface LessonProgress {
   watched: boolean
   watched_at: string | null
   rating: number | null
-  comment: string
+  comment: string | null
+  teacher_answer?: string | null
   exercise: {
     id: number
     name: string
@@ -50,7 +51,11 @@ const fetcher = async (url: string, token: string): Promise<LessonProgress[]> =>
     throw new Error(`Erro ao buscar progresso: ${response.status}`)
   }
 
-  return response.json()
+  const data = await response.json()
+  return data.map((lesson: LessonProgress & { teatcher_answer?: string | null }) => ({
+    ...lesson,
+    teacher_answer: lesson.teacher_answer ?? lesson.teatcher_answer ?? null,
+  }))
 }
 
 export function useEventProgress(eventId: string | null): UseEventProgressReturn {

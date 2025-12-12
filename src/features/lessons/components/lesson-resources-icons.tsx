@@ -1,7 +1,6 @@
 "use client";
 
-import { FileText, BookOpen, CheckCircle2, Clock, ExternalLink, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BookOpen, CheckCircle2, Clock, ExternalLink, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +98,7 @@ export function LessonHeader({
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-xs text-muted-foreground leading-tight mb-0.5">
-                    Quiz do módulo
+                    Exercício da aula
                   </p>
                   <h4 className="text-sm font-medium text-foreground leading-tight">
                     {exercise.name}

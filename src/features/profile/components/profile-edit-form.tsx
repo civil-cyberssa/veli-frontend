@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState, useEffect, useRef, useMemo } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -846,9 +847,11 @@ export function ProfileEditForm() {
                       className="px-4 py-2 text-sm flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors cursor-default"
                     >
                       {language.lang_icon && (
-                        <img
+                        <Image
                           src={language.lang_icon}
                           alt={language.name}
+                          width={20}
+                          height={20}
                           className="h-5 w-5 rounded-sm object-cover"
                         />
                       )}
