@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, Send, Clock, CheckCircle2, Sparkles, User, GraduationCap, ArrowRight } from 'lucide-react'
+import { MessageCircle, Send, Clock, CheckCircle2, Sparkles, User, GraduationCap, ArrowRight, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface TeacherQuestionsProps {
@@ -14,6 +14,19 @@ interface TeacherQuestionsProps {
   isSubmitting?: boolean
 }
 
+// Função helper para formatar tempo relativo
+function getRelativeTime(date: Date): string {
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffInSeconds < 60) return 'agora há pouco'
+  if (diffInSeconds < 3600) return `há ${Math.floor(diffInSeconds / 60)} min`
+  if (diffInSeconds < 86400) return `há ${Math.floor(diffInSeconds / 3600)}h`
+  if (diffInSeconds < 604800) return `há ${Math.floor(diffInSeconds / 86400)}d`
+
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+}
+
 export function TeacherQuestions({
   lessonId,
   studentComment,
@@ -22,10 +35,20 @@ export function TeacherQuestions({
   isSubmitting = false,
 }: TeacherQuestionsProps) {
   const [comment, setComment] = useState(studentComment ?? '')
+  const [lastSubmittedAt, setLastSubmittedAt] = useState<Date | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setComment(studentComment ?? '')
   }, [studentComment, lessonId])
+
+  // Auto-scroll para o final quando há nova resposta
+  useEffect(() => {
+    if (hasTeacherAnswer && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [teacherAnswer])
 
   const trimmedComment = comment.trim()
   const savedComment = studentComment?.trim() ?? ''
@@ -42,10 +65,31 @@ export function TeacherQuestions({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!canSubmit || !onSubmitComment) return
+
     try {
       await onSubmitComment(trimmedComment)
+      setLastSubmittedAt(new Date())
+      // Limpa o campo apenas se for uma nova mensagem (não atualização)
+      if (!hasStudentComment) {
+        setComment('')
+      }
+      // Foca no textarea após envio
+      setTimeout(() => {
+        textareaRef.current?.focus()
+      }, 100)
     } catch (error) {
       console.error('Erro ao enviar comentário ao professor:', error)
+    }
+  }
+
+  // Handler para Enter (Shift+Enter para nova linha)
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      if (canSubmit) {
+        const form = event.currentTarget.form
+        form?.requestSubmit()
+      }
     }
   }
 
@@ -99,7 +143,7 @@ export function TeacherQuestions({
               ) : (
                 <div className="space-y-5">
                   {/* Fluxo de conversa - Sua pergunta */}
-                  <div className="flex gap-3 items-start">
+                  <div className="flex gap-3 items-start animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md ring-2 ring-primary/20">
                       <User className="h-5 w-5 text-white" />
                     </div>
@@ -111,8 +155,13 @@ export function TeacherQuestions({
                         <span className="text-[10px] text-muted-foreground">
                           • perguntou
                         </span>
+                        {lastSubmittedAt && (
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {getRelativeTime(lastSubmittedAt)}
+                          </span>
+                        )}
                       </div>
-                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-4 shadow-sm">
+                      <div className="group rounded-2xl rounded-tl-sm bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/30">
                         <p className="text-sm text-foreground whitespace-pre-line break-words leading-relaxed">
                           {studentComment}
                         </p>
@@ -136,7 +185,7 @@ export function TeacherQuestions({
                           </span>
                           <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500 ml-auto" />
                         </div>
-                        <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 p-4 shadow-sm">
+                        <div className="group rounded-2xl rounded-tl-sm bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 p-4 shadow-sm transition-all hover:shadow-md hover:border-blue-300/60 dark:hover:border-blue-700/60">
                           <p className="text-sm text-blue-950 dark:text-blue-50 whitespace-pre-line break-words leading-relaxed">
                             {teacherAnswer}
                           </p>
@@ -144,7 +193,7 @@ export function TeacherQuestions({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 py-4 px-5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/50">
+                    <div className="flex items-center gap-3 py-4 px-5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/50 transition-all animate-in fade-in-50 duration-300">
                       <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-sm">
                         <Clock className="h-4 w-4 text-white animate-pulse" />
                       </div>
@@ -159,6 +208,9 @@ export function TeacherQuestions({
                       <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-pulse flex-shrink-0" />
                     </div>
                   )}
+
+                  {/* Ref para scroll automático */}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </>
@@ -194,13 +246,15 @@ export function TeacherQuestions({
 
               <div className="relative">
                 <textarea
+                  ref={textareaRef}
                   id={`teacher-comment-${lessonId}`}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder={
                     hasStudentComment
                       ? 'Atualize seu comentário ou faça uma nova pergunta...'
-                      : 'Digite sua pergunta ou comentário aqui...'
+                      : 'Digite sua pergunta ou comentário aqui... (Enter para enviar, Shift+Enter para nova linha)'
                   }
                   className={cn(
                     "w-full min-h-32 rounded-xl border-2 bg-background px-4 py-3.5 text-sm resize-y",
@@ -208,16 +262,26 @@ export function TeacherQuestions({
                     "disabled:opacity-50 disabled:cursor-not-allowed",
                     "transition-all duration-200",
                     "placeholder:text-muted-foreground/60",
-                    "shadow-sm"
+                    "shadow-sm hover:shadow-md hover:border-primary/40",
+                    isSubmitting && "opacity-70 cursor-wait"
                   )}
                   maxLength={500}
-                  disabled={!lessonId || !onSubmitComment}
+                  disabled={!lessonId || !onSubmitComment || isSubmitting}
+                  autoFocus={!hasStudentComment}
                 />
                 {comment.length > 450 && (
-                  <div className="absolute bottom-3 left-3 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20">
+                  <div className="absolute bottom-3 left-3 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 animate-in fade-in-50 duration-200">
                     <span className="text-[10px] font-medium text-amber-700 dark:text-amber-400">
                       {500 - comment.length} caracteres restantes
                     </span>
+                  </div>
+                )}
+                {isSubmitting && (
+                  <div className="absolute inset-0 rounded-xl bg-background/50 backdrop-blur-[2px] flex items-center justify-center">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 shadow-lg">
+                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                      <span className="text-sm font-medium text-primary">Enviando...</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -225,25 +289,31 @@ export function TeacherQuestions({
               <div className="flex items-center justify-between mt-3 gap-3">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <MessageCircle className="h-3.5 w-3.5" />
-                  <span>Apenas você e o professor verão esta mensagem</span>
+                  <span className="hidden sm:inline">Apenas você e o professor verão esta mensagem</span>
+                  <span className="sm:hidden">Mensagem privada</span>
                 </div>
                 <Button
                   type="submit"
                   disabled={!canSubmit}
                   className={cn(
-                    "shadow-md hover:shadow-lg transition-all",
-                    "disabled:shadow-none"
+                    "shadow-md hover:shadow-lg transition-all duration-200",
+                    "disabled:shadow-none disabled:opacity-50",
+                    "group relative overflow-hidden",
+                    canSubmit && "hover:scale-[1.02] active:scale-[0.98]"
                   )}
                   size="default"
                 >
                   {isSubmitting ? (
                     <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Enviando...
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4 mr-2" />
+                      <Send className={cn(
+                        "h-4 w-4 mr-2 transition-transform",
+                        canSubmit && "group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                      )} />
                       {hasStudentComment ? 'Atualizar' : 'Enviar'}
                     </>
                   )}
