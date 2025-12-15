@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, Send, Clock, CheckCircle2, Sparkles } from 'lucide-react'
+import { MessageCircle, Send, Clock, CheckCircle2, Sparkles, User, GraduationCap, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface TeacherQuestionsProps {
@@ -82,60 +82,83 @@ export function TeacherQuestions({
             </div>
           ) : (
             <>
-              {/* Comentário do aluno */}
-              {hasStudentComment ? (
-                <div className="group relative rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-4 shadow-sm transition-all hover:shadow-md">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                    <p className="text-[11px] font-semibold uppercase text-primary tracking-wide">
-                      Seu comentário
-                    </p>
+              {/* Estado vazio - Nenhum comentário ainda */}
+              {!hasStudentComment ? (
+                <div className="rounded-2xl border-2 border-dashed border-muted/40 bg-gradient-to-br from-muted/20 to-muted/5 p-8 text-center transition-all hover:border-primary/30 hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 mb-4 ring-4 ring-primary/5">
+                    <Sparkles className="h-8 w-8 text-primary" />
                   </div>
-                  <p className="text-sm text-foreground whitespace-pre-line break-words leading-relaxed">
-                    {studentComment}
+                  <h4 className="text-base font-semibold text-foreground mb-2">
+                    Inicie uma conversa
+                  </h4>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    Faça perguntas, compartilhe dúvidas ou deixe comentários sobre esta aula.
+                    Seu professor responderá em breve.
                   </p>
                 </div>
               ) : (
-                <div className="rounded-xl border-2 border-dashed border-muted/50 bg-muted/20 p-6 text-center transition-colors hover:border-muted/70 hover:bg-muted/30">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-background mb-3">
-                    <Sparkles className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm text-muted-foreground font-medium mb-1">
-                    Ainda sem comentários
-                  </p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Envie sua primeira pergunta ou comentário ao professor
-                  </p>
-                </div>
-              )}
-
-              {/* Resposta do professor com animação */}
-              {hasTeacherAnswer && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-500">
-                  <div className="relative rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-600/10 p-4 shadow-sm">
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                <div className="space-y-5">
+                  {/* Fluxo de conversa - Sua pergunta */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md ring-2 ring-primary/20">
+                      <User className="h-5 w-5 text-white" />
                     </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <p className="text-[11px] font-semibold uppercase text-blue-600 dark:text-blue-400 tracking-wide">
-                        Resposta do professor
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-semibold text-foreground">
+                          Você
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          • perguntou
+                        </span>
+                      </div>
+                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-4 shadow-sm">
+                        <p className="text-sm text-foreground whitespace-pre-line break-words leading-relaxed">
+                          {studentComment}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-blue-900 dark:text-blue-100 whitespace-pre-line break-words leading-relaxed">
-                      {teacherAnswer}
-                    </p>
                   </div>
-                </div>
-              )}
 
-              {/* Status de aguardando resposta */}
-              {!hasTeacherAnswer && hasStudentComment && (
-                <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                  <Clock className="h-4 w-4 text-amber-600 dark:text-amber-500 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                    Aguardando resposta do professor
-                  </span>
+                  {/* Resposta do professor ou status de aguardando */}
+                  {hasTeacherAnswer ? (
+                    <div className="flex gap-3 items-start animate-in fade-in slide-in-from-bottom-3 duration-500">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md ring-2 ring-blue-500/20">
+                        <GraduationCap className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                            Professor
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            • respondeu
+                          </span>
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500 ml-auto" />
+                        </div>
+                        <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 p-4 shadow-sm">
+                          <p className="text-sm text-blue-950 dark:text-blue-50 whitespace-pre-line break-words leading-relaxed">
+                            {teacherAnswer}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 py-4 px-5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/50">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-sm">
+                        <Clock className="h-4 w-4 text-white animate-pulse" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 mb-0.5">
+                          Aguardando resposta
+                        </p>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-300/80">
+                          O professor foi notificado e responderá em breve
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-pulse flex-shrink-0" />
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -143,16 +166,32 @@ export function TeacherQuestions({
         </div>
 
         {/* Formulário de envio */}
-        <div className="px-5 py-5 bg-muted/10">
+        <div className="px-5 py-5 bg-gradient-to-b from-muted/5 to-muted/10">
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label
-                htmlFor={`teacher-comment-${lessonId}`}
-                className="text-xs font-semibold text-foreground/80 block mb-2.5 flex items-center gap-2"
-              >
-                <Send className="h-3.5 w-3.5" />
-                {hasStudentComment ? 'Atualizar seu comentário' : 'Escreva seu comentário'}
-              </label>
+              <div className="flex items-center justify-between mb-3">
+                <label
+                  htmlFor={`teacher-comment-${lessonId}`}
+                  className="text-sm font-semibold text-foreground flex items-center gap-2"
+                >
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <Send className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  {hasStudentComment ? 'Atualizar mensagem' : 'Nova mensagem'}
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn(
+                    "text-xs font-semibold transition-colors tabular-nums",
+                    comment.length > 450 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+                    comment.length >= 500 && "text-red-600 dark:text-red-400"
+                  )}>
+                    {comment.length}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/</span>
+                  <span className="text-xs text-muted-foreground">500</span>
+                </div>
+              </div>
+
               <div className="relative">
                 <textarea
                   id={`teacher-comment-${lessonId}`}
@@ -161,39 +200,41 @@ export function TeacherQuestions({
                   placeholder={
                     hasStudentComment
                       ? 'Atualize seu comentário ou faça uma nova pergunta...'
-                      : 'Ex: Tenho dúvidas sobre o tópico X, poderia explicar melhor?'
+                      : 'Digite sua pergunta ou comentário aqui...'
                   }
                   className={cn(
-                    "w-full min-h-28 rounded-lg border bg-background px-4 py-3 text-sm resize-y",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                    "w-full min-h-32 rounded-xl border-2 bg-background px-4 py-3.5 text-sm resize-y",
+                    "focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
                     "transition-all duration-200",
-                    "placeholder:text-muted-foreground/50"
+                    "placeholder:text-muted-foreground/60",
+                    "shadow-sm"
                   )}
                   maxLength={500}
                   disabled={!lessonId || !onSubmitComment}
                 />
-              </div>
-              <div className="flex items-center justify-between mt-2.5 gap-3">
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "text-xs font-medium transition-colors",
-                    comment.length > 450 ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground",
-                    comment.length >= 500 && "text-red-600 dark:text-red-500"
-                  )}>
-                    {comment.length}/500
-                  </span>
-                  {comment.length > 450 && (
-                    <span className="text-[10px] text-muted-foreground">
-                      ({500 - comment.length} restantes)
+                {comment.length > 450 && (
+                  <div className="absolute bottom-3 left-3 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20">
+                    <span className="text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                      {500 - comment.length} caracteres restantes
                     </span>
-                  )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between mt-3 gap-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  <span>Apenas você e o professor verão esta mensagem</span>
                 </div>
                 <Button
                   type="submit"
                   disabled={!canSubmit}
-                  className="shadow-sm hover:shadow transition-all"
-                  size="sm"
+                  className={cn(
+                    "shadow-md hover:shadow-lg transition-all",
+                    "disabled:shadow-none"
+                  )}
+                  size="default"
                 >
                   {isSubmitting ? (
                     <>
@@ -210,15 +251,28 @@ export function TeacherQuestions({
               </div>
             </div>
           </form>
-          <div className="mt-3 pt-3 border-t border-border/50">
-            <p className="text-[11px] text-muted-foreground leading-relaxed flex items-start gap-2">
-              <MessageCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-muted-foreground/50" />
-              <span>
-                O professor será notificado e responderá através desta mesma área.
-                Você receberá uma notificação quando houver resposta.
-              </span>
-            </p>
-          </div>
+
+          {!hasStudentComment && (
+            <div className="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50">
+              <div className="flex gap-2.5">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <MessageCircle className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    Dica para uma boa pergunta
+                  </p>
+                  <p className="text-[11px] text-blue-700 dark:text-blue-300/80 leading-relaxed">
+                    Seja específico sobre suas dúvidas. Mencione o minuto do vídeo ou
+                    o conceito que não entendeu. Quanto mais detalhes, melhor o professor
+                    poderá ajudá-lo!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Card>
