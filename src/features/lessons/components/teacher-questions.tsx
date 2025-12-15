@@ -324,12 +324,6 @@ export function TeacherQuestions({
               )}
             </Button>
           </div>
-
-          {comment.length > 450 && (
-            <p className="text-[10px] text-muted-foreground mt-1.5 text-right">
-              {comment.length}/500
-            </p>
-          )}
         </form>
       </div>
     </Card>
