@@ -1,7 +1,5 @@
 'use client'
 
-import { Footer } from '@/src/components/footer'
-
 export default function LessonLayout({
   children,
 }: {
@@ -14,8 +12,6 @@ export default function LessonLayout({
       <main className="flex-1 px-4 py-6 animate-slide-up">
         {children}
       </main>
-
-      <Footer />
 
       <style jsx global>{`
         @keyframes fade-in {
