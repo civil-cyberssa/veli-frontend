@@ -64,14 +64,19 @@ export default function LessonPage() {
     [eventProgress, selectedLessonId]
   )
 
+  // Usar student_class_id se disponível, senão usar courseId da URL
+  const registrationIdForDoubts = selectedLessonProgress?.student_class_id ?? (courseId ? parseInt(courseId) : undefined)
+
   const { data: doubtsData = [] } = useLessonDoubts(
-    selectedLessonProgress?.student_class_id,
+    registrationIdForDoubts,
     selectedLessonId ?? undefined
   )
 
   // Debug logs
   console.log('Page - selectedLessonProgress:', selectedLessonProgress)
   console.log('Page - student_class_id:', selectedLessonProgress?.student_class_id)
+  console.log('Page - courseId:', courseId)
+  console.log('Page - registrationIdForDoubts:', registrationIdForDoubts)
   console.log('Page - selectedLessonId:', selectedLessonId)
   console.log('Page - doubtsData:', doubtsData)
 
@@ -412,7 +417,7 @@ export default function LessonPage() {
                 onDeleteComment={handleDeleteComment}
                 isSubmittingComment={isCreatingComment}
                 lessonId={selectedLessonId || 0}
-                registrationId={selectedLessonProgress?.student_class_id}
+                registrationId={registrationIdForDoubts}
                 doubtsCount={doubtsData.length}
               />
             </div>
