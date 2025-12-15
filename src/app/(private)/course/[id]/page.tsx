@@ -72,14 +72,6 @@ export default function LessonPage() {
     selectedLessonId ?? undefined
   )
 
-  // Debug logs
-  console.log('Page - selectedLessonProgress:', selectedLessonProgress)
-  console.log('Page - student_class_id:', selectedLessonProgress?.student_class_id)
-  console.log('Page - courseId:', courseId)
-  console.log('Page - registrationIdForDoubts:', registrationIdForDoubts)
-  console.log('Page - selectedLessonId:', selectedLessonId)
-  console.log('Page - doubtsData:', doubtsData)
-
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
   const currentCourseName = useMemo(() => {

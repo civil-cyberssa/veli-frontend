@@ -47,12 +47,6 @@ export function TeacherQuestions({
   const updateDoubt = useUpdateDoubt()
   const deleteDoubt = useDeleteDoubt()
 
-  // Debug logs
-  console.log('TeacherQuestions - lessonId:', lessonId)
-  console.log('TeacherQuestions - registrationId:', registrationId)
-  console.log('TeacherQuestions - doubts:', doubts)
-  console.log('TeacherQuestions - isLoading:', isLoading)
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!registrationId || !newQuestion.trim()) return

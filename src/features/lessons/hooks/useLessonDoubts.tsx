@@ -138,13 +138,6 @@ export function useLessonDoubts(registrationId?: number, lessonId?: number) {
       ? `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${registrationId}/lessons/${lessonId}/`
       : null
 
-  // Debug logs
-  console.log('useLessonDoubts - registrationId:', registrationId)
-  console.log('useLessonDoubts - lessonId:', lessonId)
-  console.log('useLessonDoubts - baseUrl:', baseUrl)
-  console.log('useLessonDoubts - session status:', status)
-  console.log('useLessonDoubts - has access token:', !!session?.access)
-
   const { data, error, mutate, isLoading } = useSWR<LessonDoubt[]>(
     status === 'authenticated' && session?.access && baseUrl
       ? [baseUrl, session.access]
@@ -156,10 +149,6 @@ export function useLessonDoubts(registrationId?: number, lessonId?: number) {
       revalidateIfStale: true,
     }
   )
-
-  console.log('useLessonDoubts - data:', data)
-  console.log('useLessonDoubts - error:', error)
-  console.log('useLessonDoubts - isLoading:', isLoading)
 
   return {
     data: data || [],
@@ -179,10 +168,13 @@ export function useCreateDoubt() {
     baseUrl,
     createDoubt,
     {
-      onSuccess: (_, { data }) => {
+      onSuccess: (result) => {
         // Revalidar a lista de dúvidas específica
-        const listUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${data.registration}/lessons/${data.lesson}/`
-        mutate((key) => Array.isArray(key) && key[0] === listUrl)
+        // result é o LessonDoubt retornado pela API
+        if (result && result.registration_id && result.lesson) {
+          const listUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${result.registration_id}/lessons/${result.lesson}/`
+          mutate((key) => Array.isArray(key) && key[0] === listUrl)
+        }
       },
       onError: (error) => {
         console.error('Erro ao criar dúvida:', error)
