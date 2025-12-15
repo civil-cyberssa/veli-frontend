@@ -19,6 +19,7 @@ import { QuizView } from '@/src/features/lessons/components/quiz-view'
 import { PlayCircle } from 'lucide-react'
 import { LessonDescriptionCard } from '@/src/features/lessons/components/lesson-rating'
 import { LessonInteractionTabs } from '@/src/features/lessons/components/lesson-interaction-tabs'
+import { useLessonDoubts } from '@/src/features/lessons/hooks/useLessonDoubts'
 import { QuizPromptModal } from '@/src/features/lessons/components/quiz-prompt-modal'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { toast } from 'sonner'
@@ -39,7 +40,6 @@ export default function LessonPage() {
   const hasMarkedWatched = useRef<Set<number>>(new Set())
   const autoMarkTriggered = useRef(false)
   const [watchProgress, setWatchProgress] = useState(0)
-  const [isTeacherCommentSubmitting, setIsTeacherCommentSubmitting] = useState(false)
 
   const { data: eventProgress, isLoading: isProgressLoading, refetch: refetchProgress } = useEventProgress(courseId)
 
@@ -62,6 +62,11 @@ export default function LessonPage() {
   const selectedLessonProgress = useMemo(
     () => eventProgress?.find((lesson) => lesson.lesson_id === selectedLessonId),
     [eventProgress, selectedLessonId]
+  )
+
+  const { data: doubtsData = [] } = useLessonDoubts(
+    selectedLessonProgress?.event_id,
+    selectedLessonId ?? undefined
   )
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
@@ -168,28 +173,6 @@ export default function LessonPage() {
     } catch (err) {
       console.error('Erro ao salvar comentário:', err)
       toast.error('Não foi possível salvar seu comentário. Tente novamente.')
-    }
-  }
-
-  const handleTeacherCommentSubmit = async (comment: string) => {
-    if (!selectedLessonId || !selectedLessonProgress?.event_id) return
-
-    setIsTeacherCommentSubmitting(true)
-
-    try {
-      await updateRating({
-        eventId: selectedLessonProgress.event_id,
-        lessonId: selectedLessonId,
-        comment,
-      })
-
-      await refetchProgress()
-      toast.success('Comentário enviado ao professor!')
-    } catch (err) {
-      console.error('Erro ao enviar comentário ao professor:', err)
-      toast.error('Não foi possível enviar seu comentário ao professor. Tente novamente.')
-    } finally {
-      setIsTeacherCommentSubmitting(false)
     }
   }
 
@@ -423,10 +406,8 @@ export default function LessonPage() {
                 onDeleteComment={handleDeleteComment}
                 isSubmittingComment={isCreatingComment}
                 lessonId={selectedLessonId || 0}
-                teacherComment={selectedLessonProgress?.comment ?? null}
-                teacherAnswer={selectedLessonProgress?.teacher_answer ?? null}
-                onSubmitTeacherComment={handleTeacherCommentSubmit}
-                isTeacherCommentSubmitting={isTeacherCommentSubmitting}
+                registrationId={selectedLessonProgress?.event_id}
+                doubtsCount={doubtsData.length}
               />
             </div>
 

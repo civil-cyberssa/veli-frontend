@@ -18,10 +18,8 @@ interface LessonInteractionTabsProps {
 
   // Props para perguntas ao professor
   lessonId: number
-  teacherComment?: string | null
-  teacherAnswer?: string | null
-  onSubmitTeacherComment?: (comment: string) => Promise<void>
-  isTeacherCommentSubmitting?: boolean
+  registrationId?: number
+  doubtsCount?: number
 }
 
 type TabValue = 'comentarios' | 'perguntas'
@@ -34,10 +32,8 @@ export function LessonInteractionTabs({
   onDeleteComment,
   isSubmittingComment,
   lessonId,
-  teacherComment,
-  teacherAnswer,
-  onSubmitTeacherComment,
-  isTeacherCommentSubmitting,
+  registrationId,
+  doubtsCount = 0,
 }: LessonInteractionTabsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>('comentarios')
   const [isCommentOperating, setIsCommentOperating] = useState(false)
@@ -65,7 +61,7 @@ export function LessonInteractionTabs({
       value: 'perguntas' as TabValue,
       label: 'Pergunte ao Professor',
       icon: HelpCircle,
-      count: teacherAnswer ? 1 : teacherComment ? 1 : 0,
+      count: doubtsCount,
     },
   ]
 
@@ -129,10 +125,7 @@ export function LessonInteractionTabs({
         {activeTab === 'perguntas' && (
           <TeacherQuestions
             lessonId={lessonId}
-            studentComment={teacherComment}
-            teacherAnswer={teacherAnswer}
-            onSubmitComment={onSubmitTeacherComment}
-            isSubmitting={isTeacherCommentSubmitting}
+            registrationId={registrationId}
           />
         )}
       </div>
