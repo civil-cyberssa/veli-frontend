@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
 import useSWRMutation from 'swr/mutation'
+import { useSWRConfig } from 'swr'
 
 export interface DoubtAnswer {
   id: number
@@ -160,12 +161,18 @@ export function useLessonDoubts(registrationId?: number, lessonId?: number) {
 // Hook para criar dúvida
 export function useCreateDoubt() {
   const { data: session } = useSession()
+  const { mutate } = useSWRConfig()
   const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/`
 
   const { trigger, isMutating } = useSWRMutation(
     baseUrl,
     createDoubt,
     {
+      onSuccess: (_, { data }) => {
+        // Revalidar a lista de dúvidas específica
+        const listUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${data.registration}/lessons/${data.lesson}/`
+        mutate((key) => Array.isArray(key) && key[0] === listUrl)
+      },
       onError: (error) => {
         console.error('Erro ao criar dúvida:', error)
       }
@@ -189,12 +196,17 @@ export function useCreateDoubt() {
 // Hook para atualizar dúvida
 export function useUpdateDoubt() {
   const { data: session } = useSession()
+  const { mutate } = useSWRConfig()
   const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/`
 
   const { trigger, isMutating } = useSWRMutation(
     baseUrl,
     updateDoubt,
     {
+      onSuccess: () => {
+        // Revalidar todas as listas de dúvidas
+        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'))
+      },
       onError: (error) => {
         console.error('Erro ao atualizar dúvida:', error)
       }
@@ -231,12 +243,17 @@ export function useUpdateDoubt() {
 // Hook para deletar dúvida
 export function useDeleteDoubt() {
   const { data: session } = useSession()
+  const { mutate } = useSWRConfig()
   const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/`
 
   const { trigger, isMutating } = useSWRMutation(
     baseUrl,
     deleteDoubt,
     {
+      onSuccess: () => {
+        // Revalidar todas as listas de dúvidas
+        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'))
+      },
       onError: (error) => {
         console.error('Erro ao deletar dúvida:', error)
       }

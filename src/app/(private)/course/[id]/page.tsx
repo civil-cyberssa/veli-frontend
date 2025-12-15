@@ -65,7 +65,7 @@ export default function LessonPage() {
   )
 
   const { data: doubtsData = [] } = useLessonDoubts(
-    selectedLessonProgress?.event_id,
+    selectedLessonProgress?.student_class_id,
     selectedLessonId ?? undefined
   )
 
@@ -406,7 +406,7 @@ export default function LessonPage() {
                 onDeleteComment={handleDeleteComment}
                 isSubmittingComment={isCreatingComment}
                 lessonId={selectedLessonId || 0}
-                registrationId={selectedLessonProgress?.event_id}
+                registrationId={selectedLessonProgress?.student_class_id}
                 doubtsCount={doubtsData.length}
               />
             </div>
