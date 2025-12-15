@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, Send, Clock, CheckCircle2, Sparkles, User, GraduationCap, ArrowRight, Loader2 } from 'lucide-react'
+import { MessageCircle, Send, Clock, CheckCircle2, Sparkles, User, GraduationCap, ArrowRight, Loader2, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface TeacherQuestionsProps {
@@ -12,6 +12,14 @@ interface TeacherQuestionsProps {
   teacherAnswer?: string | null
   onSubmitComment?: (comment: string) => Promise<void>
   isSubmitting?: boolean
+}
+
+// Estrutura de mensagem para o chat
+interface ChatMessage {
+  id: string
+  type: 'student' | 'teacher'
+  content: string
+  timestamp: Date
 }
 
 // Função helper para formatar tempo relativo
@@ -27,6 +35,16 @@ function getRelativeTime(date: Date): string {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
 }
 
+// Função para formatar timestamp completo
+function getFullTimestamp(date: Date): string {
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 export function TeacherQuestions({
   lessonId,
   studentComment,
@@ -34,31 +52,70 @@ export function TeacherQuestions({
   onSubmitComment,
   isSubmitting = false,
 }: TeacherQuestionsProps) {
-  const [comment, setComment] = useState(studentComment ?? '')
-  const [lastSubmittedAt, setLastSubmittedAt] = useState<Date | null>(null)
+  const [comment, setComment] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
+  // Constrói histórico de mensagens a partir dos dados
   useEffect(() => {
-    setComment(studentComment ?? '')
-  }, [studentComment, lessonId])
+    const chatHistory: ChatMessage[] = []
 
-  // Auto-scroll para o final quando há nova resposta
-  useEffect(() => {
-    if (hasTeacherAnswer && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (studentComment?.trim()) {
+      chatHistory.push({
+        id: 'student-1',
+        type: 'student',
+        content: studentComment.trim(),
+        timestamp: new Date() // Idealmente viria do backend
+      })
     }
-  }, [teacherAnswer])
+
+    if (teacherAnswer?.trim()) {
+      chatHistory.push({
+        id: 'teacher-1',
+        type: 'teacher',
+        content: teacherAnswer.trim(),
+        timestamp: new Date() // Idealmente viria do backend
+      })
+    }
+
+    setMessages(chatHistory)
+  }, [studentComment, teacherAnswer, lessonId])
+
+  // Auto-scroll para o final quando há nova mensagem
+  useEffect(() => {
+    scrollToBottom('smooth')
+  }, [messages])
+
+  // Detecta se usuário scrollou para cima
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+      setShowScrollButton(!isNearBottom)
+    }
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior })
+  }
 
   const trimmedComment = comment.trim()
-  const savedComment = studentComment?.trim() ?? ''
-  const hasStudentComment = Boolean(savedComment)
-  const hasTeacherAnswer = Boolean(teacherAnswer?.trim())
+  const hasMessages = messages.length > 0
+  const hasStudentComment = messages.some(m => m.type === 'student')
+  const hasTeacherAnswer = messages.some(m => m.type === 'teacher')
 
   const canSubmit =
     Boolean(onSubmitComment) &&
     Boolean(trimmedComment) &&
-    trimmedComment !== savedComment &&
     !isSubmitting &&
     lessonId > 0
 
@@ -66,19 +123,30 @@ export function TeacherQuestions({
     event.preventDefault()
     if (!canSubmit || !onSubmitComment) return
 
+    const messageContent = trimmedComment
+
     try {
-      await onSubmitComment(trimmedComment)
-      setLastSubmittedAt(new Date())
-      // Limpa o campo apenas se for uma nova mensagem (não atualização)
-      if (!hasStudentComment) {
-        setComment('')
+      // Adiciona mensagem otimisticamente ao chat
+      const newMessage: ChatMessage = {
+        id: `student-${Date.now()}`,
+        type: 'student',
+        content: messageContent,
+        timestamp: new Date()
       }
+      setMessages(prev => [...prev, newMessage])
+      setComment('')
+
+      // Envia para o backend
+      await onSubmitComment(messageContent)
+
       // Foca no textarea após envio
       setTimeout(() => {
         textareaRef.current?.focus()
       }, 100)
     } catch (error) {
       console.error('Erro ao enviar comentário ao professor:', error)
+      // Remove mensagem otimista em caso de erro
+      setMessages(prev => prev.filter(m => m.content !== messageContent))
     }
   }
 
@@ -93,257 +161,235 @@ export function TeacherQuestions({
     }
   }
 
-  return (
-    <Card className="border-border/50 overflow-hidden" data-tour="teacher-questions">
-      <div className="divide-y divide-border/50">
-        {/* Header com gradiente sutil */}
-        <div className="px-5 py-4 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-              <MessageCircle className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-base font-semibold text-foreground mb-1">
-                Pergunte ao Professor
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Seus comentários são privados — apenas você e o professor podem visualizar.
-              </p>
-            </div>
-          </div>
+  // Componente de mensagem individual
+  const ChatBubble = ({ message }: { message: ChatMessage }) => {
+    const isStudent = message.type === 'student'
+    const isPending = hasStudentComment && !hasTeacherAnswer && message.type === 'student'
+
+    return (
+      <div
+        className={cn(
+          "flex gap-3 items-start mb-4 animate-in fade-in-50 slide-in-from-bottom-2 duration-300",
+          isStudent && "flex-row-reverse"
+        )}
+      >
+        {/* Avatar */}
+        <div className={cn(
+          "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm ring-2",
+          isStudent
+            ? "bg-gradient-to-br from-primary to-primary/80 ring-primary/20"
+            : "bg-gradient-to-br from-blue-600 to-blue-500 ring-blue-500/20"
+        )}>
+          {isStudent ? (
+            <User className="h-4 w-4 text-white" />
+          ) : (
+            <GraduationCap className="h-4 w-4 text-white" />
+          )}
         </div>
 
-        {/* Área de conteúdo */}
-        <div className="px-5 py-5 space-y-4 bg-background">
-          {!lessonId ? (
-            <div className="py-12 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
+        {/* Mensagem */}
+        <div className={cn("flex-1 min-w-0 max-w-[85%]", isStudent && "flex flex-col items-end")}>
+          <div className={cn(
+            "rounded-2xl p-3.5 shadow-sm transition-all",
+            isStudent
+              ? "rounded-tr-sm bg-gradient-to-br from-primary/15 to-primary/10 border border-primary/25"
+              : "rounded-tl-sm bg-gradient-to-br from-blue-50 to-blue-100/60 dark:from-blue-950/50 dark:to-blue-900/30 border border-blue-200/60 dark:border-blue-800/60"
+          )}>
+            <p className={cn(
+              "text-sm leading-relaxed whitespace-pre-wrap break-words",
+              isStudent
+                ? "text-foreground"
+                : "text-blue-950 dark:text-blue-50"
+            )}>
+              {message.content}
+            </p>
+          </div>
+
+          {/* Timestamp e status */}
+          <div className={cn(
+            "flex items-center gap-1.5 mt-1 px-1",
+            isStudent && "flex-row-reverse"
+          )}>
+            <span className="text-[10px] text-muted-foreground">
+              {getRelativeTime(message.timestamp)}
+            </span>
+            {isPending && (
+              <>
+                <span className="text-[10px] text-muted-foreground">•</span>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-amber-600 dark:text-amber-500 animate-pulse" />
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                    Aguardando resposta
+                  </span>
+                </div>
+              </>
+            )}
+            {!isPending && message.type === 'student' && hasTeacherAnswer && (
+              <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-500" />
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Card className="border-border/50 overflow-hidden flex flex-col h-[600px]" data-tour="teacher-questions">
+      {/* Header compacto */}
+      <div className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-primary/5 via-transparent to-transparent border-b border-border/50">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <MessageCircle className="h-4 w-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-foreground">
+              Pergunte ao Professor
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Conversa privada com o professor
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Container de mensagens scrollável */}
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto px-4 py-4 bg-gradient-to-b from-muted/5 to-background"
+      >
+        {!lessonId ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/30 mb-4">
                 <MessageCircle className="h-8 w-8 text-muted-foreground/50" />
               </div>
               <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Selecione uma aula para enviar um comentário ao professor.
+                Selecione uma aula para conversar com o professor
               </p>
             </div>
-          ) : (
-            <>
-              {/* Estado vazio - Nenhum comentário ainda */}
-              {!hasStudentComment ? (
-                <div className="rounded-2xl border-2 border-dashed border-muted/40 bg-gradient-to-br from-muted/20 to-muted/5 p-8 text-center transition-all hover:border-primary/30 hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 mb-4 ring-4 ring-primary/5">
-                    <Sparkles className="h-8 w-8 text-primary" />
-                  </div>
-                  <h4 className="text-base font-semibold text-foreground mb-2">
-                    Inicie uma conversa
-                  </h4>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-                    Faça perguntas, compartilhe dúvidas ou deixe comentários sobre esta aula.
-                    Seu professor responderá em breve.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {/* Fluxo de conversa - Sua pergunta */}
-                  <div className="flex gap-3 items-start animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md ring-2 ring-primary/20">
-                      <User className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-semibold text-foreground">
-                          Você
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          • perguntou
-                        </span>
-                        {lastSubmittedAt && (
-                          <span className="text-[10px] text-muted-foreground ml-auto">
-                            {getRelativeTime(lastSubmittedAt)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="group rounded-2xl rounded-tl-sm bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/30">
-                        <p className="text-sm text-foreground whitespace-pre-line break-words leading-relaxed">
-                          {studentComment}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+          </div>
+        ) : !hasMessages ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center max-w-md px-4">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 mb-4 ring-4 ring-primary/5">
+                <Sparkles className="h-10 w-10 text-primary" />
+              </div>
+              <h4 className="text-base font-semibold text-foreground mb-2">
+                Comece a conversa
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Faça sua primeira pergunta ou compartilhe dúvidas sobre esta aula.
+                O professor responderá assim que possível.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {messages.map((message) => (
+              <ChatBubble key={message.id} message={message} />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
 
-                  {/* Resposta do professor ou status de aguardando */}
-                  {hasTeacherAnswer ? (
-                    <div className="flex gap-3 items-start animate-in fade-in slide-in-from-bottom-3 duration-500">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center shadow-md ring-2 ring-blue-500/20">
-                        <GraduationCap className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                            Professor
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            • respondeu
-                          </span>
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500 ml-auto" />
-                        </div>
-                        <div className="group rounded-2xl rounded-tl-sm bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 p-4 shadow-sm transition-all hover:shadow-md hover:border-blue-300/60 dark:hover:border-blue-700/60">
-                          <p className="text-sm text-blue-950 dark:text-blue-50 whitespace-pre-line break-words leading-relaxed">
-                            {teacherAnswer}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3 py-4 px-5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/50 transition-all animate-in fade-in-50 duration-300">
-                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-sm">
-                        <Clock className="h-4 w-4 text-white animate-pulse" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 mb-0.5">
-                          Aguardando resposta
-                        </p>
-                        <p className="text-[11px] text-amber-700 dark:text-amber-300/80">
-                          O professor foi notificado e responderá em breve
-                        </p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-pulse flex-shrink-0" />
-                    </div>
-                  )}
+      {/* Botão de scroll to bottom */}
+      {showScrollButton && hasMessages && (
+        <div className="absolute bottom-24 right-6 z-10 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <button
+            onClick={() => scrollToBottom('smooth')}
+            className="p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-110 active:scale-95 ring-2 ring-primary/20"
+            aria-label="Ir para o final"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
-                  {/* Ref para scroll automático */}
-                  <div ref={messagesEndRef} />
+      {/* Input de mensagem fixo no bottom - estilo WhatsApp */}
+      <div className="flex-shrink-0 border-t border-border/50 bg-background/95 backdrop-blur-sm">
+        <form onSubmit={handleSubmit} className="px-3 py-3">
+          <div className="flex gap-2 items-end">
+            {/* Textarea */}
+            <div className="flex-1 relative">
+              <textarea
+                ref={textareaRef}
+                id={`teacher-comment-${lessonId}`}
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Digite sua mensagem... (Enter para enviar)"
+                rows={1}
+                className={cn(
+                  "w-full max-h-32 rounded-2xl border-2 bg-background px-4 py-2.5 text-sm resize-none",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "transition-all duration-200",
+                  "placeholder:text-muted-foreground/60",
+                  "scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent",
+                  isSubmitting && "opacity-70 cursor-wait"
+                )}
+                style={{
+                  minHeight: '42px',
+                  height: 'auto',
+                  overflowY: comment.split('\n').length > 2 ? 'auto' : 'hidden'
+                }}
+                maxLength={500}
+                disabled={!lessonId || !onSubmitComment || isSubmitting}
+                autoFocus
+              />
+
+              {/* Contador de caracteres */}
+              {comment.length > 400 && (
+                <div className="absolute -top-6 right-0 px-2 py-0.5 rounded-md bg-background/90 backdrop-blur-sm border border-border/50">
+                  <span className={cn(
+                    "text-[10px] font-medium tabular-nums",
+                    comment.length > 450 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+                    comment.length >= 490 && "text-red-600 dark:text-red-400"
+                  )}>
+                    {comment.length}/500
+                  </span>
                 </div>
               )}
-            </>
-          )}
-        </div>
-
-        {/* Formulário de envio */}
-        <div className="px-5 py-5 bg-gradient-to-b from-muted/5 to-muted/10">
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label
-                  htmlFor={`teacher-comment-${lessonId}`}
-                  className="text-sm font-semibold text-foreground flex items-center gap-2"
-                >
-                  <div className="p-1.5 rounded-lg bg-primary/10">
-                    <Send className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  {hasStudentComment ? 'Atualizar mensagem' : 'Nova mensagem'}
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <span className={cn(
-                    "text-xs font-semibold transition-colors tabular-nums",
-                    comment.length > 450 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
-                    comment.length >= 500 && "text-red-600 dark:text-red-400"
-                  )}>
-                    {comment.length}
-                  </span>
-                  <span className="text-xs text-muted-foreground">/</span>
-                  <span className="text-xs text-muted-foreground">500</span>
-                </div>
-              </div>
-
-              <div className="relative">
-                <textarea
-                  ref={textareaRef}
-                  id={`teacher-comment-${lessonId}`}
-                  value={comment}
-                  onChange={(event) => setComment(event.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={
-                    hasStudentComment
-                      ? 'Atualize seu comentário ou faça uma nova pergunta...'
-                      : 'Digite sua pergunta ou comentário aqui... (Enter para enviar, Shift+Enter para nova linha)'
-                  }
-                  className={cn(
-                    "w-full min-h-32 rounded-xl border-2 bg-background px-4 py-3.5 text-sm resize-y",
-                    "focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary",
-                    "disabled:opacity-50 disabled:cursor-not-allowed",
-                    "transition-all duration-200",
-                    "placeholder:text-muted-foreground/60",
-                    "shadow-sm hover:shadow-md hover:border-primary/40",
-                    isSubmitting && "opacity-70 cursor-wait"
-                  )}
-                  maxLength={500}
-                  disabled={!lessonId || !onSubmitComment || isSubmitting}
-                  autoFocus={!hasStudentComment}
-                />
-                {comment.length > 450 && (
-                  <div className="absolute bottom-3 left-3 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 animate-in fade-in-50 duration-200">
-                    <span className="text-[10px] font-medium text-amber-700 dark:text-amber-400">
-                      {500 - comment.length} caracteres restantes
-                    </span>
-                  </div>
-                )}
-                {isSubmitting && (
-                  <div className="absolute inset-0 rounded-xl bg-background/50 backdrop-blur-[2px] flex items-center justify-center">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 shadow-lg">
-                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                      <span className="text-sm font-medium text-primary">Enviando...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between mt-3 gap-3">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Apenas você e o professor verão esta mensagem</span>
-                  <span className="sm:hidden">Mensagem privada</span>
-                </div>
-                <Button
-                  type="submit"
-                  disabled={!canSubmit}
-                  className={cn(
-                    "shadow-md hover:shadow-lg transition-all duration-200",
-                    "disabled:shadow-none disabled:opacity-50",
-                    "group relative overflow-hidden",
-                    canSubmit && "hover:scale-[1.02] active:scale-[0.98]"
-                  )}
-                  size="default"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className={cn(
-                        "h-4 w-4 mr-2 transition-transform",
-                        canSubmit && "group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                      )} />
-                      {hasStudentComment ? 'Atualizar' : 'Enviar'}
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
-          </form>
 
-          {!hasStudentComment && (
-            <div className="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50">
-              <div className="flex gap-2.5">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center">
-                    <MessageCircle className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">
-                    Dica para uma boa pergunta
-                  </p>
-                  <p className="text-[11px] text-blue-700 dark:text-blue-300/80 leading-relaxed">
-                    Seja específico sobre suas dúvidas. Mencione o minuto do vídeo ou
-                    o conceito que não entendeu. Quanto mais detalhes, melhor o professor
-                    poderá ajudá-lo!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+            {/* Botão de enviar */}
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              size="icon"
+              className={cn(
+                "h-[42px] w-[42px] rounded-full shadow-md transition-all duration-200 flex-shrink-0",
+                canSubmit
+                  ? "bg-primary hover:bg-primary/90 hover:shadow-lg hover:scale-105 active:scale-95"
+                  : "bg-muted",
+                isSubmitting && "animate-pulse"
+              )}
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className={cn(
+                  "h-5 w-5 transition-transform",
+                  canSubmit && "group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                )} />
+              )}
+            </Button>
+          </div>
+
+          {/* Info text */}
+          <div className="mt-2 px-1 flex items-center justify-between">
+            <p className="text-[10px] text-muted-foreground">
+              <span className="hidden sm:inline">Apenas você e o professor verão esta conversa</span>
+              <span className="sm:hidden">Conversa privada</span>
+            </p>
+            {!hasMessages && (
+              <p className="text-[10px] text-muted-foreground">
+                Shift+Enter para nova linha
+              </p>
+            )}
+          </div>
+        </form>
       </div>
     </Card>
   )
