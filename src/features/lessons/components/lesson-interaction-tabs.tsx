@@ -18,10 +18,8 @@ interface LessonInteractionTabsProps {
 
   // Props para perguntas ao professor
   lessonId: number
-  teacherComment?: string | null
-  teacherAnswer?: string | null
-  onSubmitTeacherComment?: (comment: string) => Promise<void>
-  isTeacherCommentSubmitting?: boolean
+  registrationId?: number
+  doubtsCount?: number
 }
 
 type TabValue = 'comentarios' | 'perguntas'
@@ -34,10 +32,8 @@ export function LessonInteractionTabs({
   onDeleteComment,
   isSubmittingComment,
   lessonId,
-  teacherComment,
-  teacherAnswer,
-  onSubmitTeacherComment,
-  isTeacherCommentSubmitting,
+  registrationId,
+  doubtsCount = 0,
 }: LessonInteractionTabsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>('comentarios')
   const [isCommentOperating, setIsCommentOperating] = useState(false)
@@ -58,14 +54,16 @@ export function LessonInteractionTabs({
     {
       value: 'comentarios' as TabValue,
       label: 'Comentários',
+      shortLabel: 'Comentários',
       icon: MessageCircle,
       count: commentsData?.count || 0,
     },
     {
       value: 'perguntas' as TabValue,
       label: 'Pergunte ao Professor',
+      shortLabel: 'Perguntas',
       icon: HelpCircle,
-      count: teacherAnswer ? 1 : teacherComment ? 1 : 0,
+      count: doubtsCount,
     },
   ]
 
@@ -81,7 +79,7 @@ export function LessonInteractionTabs({
               onClick={() => handleTabChange(tab.value)}
               disabled={isDisabled}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all relative',
+                'flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium transition-all relative',
                 activeTab === tab.value
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground',
@@ -89,11 +87,12 @@ export function LessonInteractionTabs({
               )}
               title={isDisabled ? 'Aguarde a operação atual terminar' : undefined}
             >
-              <tab.icon className="h-4 w-4" />
-              <span>{tab.label}</span>
+              <tab.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.shortLabel}</span>
               {tab.count > 0 && (
                 <span className={cn(
-                  "px-1.5 py-0.5 rounded-full text-xs font-medium",
+                  "px-1 sm:px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0",
                   activeTab === tab.value
                     ? "bg-primary/10 text-primary"
                     : "bg-muted text-muted-foreground"
@@ -102,7 +101,7 @@ export function LessonInteractionTabs({
                 </span>
               )}
               {isDisabled && tab.value !== activeTab && (
-                <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                <Loader2 className="h-3 w-3 animate-spin ml-0.5 sm:ml-1" />
               )}
               {activeTab === tab.value && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
@@ -129,10 +128,7 @@ export function LessonInteractionTabs({
         {activeTab === 'perguntas' && (
           <TeacherQuestions
             lessonId={lessonId}
-            studentComment={teacherComment}
-            teacherAnswer={teacherAnswer}
-            onSubmitComment={onSubmitTeacherComment}
-            isSubmitting={isTeacherCommentSubmitting}
+            registrationId={registrationId}
           />
         )}
       </div>

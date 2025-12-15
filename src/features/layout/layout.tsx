@@ -18,7 +18,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription"
-import { Footer } from "@/src/components/footer"
 
 // Mapeamento de rotas para breadcrumbs
 const routeBreadcrumbs: Record<string, { label: string; href?: string }[]> = {
@@ -118,7 +117,6 @@ export default function Layout({children}: {children: React.ReactNode}) {
         <div className="flex flex-1 flex-col gap-4 px-6">
           {children}
         </div>
-        <Footer />
       </SidebarInset>
     </SidebarProvider>
   )
