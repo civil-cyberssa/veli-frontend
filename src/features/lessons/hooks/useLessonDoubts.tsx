@@ -1,5 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/src/services/api'
+'use client'
+
+import { useSession } from 'next-auth/react'
+import useSWR from 'swr'
+import useSWRMutation from 'swr/mutation'
 
 export interface DoubtAnswer {
   id: number
@@ -31,86 +34,235 @@ interface UpdateDoubtPayload {
   comment: string
 }
 
+// Fetcher para GET
+const fetcher = async (
+  url: string,
+  token: string
+): Promise<LessonDoubt[]> => {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar dúvidas: ${response.status}`)
+  }
+
+  return await response.json()
+}
+
+// Função para criar dúvida (POST)
+async function createDoubt(
+  url: string,
+  { arg }: { arg: { token: string; data: CreateDoubtPayload } }
+): Promise<LessonDoubt> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${arg.token}`,
+    },
+    credentials: 'include',
+    body: JSON.stringify(arg.data),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Erro ao criar dúvida: ${response.status} - ${errorText}`)
+  }
+
+  return await response.json()
+}
+
+// Função para atualizar dúvida (PUT)
+async function updateDoubt(
+  url: string,
+  { arg }: { arg: { token: string; registrationId: number; doubtId: number; data: UpdateDoubtPayload } }
+): Promise<LessonDoubt> {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${arg.registrationId}/${arg.doubtId}/`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${arg.token}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify(arg.data),
+    }
+  )
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Erro ao atualizar dúvida: ${response.status} - ${errorText}`)
+  }
+
+  return await response.json()
+}
+
+// Função para deletar dúvida (DELETE)
+async function deleteDoubt(
+  url: string,
+  { arg }: { arg: { token: string; registrationId: number; doubtId: number } }
+): Promise<{ success: boolean }> {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${arg.registrationId}/${arg.doubtId}/`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${arg.token}`,
+      },
+      credentials: 'include',
+    }
+  )
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Erro ao deletar dúvida: ${response.status} - ${errorText}`)
+  }
+
+  return { success: true }
+}
+
 // Hook para listar dúvidas de uma aula
 export function useLessonDoubts(registrationId?: number, lessonId?: number) {
-  return useQuery<LessonDoubt[]>({
-    queryKey: ['lesson-doubts', registrationId, lessonId],
-    queryFn: async () => {
-      if (!registrationId || !lessonId) return []
-      const { data } = await api.get(
-        `/student-portal/lesson-doubts/${registrationId}/lessons/${lessonId}/`
-      )
-      return data
-    },
-    enabled: !!registrationId && !!lessonId,
-  })
+  const { data: session, status } = useSession()
+
+  const baseUrl =
+    registrationId && lessonId
+      ? `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${registrationId}/lessons/${lessonId}/`
+      : null
+
+  const { data, error, mutate, isLoading } = useSWR<LessonDoubt[]>(
+    status === 'authenticated' && session?.access && baseUrl
+      ? [baseUrl, session.access]
+      : null,
+    ([url, token]: [string, string]) => fetcher(url, token),
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      revalidateIfStale: true,
+    }
+  )
+
+  return {
+    data: data || [],
+    error,
+    isLoading,
+    mutate,
+  }
 }
 
 // Hook para criar dúvida
 export function useCreateDoubt() {
-  const queryClient = useQueryClient()
+  const { data: session } = useSession()
+  const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/`
 
-  return useMutation({
-    mutationFn: async (payload: CreateDoubtPayload) => {
-      const { data } = await api.post('/student-portal/lesson-doubts/', payload)
-      return data
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['lesson-doubts', variables.registration, variables.lesson],
-      })
-    },
-  })
+  const { trigger, isMutating } = useSWRMutation(
+    baseUrl,
+    createDoubt,
+    {
+      onError: (error) => {
+        console.error('Erro ao criar dúvida:', error)
+      }
+    }
+  )
+
+  const mutateAsync = async (data: CreateDoubtPayload) => {
+    if (!session?.access) {
+      throw new Error('Usuário não autenticado')
+    }
+
+    return await trigger({ token: session.access, data })
+  }
+
+  return {
+    mutateAsync,
+    isPending: isMutating,
+  }
 }
 
-// Hook para editar dúvida
+// Hook para atualizar dúvida
 export function useUpdateDoubt() {
-  const queryClient = useQueryClient()
+  const { data: session } = useSession()
+  const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/`
 
-  return useMutation({
-    mutationFn: async ({
+  const { trigger, isMutating } = useSWRMutation(
+    baseUrl,
+    updateDoubt,
+    {
+      onError: (error) => {
+        console.error('Erro ao atualizar dúvida:', error)
+      }
+    }
+  )
+
+  const mutateAsync = async ({
+    registrationId,
+    doubtId,
+    payload,
+  }: {
+    registrationId: number
+    doubtId: number
+    payload: UpdateDoubtPayload
+  }) => {
+    if (!session?.access) {
+      throw new Error('Usuário não autenticado')
+    }
+
+    return await trigger({
+      token: session.access,
       registrationId,
       doubtId,
-      payload,
-    }: {
-      registrationId: number
-      doubtId: number
-      payload: UpdateDoubtPayload
-    }) => {
-      const { data } = await api.put(
-        `/student-portal/lesson-doubts/${registrationId}/${doubtId}/`,
-        payload
-      )
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['lesson-doubts'],
-      })
-    },
-  })
+      data: payload,
+    })
+  }
+
+  return {
+    mutateAsync,
+    isPending: isMutating,
+  }
 }
 
 // Hook para deletar dúvida
 export function useDeleteDoubt() {
-  const queryClient = useQueryClient()
+  const { data: session } = useSession()
+  const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/`
 
-  return useMutation({
-    mutationFn: async ({
+  const { trigger, isMutating } = useSWRMutation(
+    baseUrl,
+    deleteDoubt,
+    {
+      onError: (error) => {
+        console.error('Erro ao deletar dúvida:', error)
+      }
+    }
+  )
+
+  const mutateAsync = async ({
+    registrationId,
+    doubtId,
+  }: {
+    registrationId: number
+    doubtId: number
+  }) => {
+    if (!session?.access) {
+      throw new Error('Usuário não autenticado')
+    }
+
+    return await trigger({
+      token: session.access,
       registrationId,
       doubtId,
-    }: {
-      registrationId: number
-      doubtId: number
-    }) => {
-      await api.delete(
-        `/student-portal/lesson-doubts/${registrationId}/${doubtId}/`
-      )
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['lesson-doubts'],
-      })
-    },
-  })
+    })
+  }
+
+  return {
+    mutateAsync,
+    isPending: isMutating,
+  }
 }
