@@ -168,17 +168,17 @@ export function useCreateDoubt() {
     baseUrl,
     createDoubt,
     {
-      optimisticData: (currentData) => currentData,
+      optimisticData: (currentData: LessonDoubt[] | undefined) => currentData || [],
       populateCache: true,
       revalidate: true,
-      onSuccess: (result) => {
+      onSuccess: (result: LessonDoubt) => {
         // Revalidar a lista de dúvidas específica
         if (result && result.registration_id && result.lesson) {
           const listUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${result.registration_id}/lessons/${result.lesson}/`
-          mutate((key) => Array.isArray(key) && key[0] === listUrl, undefined, { revalidate: true })
+          mutate((key: unknown) => Array.isArray(key) && key[0] === listUrl, undefined, { revalidate: true })
         }
       },
-      onError: (error) => {
+      onError: (error: Error) => {
         console.error('Erro ao criar dúvida:', error)
       }
     }
@@ -208,14 +208,14 @@ export function useUpdateDoubt() {
     baseUrl,
     updateDoubt,
     {
-      optimisticData: (currentData) => currentData,
+      optimisticData: (currentData: LessonDoubt[] | undefined) => currentData || [],
       populateCache: true,
       revalidate: true,
       onSuccess: () => {
         // Revalidar todas as listas de dúvidas
-        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'), undefined, { revalidate: true })
+        mutate((key: unknown) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'), undefined, { revalidate: true })
       },
-      onError: (error) => {
+      onError: (error: Error) => {
         console.error('Erro ao atualizar dúvida:', error)
       }
     }
@@ -258,14 +258,14 @@ export function useDeleteDoubt() {
     baseUrl,
     deleteDoubt,
     {
-      optimisticData: (currentData) => currentData,
+      optimisticData: (currentData: { success: boolean } | undefined) => currentData ?? { success: true },
       populateCache: false,
       revalidate: true,
       onSuccess: () => {
         // Revalidar todas as listas de dúvidas
-        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'), undefined, { revalidate: true })
+        mutate((key: unknown) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'), undefined, { revalidate: true })
       },
-      onError: (error) => {
+      onError: (error: Error) => {
         console.error('Erro ao deletar dúvida:', error)
       }
     }

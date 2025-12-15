@@ -248,17 +248,6 @@ export function LessonDescriptionCard({
               )}
             </div>
           </div>
-
-          {teacherAnswer && (
-            <div className="p-4 border border-blue-200/60 rounded-lg bg-blue-500/5 space-y-1">
-              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                Resposta do professor
-              </p>
-              <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">
-                {teacherAnswer}
-              </p>
-            </div>
-          )}
           </div>
         </div>
       </div>
