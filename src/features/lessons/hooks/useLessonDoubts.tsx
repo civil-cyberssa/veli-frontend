@@ -79,7 +79,7 @@ async function createDoubt(
   return await response.json()
 }
 
-// Função para atualizar dúvida (PUT)
+// Função para atualizar dúvida (PATCH)
 async function updateDoubt(
   url: string,
   { arg }: { arg: { token: string; registrationId: number; doubtId: number; data: UpdateDoubtPayload } }
@@ -87,7 +87,7 @@ async function updateDoubt(
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${arg.registrationId}/${arg.doubtId}/`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${arg.token}`,
@@ -168,12 +168,14 @@ export function useCreateDoubt() {
     baseUrl,
     createDoubt,
     {
+      optimisticData: (currentData) => currentData,
+      populateCache: true,
+      revalidate: true,
       onSuccess: (result) => {
         // Revalidar a lista de dúvidas específica
-        // result é o LessonDoubt retornado pela API
         if (result && result.registration_id && result.lesson) {
           const listUrl = `${process.env.NEXT_PUBLIC_API_URL}/student-portal/lesson-doubts/${result.registration_id}/lessons/${result.lesson}/`
-          mutate((key) => Array.isArray(key) && key[0] === listUrl)
+          mutate((key) => Array.isArray(key) && key[0] === listUrl, undefined, { revalidate: true })
         }
       },
       onError: (error) => {
@@ -206,9 +208,12 @@ export function useUpdateDoubt() {
     baseUrl,
     updateDoubt,
     {
+      optimisticData: (currentData) => currentData,
+      populateCache: true,
+      revalidate: true,
       onSuccess: () => {
         // Revalidar todas as listas de dúvidas
-        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'))
+        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'), undefined, { revalidate: true })
       },
       onError: (error) => {
         console.error('Erro ao atualizar dúvida:', error)
@@ -253,9 +258,12 @@ export function useDeleteDoubt() {
     baseUrl,
     deleteDoubt,
     {
+      optimisticData: (currentData) => currentData,
+      populateCache: false,
+      revalidate: true,
       onSuccess: () => {
         // Revalidar todas as listas de dúvidas
-        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'))
+        mutate((key) => Array.isArray(key) && typeof key[0] === 'string' && key[0].includes('/student-portal/lesson-doubts/'), undefined, { revalidate: true })
       },
       onError: (error) => {
         console.error('Erro ao deletar dúvida:', error)

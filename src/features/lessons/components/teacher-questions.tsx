@@ -118,27 +118,96 @@ export function TeacherQuestions({
   }
 
   return (
-    <Card className="border overflow-hidden" data-tour="teacher-questions">
-      {/* Header */}
-      <div className="px-4 py-3 border-b">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-foreground">
-            Pergunte ao Professor
-          </h3>
-          {doubts.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {doubts.length} {doubts.length === 1 ? 'pergunta' : 'perguntas'}
-            </span>
-          )}
+    <>
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideOut {
+          from {
+            opacity: 1;
+            max-height: 500px;
+          }
+          to {
+            opacity: 0;
+            max-height: 0;
+            padding: 0;
+            margin: 0;
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+
+        .doubt-item {
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .doubt-item-deleting {
+          animation: slideOut 0.3s ease-out forwards;
+        }
+
+        .updating-indicator {
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+      `}</style>
+
+      <Card className="border overflow-hidden" data-tour="teacher-questions">
+        {/* Header */}
+        <div className="px-4 py-3 border-b">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-foreground">
+              Pergunte ao Professor
+            </h3>
+            <div className="flex items-center gap-2">
+              {(createDoubt.isPending || updateDoubt.isPending || deleteDoubt.isPending) && (
+                <div className="flex items-center gap-1 text-xs text-primary updating-indicator">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Atualizando...</span>
+                </div>
+              )}
+              {doubts.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {doubts.length} {doubts.length === 1 ? 'pergunta' : 'perguntas'}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Lista de Dúvidas */}
       <div className="max-h-[500px] overflow-y-auto">
         {isLoading ? (
-          <div className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">Carregando...</p>
+          <div className="p-4 space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="space-y-3 animate-pulse">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 bg-muted rounded-full" />
+                  <div className="h-3 w-20 bg-muted rounded" />
+                  <div className="h-2 w-16 bg-muted rounded ml-auto" />
+                </div>
+                <div className="pl-3 border-l-2 border-muted">
+                  <div className="space-y-2">
+                    <div className="h-3 bg-muted rounded w-full" />
+                    <div className="h-3 bg-muted rounded w-3/4" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : !lessonId ? (
           <div className="p-8 text-center">
@@ -159,7 +228,7 @@ export function TeacherQuestions({
         ) : (
           <div className="divide-y">
             {doubts.map((doubt) => (
-              <div key={doubt.id} className="p-4 space-y-3">
+              <div key={doubt.id} className="doubt-item p-4 space-y-3">
                 {/* Pergunta */}
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -316,6 +385,7 @@ export function TeacherQuestions({
         </form>
       </div>
     </Card>
+    </>
   )
 }
 
