@@ -33,6 +33,34 @@ import { useSubmitActivityAnswer } from '@/src/features/dashboard/hooks/useSubmi
 import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
 
 type AnswerOption = 'a' | 'b' | 'c' | 'd'
+type ActivityFilter = 'all' | 'available' | 'locked'
+
+const parseAvailableDate = (dateString: string) => {
+  if (dateString.includes('-')) return new Date(dateString)
+
+  const [day, month, year] = dateString.split('/').map(Number)
+  return new Date(year, (month ?? 1) - 1, day ?? 1)
+}
+
+const isFutureAvailable = (dateString: string) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const availableDate = parseAvailableDate(dateString)
+  availableDate.setHours(0, 0, 0, 0)
+
+  return availableDate.getTime() > today.getTime()
+}
+
+const isTodayDate = (dateString: string) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const availableDate = parseAvailableDate(dateString)
+  availableDate.setHours(0, 0, 0, 0)
+
+  return availableDate.getTime() === today.getTime()
+}
 
 export default function ActivitiesPage() {
   const { data: subscriptions, loading: isLoadingSubscriptions, selectedSubscription, setSelectedSubscription } =
@@ -41,6 +69,7 @@ export default function ActivitiesPage() {
   const [courseId, setCourseId] = useState<number | null>(null)
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState<AnswerOption | null>(null)
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all')
 
   const { activities: monthActivities, isLoading: isLoadingMonth, mutate: mutateMonth } =
     useDailyActivities(courseId)
@@ -116,15 +145,18 @@ export default function ActivitiesPage() {
 
     return monthActivities
       .slice()
-      .sort((a, b) => new Date(a.available_on).getTime() - new Date(b.available_on).getTime())
+      .sort(
+        (a, b) =>
+          parseAvailableDate(a.available_on).getTime() - parseAvailableDate(b.available_on).getTime()
+      )
       .map((activity) => {
-        const activityDate = new Date(activity.available_on)
+        const activityDate = parseAvailableDate(activity.available_on)
         activityDate.setHours(0, 0, 0, 0)
 
         const isToday = activityDate.getTime() === today.getTime()
         const status = activity.is_done
           ? 'done'
-          : activityDate > today
+          : activityDate.getTime() > today.getTime()
             ? 'locked'
             : 'available'
 
@@ -138,7 +170,7 @@ export default function ActivitiesPage() {
   }, [monthActivities])
 
   const handleSelectActivity = (activity: DailyActivity) => {
-    const isFuture = new Date(activity.available_on) > new Date()
+    const isFuture = isFutureAvailable(activity.available_on)
     if (isFuture) return
     setSelectedActivityId(activity.id)
   }
@@ -154,18 +186,27 @@ export default function ActivitiesPage() {
     }
   }
 
-  const isFutureActivity = activeActivity
-    ? new Date(activeActivity.available_on) > new Date()
-    : false
+  const isFutureActivity = activeActivity ? isFutureAvailable(activeActivity.available_on) : false
 
   const formatDate = (dateString: string) => {
-    const parsedDate = new Date(dateString)
+    const parsedDate = parseAvailableDate(dateString)
     return parsedDate.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',
-      timeZone: 'UTC',
     })
   }
+
+  const filteredActivities = useMemo(() => {
+    if (activityFilter === 'available') {
+      return monthActivities.filter((activity) => !isFutureAvailable(activity.available_on))
+    }
+
+    if (activityFilter === 'locked') {
+      return monthActivities.filter((activity) => isFutureAvailable(activity.available_on))
+    }
+
+    return monthActivities
+  }, [activityFilter, monthActivities])
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -371,8 +412,22 @@ export default function ActivitiesPage() {
                     </h2>
                   </div>
                   {activeActivity.is_done && (
-                    <Badge variant={activeActivity.is_correct ? 'default' : 'destructive'}>
-                      {activeActivity.is_correct ? 'Respondida corretamente' : 'Respondida incorretamente'}
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-[11px] border-0 bg-green-100/80 text-green-700 dark:bg-green-900/30 dark:text-green-200',
+                        activeActivity.is_correct === false &&
+                          'bg-red-100/80 text-red-700 dark:bg-red-900/30 dark:text-red-200'
+                      )}
+                    >
+                      <span className="flex items-center gap-1">
+                        {activeActivity.is_correct ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5" />
+                        )}
+                        {activeActivity.is_correct ? 'Você acertou' : 'Você errou'}
+                      </span>
                     </Badge>
                   )}
                 </div>
@@ -469,16 +524,28 @@ export default function ActivitiesPage() {
                 <h2 className="font-semibold">Atividades do mês</h2>
                 <p className="text-xs text-muted-foreground">Carregadas da rota /month/</p>
               </div>
-              {isLoadingMonth && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+
+              <div className="flex items-center gap-3">
+                <Select value={activityFilter} onValueChange={(value) => setActivityFilter(value as ActivityFilter)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar atividades" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="available">Liberadas</SelectItem>
+                    <SelectItem value="locked">Bloqueadas</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isLoadingMonth && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+              </div>
             </div>
 
             <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
-              {monthActivities.map((activity) => {
-                const date = new Date(activity.available_on)
+              {filteredActivities.map((activity) => {
+                const date = parseAvailableDate(activity.available_on)
                 const day = date.getDate()
-                const today = new Date()
-                const isToday = date.toDateString() === today.toDateString()
-                const isFuture = date > today
+                const isToday = isTodayDate(activity.available_on)
+                const isFuture = isFutureAvailable(activity.available_on)
 
                 return (
                   <button
@@ -519,9 +586,31 @@ export default function ActivitiesPage() {
                         </p>
                         <p className="text-xs text-muted-foreground truncate">{activity.name}</p>
                       </div>
-                      {activity.is_done && (
-                        <Badge variant="secondary" className={cn('text-[10px]', activity.is_correct ? 'text-green-700' : 'text-red-600')}>
-                          {activity.is_correct ? 'Acertou' : 'Errou'}
+                      {activity.is_done ? (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-[10px] border-0 bg-green-100/80 text-green-700 dark:bg-green-900/30 dark:text-green-200',
+                            !activity.is_correct &&
+                              'bg-red-100/80 text-red-700 dark:bg-red-900/30 dark:text-red-200'
+                          )}
+                        >
+                          <span className="flex items-center gap-1">
+                            {activity.is_correct ? (
+                              <CheckCircle2 className="h-3 w-3" />
+                            ) : (
+                              <XCircle className="h-3 w-3" />
+                            )}
+                            {activity.is_correct ? 'Acertou' : 'Errou'}
+                          </span>
+                        </Badge>
+                      ) : isFuture ? (
+                        <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground">
+                          Bloqueada
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Liberada
                         </Badge>
                       )}
                     </div>
@@ -529,9 +618,9 @@ export default function ActivitiesPage() {
                 )
               })}
 
-              {!isLoadingMonth && monthActivities.length === 0 && (
+              {!isLoadingMonth && filteredActivities.length === 0 && (
                 <div className="text-center text-sm text-muted-foreground py-8">
-                  Nenhuma atividade disponível para este mês.
+                  Nenhuma atividade disponível para este filtro.
                 </div>
               )}
             </div>
