@@ -74,7 +74,7 @@ export function DailyActivityModal({
       await submitAnswer({
         courseId,
         activityId: activity.id,
-        answer: selectedAnswer,
+        userAnswer: selectedAnswer,
       })
 
       toast.success('Resposta enviada com sucesso!')

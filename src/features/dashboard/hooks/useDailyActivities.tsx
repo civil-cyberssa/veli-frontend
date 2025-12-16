@@ -201,7 +201,8 @@ export function useDailyActivity(courseId: number | null, activityId: number | n
 interface SubmitActivityAnswerParams {
   courseId: number
   activityId: number
-  answer: 'a' | 'b' | 'c' | 'd'
+  userAnswer?: 'a' | 'b' | 'c' | 'd'
+  fileAnswer?: File | null
 }
 
 export function useSubmitActivityAnswer() {
@@ -214,18 +215,32 @@ export function useSubmitActivityAnswer() {
   ): Promise<DailyActivityDetail> => {
     if (!token) throw new Error('Não autenticado')
 
-    const response = await fetch(
-      `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${arg.courseId}/${arg.activityId}/submit/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify({ answer: arg.answer }),
-      }
-    )
+    const endpoint = `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${arg.courseId}/answers/`
+
+    const hasFile = arg.fileAnswer instanceof File
+    const payload = hasFile ? new FormData() : JSON.stringify({
+      daily_activity: arg.activityId,
+      user_answer: arg.userAnswer,
+      file_answer: null,
+    })
+
+    if (hasFile && payload instanceof FormData) {
+      payload.append('daily_activity', String(arg.activityId))
+      if (arg.userAnswer) payload.append('user_answer', arg.userAnswer)
+      payload.append('file_answer', arg.fileAnswer)
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: hasFile
+        ? { 'Authorization': `Bearer ${token}` }
+        : {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+      credentials: 'include',
+      body: payload,
+    })
 
     if (!response.ok) {
       throw new Error(`Erro ao submeter resposta: ${response.status}`)

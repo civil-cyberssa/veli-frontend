@@ -77,17 +77,27 @@ export default function ActivitiesPage() {
 
   const completionTrend = useMemo(() => {
     const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
     return monthActivities
       .slice()
       .sort((a, b) => new Date(a.available_on).getTime() - new Date(b.available_on).getTime())
       .map((activity) => {
         const activityDate = new Date(activity.available_on)
-        const value = activity.is_done ? 100 : activityDate > today ? 10 : 40
+        activityDate.setHours(0, 0, 0, 0)
+
+        const isToday = activityDate.getTime() === today.getTime()
+        const status = activity.is_done
+          ? 'done'
+          : activityDate > today
+            ? 'locked'
+            : 'available'
+
         return {
           id: activity.id,
           day: activityDate.getDate(),
-          value,
-          isToday: activityDate.toDateString() === today.toDateString(),
+          status,
+          isToday,
         }
       })
   }, [monthActivities])
@@ -112,6 +122,15 @@ export default function ActivitiesPage() {
   const isFutureActivity = activeActivity
     ? new Date(activeActivity.available_on) > new Date()
     : false
+
+  const formatDate = (dateString: string) => {
+    const parsedDate = new Date(dateString)
+    return parsedDate.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      timeZone: 'UTC',
+    })
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -183,35 +202,65 @@ export default function ActivitiesPage() {
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold">Gráfico diário</p>
-                <span className="text-[11px] text-muted-foreground">Concluído vs. disponível</span>
+                <p className="text-sm font-semibold">Andamento diário</p>
+                <span className="text-[11px] text-muted-foreground">Visão geral do mês</span>
               </div>
-              <div className="flex items-end gap-1 h-28 rounded-lg border bg-muted/30 p-3">
-                {completionTrend.map((item) => (
-                  <div key={item.id} className="flex-1 min-w-[8px]">
-                    <div
-                      className={cn(
-                        'w-full rounded-full bg-primary/60',
-                        item.value === 10 && 'bg-muted-foreground/40',
-                        item.value === 40 && 'bg-amber-400/70'
-                      )}
-                      style={{ height: `${Math.max(item.value * 0.6, 8)}px` }}
-                    />
-                    <p
-                      className={cn(
-                        'mt-1 text-[10px] text-center text-muted-foreground',
-                        item.isToday && 'text-primary font-semibold'
-                      )}
-                    >
-                      {String(item.day).padStart(2, '0')}
-                    </p>
+              <div className="rounded-2xl border bg-gradient-to-b from-muted/50 via-background to-background p-4 shadow-sm">
+                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span>Concluída</span>
                   </div>
-                ))}
-                {completionTrend.length === 0 && (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                    Sem dados do mês
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-primary/70" />
+                    <span>Disponível</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                    <span>Bloqueada</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex h-32 items-end gap-2 overflow-hidden">
+                  {completionTrend.map((item) => {
+                    const barHeight = item.status === 'done' ? 96 : item.status === 'available' ? 68 : 32
+                    const barColor =
+                      item.status === 'done'
+                        ? 'from-emerald-500/80 to-emerald-400'
+                        : item.status === 'available'
+                          ? 'from-primary/20 to-primary/60'
+                          : 'from-muted-foreground/20 to-muted-foreground/30'
+
+                    return (
+                      <div key={item.id} className="flex-1 min-w-[10px]">
+                        <div className="relative flex flex-col items-center gap-2">
+                          <div
+                            className={cn(
+                              'w-full rounded-full bg-gradient-to-t shadow-sm transition-all',
+                              barColor,
+                              item.isToday && 'ring-2 ring-primary/50 ring-offset-2'
+                            )}
+                            style={{ height: `${barHeight}px` }}
+                          />
+                          <p
+                            className={cn(
+                              'text-[10px] text-center text-muted-foreground',
+                              item.isToday && 'text-primary font-semibold'
+                            )}
+                          >
+                            {String(item.day).padStart(2, '0')}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {completionTrend.length === 0 && (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                      Sem dados do mês
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
@@ -228,7 +277,7 @@ export default function ActivitiesPage() {
                   <div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      Disponível em {activeActivity.available_on}
+                      Disponível em {formatDate(activeActivity.available_on)}
                     </p>
                     <h2 className="text-lg font-semibold">
                       {selectedActivityId ? 'Atividade selecionada' : 'Quiz do dia'}

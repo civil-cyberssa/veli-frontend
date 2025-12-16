@@ -13,7 +13,8 @@ export function useSubmitActivityAnswer() {
   const submitAnswer = async (
     courseId: number,
     activityId: number,
-    answer: 'a' | 'b' | 'c' | 'd'
+    userAnswer?: 'a' | 'b' | 'c' | 'd',
+    fileAnswer?: File | null
   ) => {
     if (!token) {
       throw new Error('Not authenticated')
@@ -22,18 +23,32 @@ export function useSubmitActivityAnswer() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(
-        `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${courseId}/${activityId}/submit/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include',
-          body: JSON.stringify({ answer }),
-        }
-      )
+      const endpoint = `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${courseId}/answers/`
+      const hasFile = fileAnswer instanceof File
+
+      const payload = hasFile ? new FormData() : JSON.stringify({
+        daily_activity: activityId,
+        user_answer: userAnswer,
+        file_answer: null,
+      })
+
+      if (hasFile && payload instanceof FormData) {
+        payload.append('daily_activity', String(activityId))
+        if (userAnswer) payload.append('user_answer', userAnswer)
+        payload.append('file_answer', fileAnswer)
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: hasFile
+          ? { 'Authorization': `Bearer ${token}` }
+          : {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+        credentials: 'include',
+        body: payload,
+      })
 
       if (!response.ok) {
         throw new Error(`Erro ao enviar resposta: ${response.status}`)
