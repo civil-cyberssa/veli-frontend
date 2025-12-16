@@ -1,10 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Download, MonitorPlay, Menu, ChevronDown, PlayCircle, CheckCircle2, Circle, ChevronRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  FileText,
+  Download,
+  MonitorPlay,
+  Menu,
+  ChevronDown,
+  PlayCircle,
+  CheckCircle2,
+  Circle,
+  ChevronRight,
+  ClipboardList,
+  Calendar,
+  TrendingUp
+} from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
+import { useDailyActivities } from '@/src/features/dashboard/hooks/useDailyActivities'
 import { cn } from '@/lib/utils'
 
 
@@ -12,11 +27,13 @@ interface LessonSidebarTabsProps {
   lessons: LessonProgress[]
   currentLessonId: number | null
   supportMaterialUrl?: string
+  courseId?: string
   onCollapsedChange?: (collapsed: boolean) => void
   onSelectLesson?: (lessonId: number) => void
+  onOpenActivity?: (activityId: number) => void
 }
 
-type TabValue = 'conteudo' | 'material'
+type TabValue = 'conteudo' | 'material' | 'atividades'
 
 // Interface para módulo agrupado
 interface ModuleGroup {
@@ -83,30 +100,35 @@ function ModuleItem({
 }) {
   // Verificar se este módulo contém a aula atual
   const isCurrentModule = module.lessons.some((l) => l.lesson_id === currentLessonId)
+  const completedCount = module.lessons.filter(l => l.watched).length
+  const totalCount = module.lessons.length
+  const progress = (completedCount / totalCount) * 100
 
   return (
     <div className={cn(
-      "transition-all rounded-lg mb-2",
+      "transition-all rounded-lg mb-2 overflow-hidden",
+      "border",
       isCurrentModule
-        ? "border border-border/40"
-        : "border border-transparent"
+        ? "border-primary/30 bg-gradient-to-br from-primary/5 to-transparent shadow-sm"
+        : "border-border/30 hover:border-border/50"
     )}>
       {/* Header do módulo */}
       <button
         onClick={onToggle}
         className={cn(
-          "w-full px-3 py-3 flex items-center gap-3 transition-all rounded-lg cursor-pointer",
+          "w-full px-3 py-3 flex items-center gap-3 transition-all cursor-pointer group",
           isCurrentModule
-            ? "hover:bg-muted/30"
+            ? "hover:bg-primary/5"
             : "hover:bg-muted/20"
         )}
       >
         {/* Número do módulo */}
         <div className={cn(
-          "flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-medium transition-colors",
+          "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all",
+          "shadow-sm group-hover:scale-105",
           isCurrentModule
-            ? "bg-primary/10 text-primary"
-            : "bg-muted text-muted-foreground"
+            ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
+            : "bg-gradient-to-br from-muted to-muted/80 text-muted-foreground"
         )}>
           {index + 1}
         </div>
@@ -114,32 +136,50 @@ function ModuleItem({
         {/* Info do módulo */}
         <div className="flex-1 text-left">
           <h4 className={cn(
-            "text-sm font-medium leading-tight",
-            isCurrentModule && "text-foreground"
+            "text-sm font-semibold leading-tight transition-colors",
+            isCurrentModule ? "text-foreground" : "text-foreground/90 group-hover:text-foreground"
           )}>
             {module.module_name}
           </h4>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {module.lessons.length} aulas • {module.total_duration}
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-muted-foreground">
+              {module.lessons.length} aulas • {module.total_duration}
+            </p>
+            {progress > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                {Math.round(progress)}%
+              </Badge>
+            )}
+          </div>
         </div>
 
-        {/* Chevron */}
+        {/* Chevron com animação */}
         <ChevronDown
           className={cn(
-            "h-4 w-4 transition-transform duration-200",
+            "h-4 w-4 transition-all duration-300",
             isExpanded && "rotate-180",
-            "text-muted-foreground"
+            "text-muted-foreground group-hover:text-foreground"
           )}
         />
       </button>
 
+      {/* Barra de progresso */}
+      {progress > 0 && (
+        <div className="px-3 pb-2">
+          <div className="h-1 bg-muted/50 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Lista de aulas (expansível) */}
       {isExpanded && (
-        <div className="px-2 pb-2 pt-1 space-y-0.5">
+        <div className="px-2 pb-2 pt-1 space-y-0.5 animate-in slide-in-from-top-2 duration-300">
           {module.lessons.map((lesson, lessonIndex) => {
             const isCurrentLesson = lesson.lesson_id === currentLessonId
-            // Duração estimada: varia entre 5-15 minutos
             const estimatedDuration = 5 + (lessonIndex % 10)
 
             return (
@@ -147,43 +187,46 @@ function ModuleItem({
                 key={lesson.lesson_id}
                 onClick={() => onSelectLesson?.(lesson.lesson_id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all cursor-pointer",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer group/lesson",
+                  "border border-transparent",
                   isCurrentLesson
-                    ? "bg-muted/40"
-                    : "hover:bg-muted/30"
+                    ? "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 shadow-sm"
+                    : "hover:bg-muted/40 hover:border-border/30"
                 )}
               >
                 {/* Ícone de status - 3 estados com animação */}
                 <div className="flex-shrink-0 relative">
                   {isCurrentLesson ? (
                     <>
-                      <PlayCircle className="h-4 w-4 text-primary animate-pulse relative z-10" />
-                      <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" style={{ animationDuration: '1.5s' }} />
+                      <PlayCircle className="h-5 w-5 text-primary animate-pulse relative z-10" />
+                      <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" style={{ animationDuration: '2s' }} />
                     </>
                   ) : lesson.watched ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <div className="relative">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500" />
+                    </div>
                   ) : (
-                    <Circle className="h-4 w-4 text-muted-foreground/30" />
+                    <Circle className="h-5 w-5 text-muted-foreground/40 group-hover/lesson:text-muted-foreground/60 transition-colors" />
                   )}
                 </div>
 
                 {/* Nome da aula */}
                 <span className={cn(
-                  "text-sm flex-1 text-left leading-snug",
+                  "text-sm flex-1 text-left leading-snug transition-colors",
                   isCurrentLesson
-                    ? "font-medium text-foreground"
+                    ? "font-semibold text-foreground"
                     : lesson.watched
-                    ? "text-green-600 dark:text-green-500 font-medium"
-                    : "text-muted-foreground"
+                    ? "text-green-700 dark:text-green-400 font-medium"
+                    : "text-muted-foreground group-hover/lesson:text-foreground"
                 )}>
                   {lesson.lesson_name}
                 </span>
 
                 {/* Duração */}
                 <span className={cn(
-                  "text-xs flex-shrink-0 font-mono",
+                  "text-xs flex-shrink-0 font-mono tabular-nums",
                   isCurrentLesson
-                    ? "text-muted-foreground"
+                    ? "text-primary/70 font-medium"
                     : lesson.watched
                     ? "text-green-600/70 dark:text-green-500/70"
                     : "text-muted-foreground/60"
@@ -199,10 +242,149 @@ function ModuleItem({
   )
 }
 
+// Componente de lista de atividades no sidebar
+function ActivitiesSidebarContent({ courseId }: { courseId: string | undefined }) {
+  const { activities, isLoading } = useDailyActivities(courseId ? parseInt(courseId) : null)
+
+  const stats = useMemo(() => {
+    const completed = activities.filter(a => a.is_done).length
+    const correct = activities.filter(a => a.is_done && a.is_correct).length
+    const total = activities.length
+    return { completed, correct, total }
+  }, [activities])
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="animate-pulse space-y-2">
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-3 bg-muted rounded w-1/2" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (!courseId || activities.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="p-4 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 mb-4">
+          <ClipboardList className="h-8 w-8 text-primary/50" />
+        </div>
+        <p className="text-sm font-medium text-muted-foreground mb-1">
+          Nenhuma atividade disponível
+        </p>
+        <p className="text-xs text-muted-foreground/70">
+          As atividades aparecerão aqui quando estiverem disponíveis
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Estatísticas */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/30">
+          <div className="text-xl font-bold text-blue-700 dark:text-blue-400">{stats.total}</div>
+          <div className="text-[10px] text-blue-600/70 dark:text-blue-400/70 font-medium">Total</div>
+        </div>
+        <div className="p-3 rounded-lg bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border border-green-200/50 dark:border-green-800/30">
+          <div className="text-xl font-bold text-green-700 dark:text-green-400">{stats.correct}</div>
+          <div className="text-[10px] text-green-600/70 dark:text-green-400/70 font-medium">Acertos</div>
+        </div>
+        <div className="p-3 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/30">
+          <div className="text-xl font-bold text-purple-700 dark:text-purple-400">
+            {stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0}%
+          </div>
+          <div className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Taxa</div>
+        </div>
+      </div>
+
+      {/* Lista de atividades */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 px-1 mb-2">
+          <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Suas Atividades
+          </h4>
+        </div>
+        {activities.slice(0, 10).map((activity) => (
+          <div
+            key={activity.id}
+            className={cn(
+              "p-3 rounded-lg border transition-all cursor-pointer group",
+              "hover:shadow-sm hover:scale-[1.01]",
+              activity.is_done
+                ? activity.is_correct
+                  ? "bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-950/20 border-green-200/50 dark:border-green-800/30"
+                  : "bg-gradient-to-br from-red-50/50 to-transparent dark:from-red-950/20 border-red-200/50 dark:border-red-800/30"
+                : "bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-border"
+            )}
+          >
+            <div className="flex items-start gap-2.5">
+              {/* Status icon */}
+              <div className="flex-shrink-0 mt-0.5">
+                {activity.is_done ? (
+                  activity.is_correct ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 text-red-600 dark:text-red-500" />
+                  )
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                )}
+              </div>
+
+              {/* Conteúdo */}
+              <div className="flex-1 min-w-0">
+                <h5 className={cn(
+                  "text-xs font-medium leading-tight mb-1 line-clamp-2",
+                  activity.is_done
+                    ? activity.is_correct
+                      ? "text-green-900 dark:text-green-100"
+                      : "text-red-900 dark:text-red-100"
+                    : "text-foreground group-hover:text-foreground transition-colors"
+                )}>
+                  {activity.name}
+                </h5>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  <span>{activity.available_on}</span>
+                  {activity.is_done && (
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "text-[9px] px-1.5 py-0 h-4 ml-auto",
+                        activity.is_correct
+                          ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
+                          : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
+                      )}
+                    >
+                      {activity.is_correct ? '✓ Acertou' : '✗ Errou'}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+        {activities.length > 10 && (
+          <p className="text-xs text-center text-muted-foreground py-2">
+            E mais {activities.length - 10} atividades...
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function LessonSidebarTabs({
   lessons,
   currentLessonId,
   supportMaterialUrl,
+  courseId,
   onCollapsedChange,
   onSelectLesson,
 }: LessonSidebarTabsProps) {
@@ -241,32 +423,41 @@ export function LessonSidebarTabs({
       label: 'Conteúdo',
       icon: MonitorPlay,
       disabled: false,
+      gradient: 'from-blue-500 to-blue-600',
+    },
+    {
+      value: 'atividades' as TabValue,
+      label: 'Atividades',
+      icon: ClipboardList,
+      disabled: false,
+      gradient: 'from-purple-500 to-purple-600',
     },
     {
       value: 'material' as TabValue,
       label: 'Material',
       icon: FileText,
       disabled: !supportMaterialUrl,
+      gradient: 'from-green-500 to-green-600',
     },
   ]
 
   if (isCollapsed) {
     return (
-      <Card className="border-border/50 overflow-hidden bg-background w-16 flex flex-col h-full">
+      <Card className="border-border/50 overflow-hidden bg-background w-16 flex flex-col h-full shadow-lg">
         {/* Header colapsado */}
-        <div className="p-2 border-b border-border/50 flex justify-center bg-muted/20">
+        <div className="p-2 border-b border-border/50 flex justify-center bg-gradient-to-b from-muted/30 to-transparent">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleCollapsedChange(false)}
-            className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+            className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-all hover:scale-110 cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Ícones verticais */}
-        <div className="flex flex-col items-center gap-2 py-4">
+        <div className="flex flex-col items-center gap-3 py-4">
           {tabs.map((tab) => (
             <Button
               key={tab.value}
@@ -280,17 +471,21 @@ export function LessonSidebarTabs({
               }}
               disabled={tab.disabled}
               className={cn(
-                'h-11 w-11 rounded-lg transition-all relative',
+                'h-12 w-12 rounded-xl transition-all relative group',
                 activeTab === tab.value
-                  ? 'bg-primary/10 text-primary'
-                  : 'hover:bg-muted/40',
+                  ? 'bg-gradient-to-br shadow-md scale-105'
+                  : 'hover:bg-muted/40 hover:scale-105',
+                activeTab === tab.value && tab.gradient,
                 tab.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
               )}
               title={tab.label}
             >
-              <tab.icon className="h-5 w-5" />
+              <tab.icon className={cn(
+                "h-5 w-5 transition-all",
+                activeTab === tab.value ? "text-white" : "text-foreground"
+              )} />
               {activeTab === tab.value && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-r-full" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-primary via-primary to-transparent rounded-r-full shadow-lg" />
               )}
             </Button>
           ))}
@@ -300,41 +495,50 @@ export function LessonSidebarTabs({
   }
 
   return (
-    <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full">
+    <Card className="border-border/50 overflow-hidden bg-background flex flex-col h-full shadow-lg">
       {/* Header com tabs */}
-      <div className="border-b border-border/50">
+      <div className="border-b border-border/50 bg-gradient-to-b from-muted/20 to-transparent">
         <div className="flex items-center justify-between px-4 py-3">
-          <h3 className="text-2xl font-semibold text-foreground">
-            {activeTab === 'conteudo' ? 'Conteúdo' : 'Material'}
+          <h3 className="text-lg font-bold text-foreground tracking-tight">
+            {activeTab === 'conteudo' && 'Conteúdo do Curso'}
+            {activeTab === 'atividades' && 'Atividades Diárias'}
+            {activeTab === 'material' && 'Material de Apoio'}
           </h3>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleCollapsedChange(true)}
-            className="h-8 w-8 hover:bg-muted/40 transition-colors cursor-pointer"
+            className="h-8 w-8 hover:bg-muted/40 transition-all hover:scale-110 cursor-pointer"
           >
             <Menu className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Tabs horizontais */}
-        <div className="flex">
+        <div className="flex px-2 gap-1">
           {tabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => !tab.disabled && setActiveTab(tab.value)}
               disabled={tab.disabled}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-all relative',
+                'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium transition-all relative rounded-t-lg group',
                 activeTab === tab.value
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground',
+                  ? 'text-foreground bg-background'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/20',
                 tab.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
               )}
             >
-              <tab.icon className="h-4 w-4" />
+              <tab.icon className={cn(
+                "h-4 w-4 transition-all",
+                activeTab === tab.value && "text-primary"
+              )} />
+              <span className="hidden sm:inline">{tab.label}</span>
               {activeTab === tab.value && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                <div className={cn(
+                  "absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r",
+                  tab.gradient
+                )} />
               )}
             </button>
           ))}
@@ -360,28 +564,33 @@ export function LessonSidebarTabs({
           </div>
         )}
 
+        {/* Tab: Atividades */}
+        {activeTab === 'atividades' && (
+          <ActivitiesSidebarContent courseId={courseId} />
+        )}
+
         {/* Tab: Material de Apoio */}
         {activeTab === 'material' && (
           <div className="p-3">
             {supportMaterialUrl ? (
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-card">
-                  <div className="p-2 rounded-md bg-primary/10 shrink-0">
-                    <FileText className="h-5 w-5 text-primary" />
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 rounded-lg border border-border/40 bg-gradient-to-br from-card to-muted/20 shadow-sm">
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 shrink-0">
+                    <FileText className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-foreground mb-0.5">
+                    <h4 className="text-sm font-semibold text-foreground mb-1">
                       Material de Apoio
                     </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Documento complementar da aula
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Documento complementar para aprofundar seus estudos
                     </p>
                   </div>
                 </div>
 
                 <Button
                   variant="default"
-                  className="w-full h-10 cursor-pointer"
+                  className="w-full h-11 cursor-pointer bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all"
                   asChild
                 >
                   <a
@@ -397,11 +606,14 @@ export function LessonSidebarTabs({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="p-3 rounded-full bg-muted/30 mb-3">
-                  <FileText className="h-6 w-6 text-muted-foreground/30" />
+                <div className="p-4 rounded-full bg-gradient-to-br from-muted/50 to-muted/20 mb-4">
+                  <FileText className="h-8 w-8 text-muted-foreground/30" />
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-muted-foreground mb-1">
                   Nenhum material disponível
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Material de apoio aparecerá aqui quando disponível
                 </p>
               </div>
             )}
