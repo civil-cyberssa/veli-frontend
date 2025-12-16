@@ -10,17 +10,18 @@ import {
   CheckCircle2,
   Circle,
   XCircle,
-  Calendar,
+  ChevronLeft,
+  ChevronRight,
   TrendingUp,
-  Filter
 } from 'lucide-react'
 import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
 import { useDailyActivities } from '@/src/features/dashboard/hooks/useDailyActivities'
-import { DailyActivityModal } from '@/src/features/lessons/components/daily-activity-modal'
+import { useSubmitActivityAnswer } from '@/src/features/dashboard/hooks/useSubmitActivityAnswer'
 import type { DailyActivity } from '@/src/features/dashboard/hooks/useDailyActivities'
 import { cn } from '@/lib/utils'
 
 type FilterType = 'all' | 'completed' | 'pending'
+type AnswerOption = 'a' | 'b' | 'c' | 'd'
 
 const categoryColors = {
   culture: {
@@ -59,11 +60,12 @@ const categoryLabels = {
 export default function ActivitiesPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null)
   const [filter, setFilter] = useState<FilterType>('all')
-  const [selectedActivity, setSelectedActivity] = useState<DailyActivity | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState<AnswerOption | null>(null)
 
   const { data: subscriptions, loading: isLoadingSubscriptions } = useSubscriptions()
   const { activities, isLoading, mutate } = useDailyActivities(selectedCourseId)
+  const { submitAnswer, isSubmitting } = useSubmitActivityAnswer()
 
   const filteredActivities = useMemo(() => {
     if (filter === 'completed') return activities.filter(a => a.is_done)
@@ -80,151 +82,138 @@ export default function ActivitiesPage() {
     return { total, completed, correct, percentage, pending: total - completed }
   }, [activities])
 
-  const handleActivityClick = (activity: DailyActivity) => {
-    setSelectedActivity(activity)
-    setIsModalOpen(true)
+  const currentActivity = filteredActivities[currentIndex] || null
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+      setSelectedAnswer(null)
+    }
   }
 
-  const handleModalClose = () => {
-    setIsModalOpen(false)
-    setTimeout(() => setSelectedActivity(null), 200)
+  const handleNext = () => {
+    if (currentIndex < filteredActivities.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+      setSelectedAnswer(null)
+    }
   }
 
-  const handleActivityComplete = () => {
-    mutate()
+  const handleSkip = () => {
+    handleNext()
   }
+
+  const handleSubmit = async () => {
+    if (!selectedAnswer || !currentActivity || !selectedCourseId) return
+
+    try {
+      await submitAnswer(selectedCourseId, currentActivity.id, selectedAnswer)
+      await mutate()
+
+      // Move to next activity after short delay
+      setTimeout(() => {
+        if (currentIndex < filteredActivities.length - 1) {
+          handleNext()
+        }
+      }, 1500)
+    } catch (error) {
+      console.error('Error submitting answer:', error)
+    }
+  }
+
+  // Reset current index when filter changes
+  useMemo(() => {
+    setCurrentIndex(0)
+    setSelectedAnswer(null)
+  }, [filter, selectedCourseId])
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
-            Atividades Diárias
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Pratique diariamente e acompanhe seu progresso
-          </p>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-5xl">
+        {/* Header with Course Selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Atividades Diárias</h1>
+            <p className="text-sm text-muted-foreground">
+              Pratique diariamente e acompanhe seu progresso
+            </p>
+          </div>
+
+          <Select
+            value={selectedCourseId?.toString() || ''}
+            onValueChange={(value) => setSelectedCourseId(parseInt(value))}
+            disabled={isLoadingSubscriptions}
+          >
+            <SelectTrigger className="w-full sm:w-[280px]">
+              <SelectValue placeholder="Selecione o curso" />
+            </SelectTrigger>
+            <SelectContent>
+              {subscriptions?.map((subscription) => (
+                <SelectItem key={subscription.id} value={subscription.id.toString()}>
+                  {subscription.course_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Course Selector & Stats */}
-        <div className="grid gap-6 mb-8 lg:grid-cols-2">
-          {/* Seletor de Curso */}
-          <Card className="p-6 border-border/50">
-            <label className="text-sm font-medium text-foreground mb-3 block">
-              Selecione o curso
-            </label>
-            <Select
-              value={selectedCourseId?.toString() || ''}
-              onValueChange={(value) => setSelectedCourseId(parseInt(value))}
-              disabled={isLoadingSubscriptions}
-            >
-              <SelectTrigger className="w-full h-12">
-                <SelectValue placeholder="Escolha um curso para começar..." />
-              </SelectTrigger>
-              <SelectContent>
-                {subscriptions?.map((subscription) => (
-                  <SelectItem key={subscription.id} value={subscription.id.toString()}>
-                    {subscription.course_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {subscriptions && subscriptions.length === 0 && !isLoadingSubscriptions && (
-              <p className="text-sm text-muted-foreground mt-3">
-                Você ainda não está inscrito em nenhum curso.
-              </p>
-            )}
-          </Card>
-
-          {/* Estatísticas */}
-          {selectedCourseId && stats.total > 0 && (
-            <Card className="p-6 border-border/50">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">Seu Progresso</h3>
-              </div>
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <div className="text-2xl font-bold">{stats.total}</div>
-                  <div className="text-xs text-muted-foreground">Total</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-500">
-                    {stats.correct}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Acertos</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-muted-foreground">
-                    {stats.pending}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Pendentes</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary">
-                    {stats.percentage}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">Taxa</div>
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
-
-        {/* Filters */}
+        {/* Filters and Stats */}
         {selectedCourseId && activities.length > 0 && (
-          <div className="flex items-center gap-2 mb-6">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex gap-2">
               <Button
                 variant={filter === 'all' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('all')}
-                className="h-8"
               >
                 Todas ({activities.length})
-              </Button>
-              <Button
-                variant={filter === 'completed' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('completed')}
-                className="h-8"
-              >
-                Concluídas ({stats.completed})
               </Button>
               <Button
                 variant={filter === 'pending' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter('pending')}
-                className="h-8"
               >
                 Pendentes ({stats.pending})
               </Button>
+              <Button
+                variant={filter === 'completed' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilter('completed')}
+              >
+                Concluídas ({stats.completed})
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Taxa de acertos:</span>
+                <span className="font-semibold text-primary">{stats.percentage}%</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Activities Grid */}
+        {/* Main Content */}
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="p-6 animate-pulse">
-                <div className="space-y-3">
-                  <div className="h-4 bg-muted rounded w-3/4" />
-                  <div className="h-3 bg-muted rounded w-full" />
-                  <div className="h-3 bg-muted rounded w-2/3" />
-                </div>
-              </Card>
-            ))}
-          </div>
+          <Card className="p-8">
+            <div className="space-y-4 animate-pulse">
+              <div className="h-4 bg-muted rounded w-1/4" />
+              <div className="h-6 bg-muted rounded w-3/4" />
+              <div className="h-32 bg-muted rounded w-full" />
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-12 bg-muted rounded" />
+                ))}
+              </div>
+            </div>
+          </Card>
         ) : !selectedCourseId ? (
           <Card className="p-12 border-dashed">
             <div className="text-center">
               <ClipboardList className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
               <h3 className="text-lg font-medium mb-2">Selecione um curso</h3>
               <p className="text-sm text-muted-foreground">
-                Escolha um curso acima para ver as atividades disponíveis
+                Escolha um curso acima para começar a praticar
               </p>
             </div>
           </Card>
@@ -244,110 +233,168 @@ export default function ActivitiesPage() {
               </p>
             </div>
           </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredActivities.map((activity, index) => {
-              const colors = categoryColors[activity.category]
-
-              return (
-                <Card
-                  key={activity.id}
-                  onClick={() => handleActivityClick(activity)}
-                  className={cn(
-                    "p-6 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
-                    "border-border/50 hover:border-primary/50",
-                    activity.is_done && "bg-muted/30"
-                  )}
-                  style={{
-                    animationDelay: `${index * 50}ms`,
-                    animation: 'fadeIn 0.3s ease-out',
-                  }}
-                >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <Badge
-                      variant="outline"
+        ) : currentActivity ? (
+          <Card className="overflow-hidden">
+            {/* Progress Header */}
+            <div className="px-6 py-4 border-b bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-xs",
+                      categoryColors[currentActivity.category].bg,
+                      categoryColors[currentActivity.category].border,
+                      categoryColors[currentActivity.category].text
+                    )}
+                  >
+                    <span
                       className={cn(
-                        "text-xs px-2 py-1",
-                        colors.bg,
-                        colors.border,
-                        colors.text
+                        "w-1.5 h-1.5 rounded-full mr-1.5",
+                        categoryColors[currentActivity.category].dot
+                      )}
+                    />
+                    {categoryLabels[currentActivity.category]}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Questão {currentIndex + 1} de {filteredActivities.length}
+                  </span>
+                </div>
+
+                {currentActivity.is_done && (
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      currentActivity.is_correct
+                        ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400"
+                        : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400"
+                    )}
+                  >
+                    {currentActivity.is_correct ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        Acertou
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3.5 w-3.5 mr-1" />
+                        Errou
+                      </>
+                    )}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Activity Content */}
+            <div className="p-6 space-y-6">
+              {/* Question */}
+              <div>
+                <h2 className="text-xl font-semibold mb-2">{currentActivity.name}</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {currentActivity.statement}
+                </p>
+              </div>
+
+              {/* Answer Options */}
+              <div className="space-y-3">
+                {(['a', 'b', 'c', 'd'] as AnswerOption[]).map((option) => {
+                  const answerText = currentActivity[`answer_${option}`]
+                  const isSelected = selectedAnswer === option
+                  const isUserAnswer = currentActivity.user_answer === option
+                  const isDisabled = currentActivity.is_done
+
+                  return (
+                    <button
+                      key={option}
+                      onClick={() => !isDisabled && setSelectedAnswer(option)}
+                      disabled={isDisabled}
+                      className={cn(
+                        "w-full p-4 text-left rounded-lg border-2 transition-all",
+                        "hover:border-primary/50 hover:bg-muted/50",
+                        "disabled:cursor-not-allowed disabled:opacity-60",
+                        isSelected && !isDisabled && "border-primary bg-primary/5",
+                        isUserAnswer && currentActivity.is_done && currentActivity.is_correct &&
+                          "border-green-500 bg-green-50 dark:bg-green-950/20",
+                        isUserAnswer && currentActivity.is_done && !currentActivity.is_correct &&
+                          "border-red-500 bg-red-50 dark:bg-red-950/20",
+                        !isSelected && !isUserAnswer && "border-border"
                       )}
                     >
-                      <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", colors.dot)} />
-                      {categoryLabels[activity.category]}
-                    </Badge>
-
-                    {activity.is_done ? (
-                      activity.is_correct ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-500" />
-                      )
-                    ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground/50" />
-                    )}
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="font-semibold text-base mb-2 line-clamp-2 leading-tight">
-                    {activity.name}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
-                    {activity.statement}
-                  </p>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>{activity.available_on}</span>
-                    </div>
-
-                    {activity.is_done && (
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          "text-xs",
-                          activity.is_correct
-                            ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400"
-                            : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400"
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "flex items-center justify-center w-8 h-8 rounded-full border-2 font-semibold text-sm",
+                            isSelected && !isDisabled && "border-primary bg-primary text-primary-foreground",
+                            isUserAnswer && currentActivity.is_done && currentActivity.is_correct &&
+                              "border-green-500 bg-green-500 text-white",
+                            isUserAnswer && currentActivity.is_done && !currentActivity.is_correct &&
+                              "border-red-500 bg-red-500 text-white",
+                            !isSelected && !isUserAnswer && "border-muted-foreground/30"
+                          )}
+                        >
+                          {option.toUpperCase()}
+                        </div>
+                        <span className="flex-1">{answerText}</span>
+                        {isUserAnswer && currentActivity.is_done && (
+                          currentActivity.is_correct ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )
                         )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Navigation Footer */}
+            <div className="px-6 py-4 border-t bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+
+                <div className="flex gap-2">
+                  {!currentActivity.is_done && (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={handleSkip}
+                        disabled={currentIndex === filteredActivities.length - 1}
                       >
-                        {activity.is_correct ? '✓ Acertou' : '✗ Errou'}
-                      </Badge>
-                    )}
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
-        )}
+                        Pular
+                      </Button>
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={!selectedAnswer || isSubmitting}
+                      >
+                        {isSubmitting ? 'Enviando...' : 'Confirmar resposta'}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  disabled={currentIndex === filteredActivities.length - 1}
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ) : null}
       </div>
-
-      {/* Modal */}
-      <DailyActivityModal
-        activity={selectedActivity}
-        courseId={selectedCourseId}
-        open={isModalOpen}
-        onOpenChange={handleModalClose}
-        onActivityComplete={handleActivityComplete}
-      />
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }
