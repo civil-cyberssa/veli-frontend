@@ -517,12 +517,10 @@ export default function ActivitiesPage() {
             )}
           </Card>
 
-          {/* Lista de atividades do mês */}
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="font-semibold">Atividades do mês</h2>
-                <p className="text-xs text-muted-foreground">Carregadas da rota /month/</p>
+                <h2 className="font-semibold">Atividades</h2>
               </div>
 
               <div className="flex items-center gap-3">
