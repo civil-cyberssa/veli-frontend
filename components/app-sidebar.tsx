@@ -10,6 +10,7 @@ import {
   MonitorPlay,
   FileText,
   Palette,
+  ClipboardList,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -51,6 +52,17 @@ const baseNavData = {
         {
           title: "Minhas Aulas",
           url: "/home",
+        },
+      ],
+    },
+    {
+      title: "Atividades",
+      url: "#",
+      icon: ClipboardList,
+      items: [
+        {
+          title: "Atividades Diárias",
+          url: "/activities",
         },
       ],
     },
