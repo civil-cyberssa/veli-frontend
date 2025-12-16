@@ -23,8 +23,13 @@ export interface DailyActivity {
   is_done: boolean
 }
 
-export interface DailyActivityDetail extends DailyActivity {
-  // O detalhe pode ter informações adicionais no futuro
+export type DailyActivityDetail = DailyActivity
+
+export interface DailyActivitiesSummary {
+  month?: string
+  total_activities?: number
+  total_answered?: number
+  total_correct?: number
 }
 
 // Hook para listar atividades de um curso
@@ -62,6 +67,86 @@ export function useDailyActivities(courseId: number | null) {
 
   return {
     activities: data || [],
+    isLoading,
+    isError: error,
+    mutate,
+  }
+}
+
+export function useDailyActivitiesSummary(courseId: number | null) {
+  const { data: session } = useSession()
+  const token = session?.access
+
+  const fetcher = async (url: string): Promise<DailyActivitiesSummary> => {
+    if (!token) throw new Error('Não autenticado')
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar resumo de atividades: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    courseId && token ? `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${courseId}/summary/` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    summary: data,
+    isLoading,
+    isError: error,
+    mutate,
+  }
+}
+
+export function useTodayDailyActivity(courseId: number | null) {
+  const { data: session } = useSession()
+  const token = session?.access
+
+  const fetcher = async (url: string): Promise<DailyActivityDetail> => {
+    if (!token) throw new Error('Não autenticado')
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar atividade de hoje: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    courseId && token ? `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${courseId}/today/` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    activity: data,
     isLoading,
     isError: error,
     mutate,
@@ -115,7 +200,8 @@ export function useDailyActivity(courseId: number | null, activityId: number | n
 interface SubmitActivityAnswerParams {
   courseId: number
   activityId: number
-  answer: 'a' | 'b' | 'c' | 'd'
+  userAnswer?: 'a' | 'b' | 'c' | 'd'
+  fileAnswer?: File | null
 }
 
 export function useSubmitActivityAnswer() {
@@ -128,18 +214,32 @@ export function useSubmitActivityAnswer() {
   ): Promise<DailyActivityDetail> => {
     if (!token) throw new Error('Não autenticado')
 
-    const response = await fetch(
-      `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${arg.courseId}/${arg.activityId}/submit/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify({ answer: arg.answer }),
-      }
-    )
+    const endpoint = `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${arg.courseId}/answers/`
+
+    const hasFile = arg.fileAnswer instanceof File
+    const payload = hasFile ? new FormData() : JSON.stringify({
+      daily_activity: arg.activityId,
+      user_answer: arg.userAnswer,
+      file_answer: null,
+    })
+
+    if (hasFile && payload instanceof FormData) {
+      payload.append('daily_activity', String(arg.activityId))
+      if (arg.userAnswer) payload.append('user_answer', arg.userAnswer)
+      payload.append('file_answer', arg.fileAnswer)
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: hasFile
+        ? { 'Authorization': `Bearer ${token}` }
+        : {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+      credentials: 'include',
+      body: payload,
+    })
 
     if (!response.ok) {
       throw new Error(`Erro ao submeter resposta: ${response.status}`)

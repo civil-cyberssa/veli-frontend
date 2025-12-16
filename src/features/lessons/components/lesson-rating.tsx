@@ -34,7 +34,6 @@ interface LessonDescriptionCardProps {
   exerciseScore?: number | null;
   supportMaterialUrl?: string;
   onOpenQuiz?: (eventId: number, exerciseName: string) => void;
-  teacherAnswer?: string | null;
 }
 
 export function LessonDescriptionCard({
@@ -56,7 +55,6 @@ export function LessonDescriptionCard({
   exerciseScore,
   supportMaterialUrl,
   onOpenQuiz,
-  teacherAnswer,
 }: LessonDescriptionCardProps) {
   const [rating, setRating] = useState<number>(initialRating || 0);
   const [hoverRating, setHoverRating] = useState<number>(0);

@@ -74,7 +74,7 @@ export function DailyActivityModal({
       await submitAnswer({
         courseId,
         activityId: activity.id,
-        answer: selectedAnswer,
+        userAnswer: selectedAnswer,
       })
 
       toast.success('Resposta enviada com sucesso!')
@@ -210,7 +210,7 @@ export function DailyActivityModal({
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-muted-foreground">
                     <Clock className="h-4 w-4 flex-shrink-0" />
                     <p className="text-xs">
-                      Selecione uma alternativa e clique em "Enviar Resposta"
+                      Selecione uma alternativa e clique em &quot;Enviar Resposta&quot;
                     </p>
                   </div>
                 )}
