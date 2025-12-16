@@ -12,7 +12,6 @@ import { useCreateLessonComment } from '@/src/features/dashboard/hooks/useCreate
 import { useUpdateLessonComment } from '@/src/features/dashboard/hooks/useUpdateLessonComment'
 import { useDeleteLessonComment } from '@/src/features/dashboard/hooks/useDeleteLessonComment'
 import { useLessonComments } from '@/src/features/dashboard/hooks/useLessonComments'
-import { useDailyActivities } from '@/src/features/dashboard/hooks/useDailyActivities'
 import { LessonSidebarTabs } from '@/src/features/lessons/components/lesson-sidebar-tabs'
 import { LessonOnboarding } from '@/src/features/lessons/components/lesson-onboarding'
 import { VideoPlayer } from '@/src/features/lessons/components/video-player'
@@ -72,8 +71,6 @@ export default function LessonPage() {
     registrationIdForDoubts,
     selectedLessonId ?? undefined
   )
-
-  const { activities } = useDailyActivities(courseId ? parseInt(courseId) : null)
 
   const hasLessons = useMemo(() => eventProgress && eventProgress.length > 0, [eventProgress])
 
@@ -414,8 +411,6 @@ export default function LessonPage() {
                 lessonId={selectedLessonId || 0}
                 registrationId={registrationIdForDoubts}
                 doubtsCount={doubtsData.length}
-                courseId={courseId ? parseInt(courseId) : null}
-                activitiesCount={activities.length}
               />
             </div>
 

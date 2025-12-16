@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { MessageCircle, HelpCircle, Loader2, ClipboardList } from 'lucide-react'
+import { MessageCircle, HelpCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LessonCommentsList } from './lesson-comments-list'
 import { TeacherQuestions } from './teacher-questions'
-import { DailyActivitiesList } from './daily-activities-list'
 import type { LessonCommentsResponse } from '@/src/features/dashboard/hooks/useLessonComments'
 
 interface LessonInteractionTabsProps {
@@ -21,13 +20,9 @@ interface LessonInteractionTabsProps {
   lessonId: number
   registrationId?: number
   doubtsCount?: number
-
-  // Props para atividades
-  courseId?: number | null
-  activitiesCount?: number
 }
 
-type TabValue = 'comentarios' | 'perguntas' | 'atividades'
+type TabValue = 'comentarios' | 'perguntas'
 
 export function LessonInteractionTabs({
   commentsData,
@@ -39,8 +34,6 @@ export function LessonInteractionTabs({
   lessonId,
   registrationId,
   doubtsCount = 0,
-  courseId = null,
-  activitiesCount = 0,
 }: LessonInteractionTabsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>('comentarios')
   const [isCommentOperating, setIsCommentOperating] = useState(false)
@@ -71,13 +64,6 @@ export function LessonInteractionTabs({
       shortLabel: 'Perguntas',
       icon: HelpCircle,
       count: doubtsCount,
-    },
-    {
-      value: 'atividades' as TabValue,
-      label: 'Atividades',
-      shortLabel: 'Atividades',
-      icon: ClipboardList,
-      count: activitiesCount,
     },
   ]
 
@@ -143,12 +129,6 @@ export function LessonInteractionTabs({
           <TeacherQuestions
             lessonId={lessonId}
             registrationId={registrationId}
-          />
-        )}
-
-        {activeTab === 'atividades' && (
-          <DailyActivitiesList
-            courseId={courseId}
           />
         )}
       </div>
