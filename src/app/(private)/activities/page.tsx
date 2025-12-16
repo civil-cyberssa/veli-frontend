@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Calendar,
   CheckCircle2,
   Clock,
@@ -24,28 +31,38 @@ import {
 } from '@/src/features/dashboard/hooks/useDailyActivities'
 import { useSubmitActivityAnswer } from '@/src/features/dashboard/hooks/useSubmitActivityAnswer'
 
-const COURSE_ID = 2
+const COURSE_OPTIONS = [
+  { id: 1, label: 'Curso 1' },
+  { id: 2, label: 'Curso 2' },
+  { id: 3, label: 'Curso 3' },
+]
 
 type AnswerOption = 'a' | 'b' | 'c' | 'd'
 
 export default function ActivitiesPage() {
+  const [courseId, setCourseId] = useState<number>(2)
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState<AnswerOption | null>(null)
 
   const { activities: monthActivities, isLoading: isLoadingMonth, mutate: mutateMonth } =
-    useDailyActivities(COURSE_ID)
-  const { summary, isLoading: isLoadingSummary } = useDailyActivitiesSummary(COURSE_ID)
+    useDailyActivities(courseId)
+  const { summary, isLoading: isLoadingSummary } = useDailyActivitiesSummary(courseId)
   const { activity: todayActivity, isLoading: isLoadingToday, mutate: mutateToday } =
-    useTodayDailyActivity(COURSE_ID)
+    useTodayDailyActivity(courseId)
   const {
     activity: selectedActivity,
     isLoading: isLoadingSelected,
     mutate: mutateSelectedActivity,
-  } = useDailyActivity(COURSE_ID, selectedActivityId)
+  } = useDailyActivity(courseId, selectedActivityId)
   const { submitAnswer, isSubmitting } = useSubmitActivityAnswer()
 
   const activeActivity = selectedActivityId ? selectedActivity : todayActivity
   const isLoadingActive = selectedActivityId ? isLoadingSelected : isLoadingToday
+
+  useEffect(() => {
+    setSelectedActivityId(null)
+    setSelectedAnswer(null)
+  }, [courseId])
 
   useEffect(() => {
     if (activeActivity?.user_answer) {
@@ -109,10 +126,10 @@ export default function ActivitiesPage() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedAnswer || !activeActivity) return
+    if (!selectedAnswer || !activeActivity || !courseId) return
 
     try {
-      await submitAnswer(COURSE_ID, activeActivity.id, selectedAnswer)
+      await submitAnswer(courseId, activeActivity.id, selectedAnswer)
       await Promise.all([mutateMonth(), mutateToday(), mutateSelectedActivity()])
     } catch (error) {
       console.error(error)
@@ -142,11 +159,28 @@ export default function ActivitiesPage() {
               Visualize o resumo mensal, responda o quiz do dia e revise outras atividades.
             </p>
           </div>
-          {selectedActivityId && (
-            <Button variant="outline" onClick={() => setSelectedActivityId(null)}>
-              Voltar para atividade do dia
-            </Button>
-          )}
+          <div className="flex items-end gap-3">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Curso</p>
+              <Select value={String(courseId)} onValueChange={(value) => setCourseId(Number(value))}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Selecione o curso" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COURSE_OPTIONS.map((course) => (
+                    <SelectItem key={course.id} value={String(course.id)}>
+                      {course.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedActivityId && (
+              <Button variant="outline" onClick={() => setSelectedActivityId(null)}>
+                Voltar para atividade do dia
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[360px_1fr_340px]">
