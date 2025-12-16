@@ -19,7 +19,6 @@ import {
   Clock,
   Loader2,
   Lock,
-  TrendingUp,
   XCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -81,19 +80,29 @@ export default function ActivitiesPage() {
     }
   }, [activeActivity?.id, activeActivity?.user_answer])
 
-  const correctCount = useMemo(() => {
-    if (summary?.correct_answers !== undefined) return summary.correct_answers
-    return monthActivities.filter((activity) => activity.is_done && activity.is_correct).length
-  }, [monthActivities, summary?.correct_answers])
+  const summaryMonthLabel = useMemo(() => {
+    if (summary?.month) {
+      return new Date(summary.month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    }
 
-  const incorrectCount = useMemo(() => {
-    if (summary?.incorrect_answers !== undefined) return summary.incorrect_answers
-    return monthActivities.filter((activity) => activity.is_done && activity.is_correct === false).length
-  }, [monthActivities, summary?.incorrect_answers])
+    return new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  }, [summary?.month])
+
+  const correctCount = useMemo(() => {
+    if (summary?.total_correct !== undefined) return summary.total_correct
+    return monthActivities.filter((activity) => activity.is_done && activity.is_correct).length
+  }, [monthActivities, summary?.total_correct])
 
   const totalActivities = summary?.total_activities ?? monthActivities.length
-  const completedActivities = summary?.completed_activities ??
+  const completedActivities = summary?.total_answered ??
     monthActivities.filter((activity) => activity.is_done).length
+  const incorrectCount = useMemo(() => {
+    if (summary?.total_answered !== undefined && summary.total_correct !== undefined) {
+      return Math.max(summary.total_answered - summary.total_correct, 0)
+    }
+
+    return monthActivities.filter((activity) => activity.is_done && activity.is_correct === false).length
+  }, [monthActivities, summary?.total_answered, summary?.total_correct])
 
   const completionRate = totalActivities > 0
     ? Math.round((completedActivities / totalActivities) * 100)
@@ -239,7 +248,7 @@ export default function ActivitiesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-semibold">Resumo do mês</h2>
-                <p className="text-xs text-muted-foreground">Baseado nos dados da API de resumo</p>
+                <p className="text-xs text-muted-foreground capitalize">{summaryMonthLabel}</p>
               </div>
               {isLoadingSummary && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             </div>
@@ -257,15 +266,9 @@ export default function ActivitiesPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Taxa de acerto</p>
-                  <p className="text-2xl font-semibold">{accuracyRate}%</p>
-                </div>
-                <Badge variant="secondary" className="gap-1 text-xs">
-                  <TrendingUp className="h-3 w-3" />
-                  Streak: {summary?.streak ?? 0}
-                </Badge>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Taxa de acerto</p>
+                <p className="text-2xl font-semibold">{accuracyRate}%</p>
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-xs">

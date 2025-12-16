@@ -26,11 +26,10 @@ export interface DailyActivity {
 export type DailyActivityDetail = DailyActivity
 
 export interface DailyActivitiesSummary {
+  month?: string
   total_activities?: number
-  completed_activities?: number
-  correct_answers?: number
-  incorrect_answers?: number
-  streak?: number
+  total_answered?: number
+  total_correct?: number
 }
 
 // Hook para listar atividades de um curso
