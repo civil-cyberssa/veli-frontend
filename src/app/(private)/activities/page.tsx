@@ -208,6 +208,104 @@ export default function ActivitiesPage() {
     return monthActivities
   }, [activityFilter, monthActivities])
 
+  const getYoutubeEmbedUrl = (url: string) => {
+    try {
+      const parsed = new URL(url)
+
+      if (parsed.hostname.includes('youtu.be')) {
+        const videoId = parsed.pathname.replace('/', '')
+        if (videoId) return `https://www.youtube.com/embed/${videoId}`
+      }
+
+      if (parsed.hostname.includes('youtube.com')) {
+        const videoId = parsed.searchParams.get('v')
+        if (videoId) return `https://www.youtube.com/embed/${videoId}`
+
+        const pathSegments = parsed.pathname.split('/').filter(Boolean)
+        const embedIndex = pathSegments.indexOf('embed')
+
+        if (embedIndex !== -1 && pathSegments[embedIndex + 1]) {
+          return `https://www.youtube.com/embed/${pathSegments[embedIndex + 1]}`
+        }
+      }
+
+      return url
+    } catch {
+      return url
+    }
+  }
+
+  const renderActivityMedia = (activity: DailyActivity | null) => {
+    if (!activity) return null
+
+    const youtubeLink = activity.video_yt_link ?? activity.atvideo_yt_link
+
+    if (activity.activity_type === 'video' && activity.file) {
+      return (
+        <div className="overflow-hidden rounded-lg border bg-black/5">
+          <video controls className="h-full w-full max-h-[360px] bg-black">
+            <source src={activity.file} />
+            Seu navegador não suporta o elemento de vídeo.
+          </video>
+        </div>
+      )
+    }
+
+    if (activity.activity_type === 'audio' && activity.file) {
+      return (
+        <div className="rounded-lg border bg-muted/50 p-4">
+          <p className="mb-2 text-sm font-medium">Ouça o áudio antes de responder:</p>
+          <audio controls className="w-full">
+            <source src={activity.file} />
+            Seu navegador não suporta o elemento de áudio.
+          </audio>
+        </div>
+      )
+    }
+
+    if (activity.activity_type === 'image' && activity.file) {
+      return (
+        <div className="overflow-hidden rounded-lg border bg-muted/30">
+          <img src={activity.file} alt={activity.name} className="h-full w-full object-contain" />
+        </div>
+      )
+    }
+
+    if (activity.activity_type === 'file' && activity.file) {
+      return (
+        <div className="flex flex-col gap-2 rounded-lg border bg-muted/50 p-4 text-sm">
+          <p className="font-medium">Baixe o arquivo para consultar antes de responder:</p>
+          <div>
+            <Button asChild variant="outline">
+              <a href={activity.file} target="_blank" rel="noreferrer">
+                Abrir arquivo
+              </a>
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
+    if (activity.activity_type === 'video_youtube' && youtubeLink) {
+      const embedUrl = getYoutubeEmbedUrl(youtubeLink)
+
+      return (
+        <div className="overflow-hidden rounded-lg border">
+          <div className="aspect-video">
+            <iframe
+              src={embedUrl}
+              className="h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )
+    }
+
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto max-w-[1400px]">
@@ -399,7 +497,7 @@ export default function ActivitiesPage() {
               <div className="flex h-full min-h-[420px] items-center justify-center text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
-            ) : activeActivity ? (
+              ) : activeActivity ? (
               <div className="space-y-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -431,6 +529,8 @@ export default function ActivitiesPage() {
                     </Badge>
                   )}
                 </div>
+
+                {renderActivityMedia(activeActivity)}
 
                 <div className="space-y-2">
                   <p className="text-sm font-medium">{activeActivity.statement}</p>
