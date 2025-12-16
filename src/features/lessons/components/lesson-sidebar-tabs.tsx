@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,13 +13,9 @@ import {
   PlayCircle,
   CheckCircle2,
   Circle,
-  ChevronRight,
-  ClipboardList,
-  Calendar,
-  TrendingUp
+  ChevronRight
 } from 'lucide-react'
 import { LessonProgress } from '@/src/features/dashboard/hooks/useEventProgress'
-import { useDailyActivities } from '@/src/features/dashboard/hooks/useDailyActivities'
 import { cn } from '@/lib/utils'
 
 
@@ -27,13 +23,11 @@ interface LessonSidebarTabsProps {
   lessons: LessonProgress[]
   currentLessonId: number | null
   supportMaterialUrl?: string
-  courseId?: string
   onCollapsedChange?: (collapsed: boolean) => void
   onSelectLesson?: (lessonId: number) => void
-  onOpenActivity?: (activityId: number) => void
 }
 
-type TabValue = 'conteudo' | 'material' | 'atividades'
+type TabValue = 'conteudo' | 'material'
 
 // Interface para módulo agrupado
 interface ModuleGroup {
@@ -242,149 +236,10 @@ function ModuleItem({
   )
 }
 
-// Componente de lista de atividades no sidebar
-function ActivitiesSidebarContent({ courseId }: { courseId: string | undefined }) {
-  const { activities, isLoading } = useDailyActivities(courseId ? parseInt(courseId) : null)
-
-  const stats = useMemo(() => {
-    const completed = activities.filter(a => a.is_done).length
-    const correct = activities.filter(a => a.is_done && a.is_correct).length
-    const total = activities.length
-    return { completed, correct, total }
-  }, [activities])
-
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="animate-pulse space-y-2">
-            <div className="h-4 bg-muted rounded w-3/4" />
-            <div className="h-3 bg-muted rounded w-1/2" />
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  if (!courseId || activities.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="p-4 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 mb-4">
-          <ClipboardList className="h-8 w-8 text-primary/50" />
-        </div>
-        <p className="text-sm font-medium text-muted-foreground mb-1">
-          Nenhuma atividade disponível
-        </p>
-        <p className="text-xs text-muted-foreground/70">
-          As atividades aparecerão aqui quando estiverem disponíveis
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Estatísticas */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/30">
-          <div className="text-xl font-bold text-blue-700 dark:text-blue-400">{stats.total}</div>
-          <div className="text-[10px] text-blue-600/70 dark:text-blue-400/70 font-medium">Total</div>
-        </div>
-        <div className="p-3 rounded-lg bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border border-green-200/50 dark:border-green-800/30">
-          <div className="text-xl font-bold text-green-700 dark:text-green-400">{stats.correct}</div>
-          <div className="text-[10px] text-green-600/70 dark:text-green-400/70 font-medium">Acertos</div>
-        </div>
-        <div className="p-3 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/30">
-          <div className="text-xl font-bold text-purple-700 dark:text-purple-400">
-            {stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0}%
-          </div>
-          <div className="text-[10px] text-purple-600/70 dark:text-purple-400/70 font-medium">Taxa</div>
-        </div>
-      </div>
-
-      {/* Lista de atividades */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 px-1 mb-2">
-          <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Suas Atividades
-          </h4>
-        </div>
-        {activities.slice(0, 10).map((activity) => (
-          <div
-            key={activity.id}
-            className={cn(
-              "p-3 rounded-lg border transition-all cursor-pointer group",
-              "hover:shadow-sm hover:scale-[1.01]",
-              activity.is_done
-                ? activity.is_correct
-                  ? "bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-950/20 border-green-200/50 dark:border-green-800/30"
-                  : "bg-gradient-to-br from-red-50/50 to-transparent dark:from-red-950/20 border-red-200/50 dark:border-red-800/30"
-                : "bg-gradient-to-br from-muted/30 to-transparent border-border/50 hover:border-border"
-            )}
-          >
-            <div className="flex items-start gap-2.5">
-              {/* Status icon */}
-              <div className="flex-shrink-0 mt-0.5">
-                {activity.is_done ? (
-                  activity.is_correct ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
-                  ) : (
-                    <CheckCircle2 className="h-4 w-4 text-red-600 dark:text-red-500" />
-                  )
-                ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
-                )}
-              </div>
-
-              {/* Conteúdo */}
-              <div className="flex-1 min-w-0">
-                <h5 className={cn(
-                  "text-xs font-medium leading-tight mb-1 line-clamp-2",
-                  activity.is_done
-                    ? activity.is_correct
-                      ? "text-green-900 dark:text-green-100"
-                      : "text-red-900 dark:text-red-100"
-                    : "text-foreground group-hover:text-foreground transition-colors"
-                )}>
-                  {activity.name}
-                </h5>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>{activity.available_on}</span>
-                  {activity.is_done && (
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        "text-[9px] px-1.5 py-0 h-4 ml-auto",
-                        activity.is_correct
-                          ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
-                          : "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
-                      )}
-                    >
-                      {activity.is_correct ? '✓ Acertou' : '✗ Errou'}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-        {activities.length > 10 && (
-          <p className="text-xs text-center text-muted-foreground py-2">
-            E mais {activities.length - 10} atividades...
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export function LessonSidebarTabs({
   lessons,
   currentLessonId,
   supportMaterialUrl,
-  courseId,
   onCollapsedChange,
   onSelectLesson,
 }: LessonSidebarTabsProps) {
@@ -424,13 +279,6 @@ export function LessonSidebarTabs({
       icon: MonitorPlay,
       disabled: false,
       gradient: 'from-blue-500 to-blue-600',
-    },
-    {
-      value: 'atividades' as TabValue,
-      label: 'Atividades',
-      icon: ClipboardList,
-      disabled: false,
-      gradient: 'from-purple-500 to-purple-600',
     },
     {
       value: 'material' as TabValue,
@@ -501,7 +349,6 @@ export function LessonSidebarTabs({
         <div className="flex items-center justify-between px-4 py-3">
           <h3 className="text-lg font-bold text-foreground tracking-tight">
             {activeTab === 'conteudo' && 'Conteúdo do Curso'}
-            {activeTab === 'atividades' && 'Atividades Diárias'}
             {activeTab === 'material' && 'Material de Apoio'}
           </h3>
           <Button
@@ -562,11 +409,6 @@ export function LessonSidebarTabs({
               />
             ))}
           </div>
-        )}
-
-        {/* Tab: Atividades */}
-        {activeTab === 'atividades' && (
-          <ActivitiesSidebarContent courseId={courseId} />
         )}
 
         {/* Tab: Material de Apoio */}

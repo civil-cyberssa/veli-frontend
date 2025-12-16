@@ -426,7 +426,6 @@ export default function LessonPage() {
                     lessons={eventProgress}
                     currentLessonId={selectedLessonId}
                     supportMaterialUrl={lesson?.support_material_url}
-                    courseId={courseId}
                     onCollapsedChange={setSidebarCollapsed}
                     onSelectLesson={setSelectedLessonId}
                   />
