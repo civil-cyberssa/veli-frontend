@@ -1,456 +1,406 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Card } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import {
+  Calendar,
   CheckCircle2,
-  Circle,
   Clock,
+  Loader2,
   Lock,
+  TrendingUp,
+  XCircle,
 } from 'lucide-react'
-import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
-import { useDailyActivities } from '@/src/features/dashboard/hooks/useDailyActivities'
-import { useSubmitActivityAnswer } from '@/src/features/dashboard/hooks/useSubmitActivityAnswer'
-import type { DailyActivity } from '@/src/features/dashboard/hooks/useDailyActivities'
 import { cn } from '@/lib/utils'
+import {
+  useDailyActivities,
+  useDailyActivity,
+  useDailyActivitiesSummary,
+  useTodayDailyActivity,
+  type DailyActivity,
+} from '@/src/features/dashboard/hooks/useDailyActivities'
+import { useSubmitActivityAnswer } from '@/src/features/dashboard/hooks/useSubmitActivityAnswer'
+
+const COURSE_ID = 2
 
 type AnswerOption = 'a' | 'b' | 'c' | 'd'
 
-const categoryColors = {
-  culture: {
-    bg: 'bg-purple-50 dark:bg-purple-950/20',
-    border: 'border-purple-200 dark:border-purple-800/30',
-    text: 'text-purple-700 dark:text-purple-400',
-    dot: 'bg-purple-500',
-  },
-  sport: {
-    bg: 'bg-green-50 dark:bg-green-950/20',
-    border: 'border-green-200 dark:border-green-800/30',
-    text: 'text-green-700 dark:text-green-400',
-    dot: 'bg-green-500',
-  },
-  education: {
-    bg: 'bg-blue-50 dark:bg-blue-950/20',
-    border: 'border-blue-200 dark:border-blue-800/30',
-    text: 'text-blue-700 dark:text-blue-400',
-    dot: 'bg-blue-500',
-  },
-  other: {
-    bg: 'bg-gray-50 dark:bg-gray-950/20',
-    border: 'border-gray-200 dark:border-gray-800/30',
-    text: 'text-gray-700 dark:text-gray-400',
-    dot: 'bg-gray-500',
-  },
-}
-
-const categoryLabels = {
-  culture: 'Cultura',
-  sport: 'Esporte',
-  education: 'Educação',
-  other: 'Geral',
-}
-
 export default function ActivitiesPage() {
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null)
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState<AnswerOption | null>(null)
 
-  const { data: subscriptions, loading: isLoadingSubscriptions } = useSubscriptions()
-  const { activities, isLoading, mutate } = useDailyActivities(selectedCourseId)
+  const { activities: monthActivities, isLoading: isLoadingMonth, mutate: mutateMonth } =
+    useDailyActivities(COURSE_ID)
+  const { summary, isLoading: isLoadingSummary } = useDailyActivitiesSummary(COURSE_ID)
+  const { activity: todayActivity, isLoading: isLoadingToday, mutate: mutateToday } =
+    useTodayDailyActivity(COURSE_ID)
+  const {
+    activity: selectedActivity,
+    isLoading: isLoadingSelected,
+    mutate: mutateSelectedActivity,
+  } = useDailyActivity(COURSE_ID, selectedActivityId)
   const { submitAnswer, isSubmitting } = useSubmitActivityAnswer()
 
-  // Encontrar a atividade pendente mais recente (Quiz do dia)
-  const todayActivity = useMemo(() => {
-    return activities.find(a => !a.is_done) || activities[0] || null
-  }, [activities])
+  const activeActivity = selectedActivityId ? selectedActivity : todayActivity
+  const isLoadingActive = selectedActivityId ? isLoadingSelected : isLoadingToday
 
-  // Últimas atividades concluídas (para histórico)
-  const recentActivities = useMemo(() => {
-    return activities
+  useEffect(() => {
+    if (activeActivity?.user_answer) {
+      setSelectedAnswer(activeActivity.user_answer)
+    } else {
+      setSelectedAnswer(null)
+    }
+  }, [activeActivity?.id, activeActivity?.user_answer])
+
+  const correctCount = useMemo(() => {
+    if (summary?.correct_answers !== undefined) return summary.correct_answers
+    return monthActivities.filter((activity) => activity.is_done && activity.is_correct).length
+  }, [monthActivities, summary?.correct_answers])
+
+  const incorrectCount = useMemo(() => {
+    if (summary?.incorrect_answers !== undefined) return summary.incorrect_answers
+    return monthActivities.filter((activity) => activity.is_done && activity.is_correct === false).length
+  }, [monthActivities, summary?.incorrect_answers])
+
+  const totalActivities = summary?.total_activities ?? monthActivities.length
+  const completedActivities = summary?.completed_activities ??
+    monthActivities.filter((activity) => activity.is_done).length
+
+  const completionRate = totalActivities > 0
+    ? Math.round((completedActivities / totalActivities) * 100)
+    : 0
+  const totalAttempts = correctCount + incorrectCount
+  const accuracyRate = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0
+
+  const completionTrend = useMemo(() => {
+    const today = new Date()
+    return monthActivities
       .slice()
-      .sort((a, b) => new Date(b.available_on).getTime() - new Date(a.available_on).getTime())
-      .slice(0, 3)
-  }, [activities])
+      .sort((a, b) => new Date(a.available_on).getTime() - new Date(b.available_on).getTime())
+      .map((activity) => {
+        const activityDate = new Date(activity.available_on)
+        const value = activity.is_done ? 100 : activityDate > today ? 10 : 40
+        return {
+          id: activity.id,
+          day: activityDate.getDate(),
+          value,
+          isToday: activityDate.toDateString() === today.toDateString(),
+        }
+      })
+  }, [monthActivities])
 
-  const stats = useMemo(() => {
-    const total = activities.length
-    const completed = activities.filter(a => a.is_done).length
-    const correct = activities.filter(a => a.is_done && a.is_correct).length
-    const totalAttempts = activities.filter(a => a.is_done).length
-
-    return {
-      total,
-      completed,
-      correct,
-      totalAttempts,
-      pending: total - completed
-    }
-  }, [activities])
-
-  // Calcular quantas questões foram respondidas no quiz atual
-  const currentQuizProgress = useMemo(() => {
-    if (!todayActivity) return { current: 0, total: 1, percentage: 0 }
-
-    // Por enquanto, cada atividade tem 1 pergunta
-    // Se tiver múltiplas perguntas por atividade, ajustar aqui
-    const totalQuestions = 4 // Simulando 4 perguntas como na imagem
-    const answeredQuestions = todayActivity.is_done ? totalQuestions : 1
-
-    return {
-      current: answeredQuestions,
-      total: totalQuestions,
-      percentage: Math.round((answeredQuestions / totalQuestions) * 100)
-    }
-  }, [todayActivity])
-
-  const handleSkip = () => {
-    // Encontrar próxima atividade pendente
-    const nextPending = activities.find((a, idx) =>
-      !a.is_done && a.id !== todayActivity?.id
-    )
-    if (nextPending) {
-      mutate()
-    }
+  const handleSelectActivity = (activity: DailyActivity) => {
+    const isFuture = new Date(activity.available_on) > new Date()
+    if (isFuture) return
+    setSelectedActivityId(activity.id)
   }
 
   const handleSubmit = async () => {
-    if (!selectedAnswer || !todayActivity || !selectedCourseId) return
+    if (!selectedAnswer || !activeActivity) return
 
     try {
-      await submitAnswer(selectedCourseId, todayActivity.id, selectedAnswer)
-      await mutate()
-      setSelectedAnswer(null)
+      await submitAnswer(COURSE_ID, activeActivity.id, selectedAnswer)
+      await Promise.all([mutateMonth(), mutateToday(), mutateSelectedActivity()])
     } catch (error) {
-      console.error('Error submitting answer:', error)
+      console.error(error)
     }
   }
 
-  // Reset quando mudar de curso
-  useMemo(() => {
-    setSelectedAnswer(null)
-  }, [selectedCourseId])
-
-  // Pegar nome do curso selecionado
-  const selectedCourse = subscriptions?.find(s => s.id === selectedCourseId)
-  const currentMonth = new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() +
-                      new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)
-
-  if (!selectedCourseId) {
-    return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="p-12 border-dashed">
-            <div className="text-center space-y-4">
-              <h1 className="text-2xl font-bold">Atividades diárias</h1>
-              <p className="text-muted-foreground mb-6">Acompanhe seu progresso mensal e responda ao quiz do dia.</p>
-
-              <div className="max-w-sm mx-auto">
-                <label className="text-sm font-medium mb-2 block text-left">Rotina de estudos</label>
-                <Select
-                  value={selectedCourseId?.toString() || ''}
-                  onValueChange={(value) => setSelectedCourseId(parseInt(value))}
-                  disabled={isLoadingSubscriptions}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione um curso" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subscriptions?.map((subscription) => (
-                      <SelectItem key={subscription.id} value={subscription.id.toString()}>
-                        {subscription.course_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  const isFutureActivity = activeActivity
+    ? new Date(activeActivity.available_on) > new Date()
+    : false
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto max-w-[1400px]">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">Atividades diárias</h1>
-          <p className="text-sm text-muted-foreground">
-            {selectedCourse?.course_name} - {currentMonth}
-          </p>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Atividades diárias</h1>
+            <p className="text-sm text-muted-foreground">
+              Visualize o resumo mensal, responda o quiz do dia e revise outras atividades.
+            </p>
+          </div>
+          {selectedActivityId && (
+            <Button variant="outline" onClick={() => setSelectedActivityId(null)}>
+              Voltar para atividade do dia
+            </Button>
+          )}
         </div>
 
-        {isLoading ? (
-          <div className="grid gap-6 lg:grid-cols-[300px_1fr_320px]">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-6 animate-pulse">
-                <div className="space-y-4">
-                  <div className="h-4 bg-muted rounded w-3/4" />
-                  <div className="h-20 bg-muted rounded" />
-                  <div className="h-20 bg-muted rounded" />
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[300px_1fr_320px]">
-            {/* Coluna 1: Resumo do mês */}
+        <div className="grid gap-6 lg:grid-cols-[360px_1fr_340px]">
+          {/* Resumo do mês */}
+          <Card className="p-5 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold">Resumo do mês</h2>
+                <p className="text-xs text-muted-foreground">Baseado nos dados da API de resumo</p>
+              </div>
+              {isLoadingSummary && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Atividades concluídas</span>
+                <span className="font-semibold">{completedActivities} / {totalActivities}</span>
+              </div>
+              <Progress value={completionRate} className="h-2" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Progresso mensal</span>
+                <span>{completionRate}%</span>
+              </div>
+            </div>
+
             <div className="space-y-4">
-              <Card className="p-5">
-                <h2 className="font-semibold mb-1">Resumo do mês</h2>
-                <p className="text-xs text-muted-foreground mb-4">
-                  {currentMonth} - {selectedCourse?.course_name}
-                </p>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Taxa de acerto</p>
+                  <p className="text-2xl font-semibold">{accuracyRate}%</p>
+                </div>
+                <Badge variant="secondary" className="gap-1 text-xs">
+                  <TrendingUp className="h-3 w-3" />
+                  Streak: {summary?.streak ?? 0}
+                </Badge>
+              </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between items-baseline mb-1">
-                      <span className="text-sm text-muted-foreground">Atividades feitas</span>
-                      <span className="text-xl font-bold">{stats.completed}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">de {stats.total} dias</p>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-muted-foreground">Certas</p>
+                  <p className="text-lg font-semibold text-green-600">{correctCount}</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-muted-foreground">Erradas</p>
+                  <p className="text-lg font-semibold text-red-600">{incorrectCount}</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-muted-foreground">Pendentes</p>
+                  <p className="text-lg font-semibold">{Math.max(totalActivities - completedActivities, 0)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold">Gráfico diário</p>
+                <span className="text-[11px] text-muted-foreground">Concluído vs. disponível</span>
+              </div>
+              <div className="flex items-end gap-1 h-28 rounded-lg border bg-muted/30 p-3">
+                {completionTrend.map((item) => (
+                  <div key={item.id} className="flex-1 min-w-[8px]">
+                    <div
+                      className={cn(
+                        'w-full rounded-full bg-primary/60',
+                        item.value === 10 && 'bg-muted-foreground/40',
+                        item.value === 40 && 'bg-amber-400/70'
+                      )}
+                      style={{ height: `${Math.max(item.value * 0.6, 8)}px` }}
+                    />
+                    <p
+                      className={cn(
+                        'mt-1 text-[10px] text-center text-muted-foreground',
+                        item.isToday && 'text-primary font-semibold'
+                      )}
+                    >
+                      {String(item.day).padStart(2, '0')}
+                    </p>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between items-baseline mb-1">
-                      <span className="text-sm text-muted-foreground">Questões certas</span>
-                      <span className="text-xl font-bold">{stats.correct}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">de {stats.totalAttempts} tentativas</p>
+                ))}
+                {completionTrend.length === 0 && (
+                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                    Sem dados do mês
                   </div>
+                )}
+              </div>
+            </div>
+          </Card>
 
+          {/* Quiz do dia / atividade selecionada */}
+          <Card className="p-6">
+            {isLoadingActive ? (
+              <div className="flex h-full min-h-[420px] items-center justify-center text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : activeActivity ? (
+              <div className="space-y-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <div className="flex justify-between items-baseline mb-1">
-                      <span className="text-sm text-muted-foreground">Atividades no mês</span>
-                      <span className="text-xl font-bold">{stats.total}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">1 por dia</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Disponível em {activeActivity.available_on}
+                    </p>
+                    <h2 className="text-lg font-semibold">
+                      {selectedActivityId ? 'Atividade selecionada' : 'Quiz do dia'}
+                    </h2>
+                  </div>
+                  {activeActivity.is_done && (
+                    <Badge variant={activeActivity.is_correct ? 'default' : 'destructive'}>
+                      {activeActivity.is_correct ? 'Respondida corretamente' : 'Respondida incorretamente'}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{activeActivity.statement}</p>
+                  <div className="space-y-2">
+                    {(['a', 'b', 'c', 'd'] as AnswerOption[]).map((option) => {
+                      const answerText = activeActivity[`answer_${option}`]
+                      const isSelected = selectedAnswer === option
+                      const isUserAnswer = activeActivity.user_answer === option
+                      const isDisabled = activeActivity.is_done || isSubmitting || isFutureActivity
+
+                      return (
+                        <button
+                          key={option}
+                          onClick={() => !isDisabled && setSelectedAnswer(option)}
+                          disabled={isDisabled}
+                          className={cn(
+                            'w-full p-3 text-left rounded-lg border transition-all text-sm',
+                            'hover:border-primary/50 hover:bg-muted/30 disabled:cursor-not-allowed',
+                            isSelected && !activeActivity.is_done && 'border-primary bg-primary/5',
+                            isUserAnswer && activeActivity.is_done && activeActivity.is_correct &&
+                              'border-green-500 bg-green-50 dark:bg-green-950/20',
+                            isUserAnswer && activeActivity.is_done && activeActivity.is_correct === false &&
+                              'border-red-500 bg-red-50 dark:bg-red-950/20'
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{option.toUpperCase()}</span>
+                            <span className="flex-1">{answerText}</span>
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
-              </Card>
 
-              {/* Últimas atividades */}
-              <Card className="p-5">
-                <h3 className="font-semibold mb-3">Últimas atividades</h3>
-                <div className="space-y-2">
-                  {recentActivities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                <div className="space-y-3 pt-2">
+                  {activeActivity.is_done && (
+                    <div className={cn(
+                      'flex items-center gap-2 text-sm rounded-lg border p-3',
+                      activeActivity.is_correct ? 'border-green-500/40 bg-green-50/50 dark:bg-green-950/20' :
+                        'border-red-500/40 bg-red-50/50 dark:bg-red-950/20'
+                    )}>
+                      {activeActivity.is_correct ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-600" />
+                      )}
+                      <span>
+                        {activeActivity.is_correct
+                          ? 'Você já respondeu corretamente esta atividade.'
+                          : 'Você respondeu esta atividade, mas errou a questão.'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Progresso</span>
+                    <span>{activeActivity.is_done ? '100%' : selectedAnswer ? '50%' : '0%'}</span>
+                  </div>
+                  <Progress value={activeActivity.is_done ? 100 : selectedAnswer ? 50 : 15} className="h-2" />
+
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => mutateToday()}
+                      disabled={isSubmitting || isLoadingToday}
                     >
-                      <div className="mt-0.5">
+                      Atualizar
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={!selectedAnswer || isSubmitting || activeActivity.is_done || isFutureActivity}
+                    >
+                      {isSubmitting ? 'Enviando...' : 'Responder'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[420px] flex-col items-center justify-center space-y-3 text-center text-muted-foreground">
+                <CheckCircle2 className="h-10 w-10" />
+                <p>Nenhuma atividade disponível para hoje.</p>
+              </div>
+            )}
+          </Card>
+
+          {/* Lista de atividades do mês */}
+          <Card className="p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold">Atividades do mês</h2>
+                <p className="text-xs text-muted-foreground">Carregadas da rota /month/</p>
+              </div>
+              {isLoadingMonth && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+            </div>
+
+            <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
+              {monthActivities.map((activity) => {
+                const date = new Date(activity.available_on)
+                const day = date.getDate()
+                const today = new Date()
+                const isToday = date.toDateString() === today.toDateString()
+                const isFuture = date > today
+
+                return (
+                  <button
+                    key={activity.id}
+                    onClick={() => handleSelectActivity(activity)}
+                    disabled={isFuture}
+                    className={cn(
+                      'w-full text-left p-3 rounded-lg border transition-colors',
+                      selectedActivityId === activity.id && 'border-primary bg-primary/5',
+                      activity.is_done && 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800',
+                      !activity.is_done && !isFuture && 'border-border hover:bg-muted/30',
+                      isFuture && 'bg-muted/30 border-muted text-muted-foreground',
+                      isToday && !activity.is_done && 'border-primary'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'flex items-center justify-center w-10 h-10 rounded-lg font-semibold text-sm shrink-0',
+                          activity.is_done && 'bg-green-600 text-white',
+                          !activity.is_done && !isFuture && 'bg-muted text-foreground',
+                          isFuture && 'bg-muted/50 text-muted-foreground'
+                        )}
+                      >
                         {activity.is_done ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <CheckCircle2 className="h-5 w-5" />
+                        ) : isFuture ? (
+                          <Lock className="h-4 w-4" />
+                        ) : isToday ? (
+                          <Clock className="h-4 w-4" />
                         ) : (
-                          <Circle className="h-4 w-4 text-muted-foreground" />
+                          String(day).padStart(2, '0')
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{activity.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-xs text-muted-foreground">{activity.available_on}</p>
-                          <span className="text-xs">•</span>
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              "text-xs h-5",
-                              activity.is_done ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400" : ""
-                            )}
-                          >
-                            {activity.is_done ? 'Concluída' : 'Pendente'}
-                          </Badge>
-                        </div>
+                        <p className="text-sm font-medium truncate">
+                          {String(day).padStart(2, '0')} {date.toLocaleDateString('pt-BR', { month: 'short' })}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{activity.name}</p>
                       </div>
+                      {activity.is_done && (
+                        <Badge variant="secondary" className={cn('text-[10px]', activity.is_correct ? 'text-green-700' : 'text-red-600')}>
+                          {activity.is_correct ? 'Acertou' : 'Errou'}
+                        </Badge>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
+                  </button>
+                )
+              })}
 
-            {/* Coluna 2: Quiz do dia */}
-            <Card className="p-6">
-              {todayActivity ? (
-                <div className="space-y-5">
-                  <div>
-                    <h2 className="text-lg font-semibold mb-1">Quiz do dia</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Atividade diária de {todayActivity.available_on}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Pergunta {currentQuizProgress.current} de {currentQuizProgress.total}
-                    </span>
-                    <span className="text-muted-foreground">
-                      Tema: {categoryLabels[todayActivity.category]}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-base mb-4">{todayActivity.statement}</h3>
-
-                    <div className="space-y-2">
-                      {(['a', 'b', 'c', 'd'] as AnswerOption[]).map((option) => {
-                        const answerText = todayActivity[`answer_${option}`]
-                        const isSelected = selectedAnswer === option
-                        const isUserAnswer = todayActivity.user_answer === option
-                        const isDisabled = todayActivity.is_done
-
-                        return (
-                          <button
-                            key={option}
-                            onClick={() => !isDisabled && setSelectedAnswer(option)}
-                            disabled={isDisabled}
-                            className={cn(
-                              "w-full p-3 text-left rounded-lg border transition-all text-sm",
-                              "hover:border-primary/50 hover:bg-muted/30",
-                              "disabled:cursor-not-allowed",
-                              isSelected && !isDisabled && "border-primary bg-primary/5",
-                              isUserAnswer && todayActivity.is_done && todayActivity.is_correct &&
-                                "border-green-500 bg-green-50 dark:bg-green-950/20",
-                              isUserAnswer && todayActivity.is_done && !todayActivity.is_correct &&
-                                "border-red-500 bg-red-50 dark:bg-red-950/20",
-                              !isSelected && !isUserAnswer && "border-border"
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">{option.toUpperCase()}</span>
-                              <span className="flex-1">{answerText}</span>
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 pt-2">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-muted-foreground">Progresso:</span>
-                        <span className="font-medium">{currentQuizProgress.percentage}% concluído</span>
-                      </div>
-                      <Progress value={currentQuizProgress.percentage} className="h-2" />
-                    </div>
-
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        variant="outline"
-                        onClick={handleSkip}
-                        disabled={todayActivity.is_done}
-                      >
-                        Pular
-                      </Button>
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={!selectedAnswer || isSubmitting || todayActivity.is_done}
-                      >
-                        {isSubmitting ? 'Enviando...' : 'Responder'}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-600" />
-                  <h3 className="font-semibold mb-2">Parabéns!</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Você completou todas as atividades disponíveis!
-                  </p>
+              {!isLoadingMonth && monthActivities.length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                  Nenhuma atividade disponível para este mês.
                 </div>
               )}
-            </Card>
-
-            {/* Coluna 3: Atividades de janeiro */}
-            <Card className="p-5">
-              <div className="mb-4">
-                <h2 className="font-semibold mb-1">Atividades de {currentMonth.toLowerCase()}</h2>
-                <p className="text-xs text-muted-foreground">Uma atividade por dia</p>
-              </div>
-
-              <div className="space-y-2 mb-4 max-h-[600px] overflow-y-auto">
-                {activities.map((activity) => {
-                  const date = new Date(activity.available_on)
-                  const day = date.getDate()
-                  const today = new Date()
-                  const isToday = date.toDateString() === today.toDateString()
-                  const isFuture = date > today
-
-                  return (
-                    <div
-                      key={activity.id}
-                      className={cn(
-                        "p-3 rounded-lg border transition-colors",
-                        activity.is_done && "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
-                        !activity.is_done && !isFuture && "border-border hover:bg-muted/30",
-                        isFuture && "bg-muted/30 border-muted",
-                        isToday && !activity.is_done && "border-primary bg-primary/5"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex items-center justify-center w-8 h-8 rounded-lg font-semibold text-sm shrink-0",
-                            activity.is_done && "bg-green-600 text-white",
-                            !activity.is_done && !isFuture && "bg-muted text-foreground",
-                            isFuture && "bg-muted/50 text-muted-foreground"
-                          )}
-                        >
-                          {activity.is_done ? (
-                            <CheckCircle2 className="h-5 w-5" />
-                          ) : isFuture ? (
-                            <Lock className="h-4 w-4" />
-                          ) : isToday ? (
-                            <Clock className="h-4 w-4" />
-                          ) : (
-                            String(day).padStart(2, '0')
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "text-sm font-medium truncate",
-                            isFuture && "text-muted-foreground"
-                          )}>
-                            {String(day).padStart(2, '0')} {date.toLocaleDateString('pt-BR', { month: 'short' })}
-                          </p>
-                          <p className={cn(
-                            "text-xs truncate",
-                            activity.is_done && "text-green-700 dark:text-green-400",
-                            !activity.is_done && !isFuture && "text-muted-foreground",
-                            isFuture && "text-muted-foreground/70"
-                          )}>
-                            {activity.name}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Legenda */}
-              <div className="pt-3 border-t space-y-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="w-3 h-3 rounded bg-green-600" />
-                  <span>Feita</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>Dia de hoje</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Lock className="w-3 h-3" />
-                  <span>Não disponível ainda</span>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   )

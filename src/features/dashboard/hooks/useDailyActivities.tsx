@@ -23,8 +23,14 @@ export interface DailyActivity {
   is_done: boolean
 }
 
-export interface DailyActivityDetail extends DailyActivity {
-  // O detalhe pode ter informações adicionais no futuro
+export type DailyActivityDetail = DailyActivity
+
+export interface DailyActivitiesSummary {
+  total_activities?: number
+  completed_activities?: number
+  correct_answers?: number
+  incorrect_answers?: number
+  streak?: number
 }
 
 // Hook para listar atividades de um curso
@@ -62,6 +68,86 @@ export function useDailyActivities(courseId: number | null) {
 
   return {
     activities: data || [],
+    isLoading,
+    isError: error,
+    mutate,
+  }
+}
+
+export function useDailyActivitiesSummary(courseId: number | null) {
+  const { data: session } = useSession()
+  const token = session?.access
+
+  const fetcher = async (url: string): Promise<DailyActivitiesSummary> => {
+    if (!token) throw new Error('Não autenticado')
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar resumo de atividades: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    courseId && token ? `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${courseId}/summary/` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    summary: data,
+    isLoading,
+    isError: error,
+    mutate,
+  }
+}
+
+export function useTodayDailyActivity(courseId: number | null) {
+  const { data: session } = useSession()
+  const token = session?.access
+
+  const fetcher = async (url: string): Promise<DailyActivityDetail> => {
+    if (!token) throw new Error('Não autenticado')
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar atividade de hoje: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    courseId && token ? `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${courseId}/today/` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  )
+
+  return {
+    activity: data,
     isLoading,
     isError: error,
     mutate,
