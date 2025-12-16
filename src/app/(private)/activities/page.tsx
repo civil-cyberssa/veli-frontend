@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,17 +31,15 @@ import {
   type DailyActivity,
 } from '@/src/features/dashboard/hooks/useDailyActivities'
 import { useSubmitActivityAnswer } from '@/src/features/dashboard/hooks/useSubmitActivityAnswer'
-
-const COURSE_OPTIONS = [
-  { id: 1, label: 'Curso 1' },
-  { id: 2, label: 'Curso 2' },
-  { id: 3, label: 'Curso 3' },
-]
+import { useSubscriptions } from '@/src/features/dashboard/hooks/useSubscription'
 
 type AnswerOption = 'a' | 'b' | 'c' | 'd'
 
 export default function ActivitiesPage() {
-  const [courseId, setCourseId] = useState<number>(2)
+  const { data: subscriptions, loading: isLoadingSubscriptions, selectedSubscription, setSelectedSubscription } =
+    useSubscriptions()
+
+  const [courseId, setCourseId] = useState<number | null>(null)
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState<AnswerOption | null>(null)
 
@@ -58,6 +57,16 @@ export default function ActivitiesPage() {
 
   const activeActivity = selectedActivityId ? selectedActivity : todayActivity
   const isLoadingActive = selectedActivityId ? isLoadingSelected : isLoadingToday
+
+  useEffect(() => {
+    if (!selectedSubscription && subscriptions?.length) {
+      setSelectedSubscription(subscriptions[0])
+    }
+  }, [selectedSubscription, setSelectedSubscription, subscriptions])
+
+  useEffect(() => {
+    setCourseId(selectedSubscription?.id ?? null)
+  }, [selectedSubscription?.id])
 
   useEffect(() => {
     setSelectedActivityId(null)
@@ -162,18 +171,59 @@ export default function ActivitiesPage() {
           <div className="flex items-end gap-3">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Curso</p>
-              <Select value={String(courseId)} onValueChange={(value) => setCourseId(Number(value))}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Selecione o curso" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COURSE_OPTIONS.map((course) => (
-                    <SelectItem key={course.id} value={String(course.id)}>
-                      {course.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isLoadingSubscriptions ? (
+                <div className="flex h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando cursos...
+                </div>
+              ) : subscriptions && subscriptions.length > 1 ? (
+                <Select
+                  value={selectedSubscription?.id ? String(selectedSubscription.id) : undefined}
+                  onValueChange={(value) => {
+                    const subscription = subscriptions.find((item) => item.id === Number(value))
+                    if (subscription) {
+                      setSelectedSubscription(subscription)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[240px]">
+                    <SelectValue placeholder="Selecione o curso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subscriptions.map((subscription) => (
+                      <SelectItem key={subscription.id} value={String(subscription.id)}>
+                        <div className="flex items-center gap-2">
+                          <Image
+                            src={subscription.course_icon}
+                            alt={subscription.course_name}
+                            width={18}
+                            height={18}
+                            className="h-4 w-4 rounded-full object-cover"
+                          />
+                          <span>{subscription.course_name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : selectedSubscription ? (
+                <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2">
+                  <Image
+                    src={selectedSubscription.course_icon}
+                    alt={selectedSubscription.course_name}
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-muted-foreground">Curso selecionado</span>
+                    <span className="text-sm font-medium leading-tight">{selectedSubscription.course_name}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-10 items-center rounded-lg border px-3 text-sm text-muted-foreground">
+                  Nenhum curso disponível
+                </div>
+              )}
             </div>
             {selectedActivityId && (
               <Button variant="outline" onClick={() => setSelectedActivityId(null)}>
