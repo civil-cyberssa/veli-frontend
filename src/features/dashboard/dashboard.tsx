@@ -162,33 +162,26 @@ export default function Dashboard() {
               <div className="flex items-center justify-center py-8">
                 <p className="text-sm text-destructive">Erro ao carregar próxima aula</p>
               </div>
-            ) : nextLiveClass && nextLiveClass.event ? (
+            ) : nextLiveClass ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   <span>
-                    {formatNextClassDateTime(nextLiveClass.event.scheduled_datetime).date} às {formatNextClassDateTime(nextLiveClass.event.scheduled_datetime).time}
+                    {formatNextClassDateTime(nextLiveClass.scheduled_datetime).date} às {formatNextClassDateTime(nextLiveClass.scheduled_datetime).time}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
                   <p className="text-sm font-medium mb-1">Módulo</p>
-                  <p className="text-sm text-muted-foreground mb-3">{nextLiveClass.event.module.name}</p>
+                  <p className="text-sm text-muted-foreground mb-3">{nextLiveClass.module_name}</p>
 
                   <p className="text-sm font-medium mb-1">Aula</p>
-                  <p className="text-base">{nextLiveClass.event.lesson.name}</p>
-
-                  {nextLiveClass.event.class_notice && (
-                    <>
-                      <p className="text-sm font-medium mb-1 mt-3">Aviso</p>
-                      <p className="text-sm text-muted-foreground">{nextLiveClass.event.class_notice}</p>
-                    </>
-                  )}
+                  <p className="text-base">{nextLiveClass.lesson_name}</p>
                 </div>
 
-                {nextLiveClass.event.classroom_link && (
+                {nextLiveClass.classroom_link && (
                   <Button className="w-full sm:w-auto" asChild>
-                    <a href={nextLiveClass.event.classroom_link} target="_blank" rel="noopener noreferrer">
+                    <a href={nextLiveClass.classroom_link} target="_blank" rel="noopener noreferrer">
                       Entrar na aula
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </a>

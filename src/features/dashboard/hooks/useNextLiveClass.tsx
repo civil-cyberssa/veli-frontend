@@ -3,40 +3,16 @@
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
 
-export interface EventLesson {
-  id: number
-  name: string
-  lesson_type: string
-  order: number
-}
-
-export interface EventModule {
-  id: number
-  name: string
-  order: number
-}
-
-export interface LiveEvent {
-  id: number
-  scheduled_datetime: string
-  classroom_link: string
-  event_recorded_link: string
-  class_notice: string
-  lesson_content_url: string | null
-  lesson: EventLesson
-  module: EventModule
-}
-
 export interface NextLiveClass {
-  event: LiveEvent
-  progress_id: number
-  watched: boolean
-  watched_at: string | null
-  rating: number | null
-  comment: string
-  teatcher_answer: string
-  exercise_score: number
-  exercise_id: number | null
+  event_id: number
+  lesson_id: number
+  lesson_name: string
+  module_id: number
+  module_name: string
+  scheduled_datetime: string
+  student_class_id: number
+  course_name: string
+  classroom_link: string
 }
 
 export interface UseNextLiveClassReturn {
