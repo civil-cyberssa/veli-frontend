@@ -4,13 +4,12 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import {
-  AudioWaveform,
-  SquareTerminal,
+  LayoutDashboard,
   PlayCircle,
+  ClipboardList,
   MonitorPlay,
   FileText,
   Palette,
-  ClipboardList,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -28,55 +27,45 @@ const baseNavData = {
   teams: [
     {
       name: "Área do Aluno",
-      logo: AudioWaveform,
+      logo: LayoutDashboard,
       plan: "Portal do Estudante",
     },
   ],
-  navMain: [
+  sections: [
     {
-      title: "Área do Aluno",
-      url: "#",
-      icon: SquareTerminal,
+      label: "PRINCIPAL",
       items: [
         {
           title: "Dashboard",
           url: "/home",
+          icon: LayoutDashboard,
+        },
+        {
+          title: "Atividades Diárias",
+          url: "/activities",
+          icon: ClipboardList,
         },
       ],
     },
     {
-      title: "Aulas",
-      url: "#",
-      icon: PlayCircle,
+      label: "CONTEÚDO",
       items: [
         {
           title: "Minhas Aulas",
           url: "/home",
+          icon: PlayCircle,
         },
-      ],
-    },
-    {
-      title: "Atividades",
-      url: "#",
-      icon: ClipboardList,
-      items: [
         {
-          title: "Atividades Diárias",
-          url: "/activities",
+          title: "Material de Apoio",
+          url: "#",
+          icon: FileText,
+        },
+        {
+          title: "Vídeos",
+          url: "#",
+          icon: MonitorPlay,
         },
       ],
-    },
-    {
-      title: "Conteúdo",
-      url: "#",
-      icon: MonitorPlay,
-      items: [],
-    },
-    {
-      title: "Material",
-      url: "#",
-      icon: FileText,
-      items: [],
     },
   ],
 }
@@ -87,36 +76,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const role = (session?.role as string | undefined)?.toLowerCase()
 
   // Calcula dinamicamente o isActive baseado na rota atual
-  const navMainWithActiveState = React.useMemo(() => {
-    const items = [...baseNavData.navMain]
+  const navSectionsWithActiveState = React.useMemo(() => {
+    const sections = [...baseNavData.sections]
 
     if (role === "manager") {
-      items.push({
-        title: "Administração",
-        url: "#",
-        icon: Palette,
+      sections.push({
+        label: "ADMINISTRAÇÃO",
         items: [
           {
             title: "Cores da marca",
             url: "/admin",
+            icon: Palette,
           },
         ],
       })
     }
 
-    return items.map((item) => {
-      // Verifica se algum sub-item está ativo
-      const hasActiveSubItem = item.items?.some((subItem) => pathname === subItem.url)
-
-      return {
+    return sections.map((section) => ({
+      ...section,
+      items: section.items.map((item) => ({
         ...item,
-        isActive: hasActiveSubItem || false,
-        items: item.items?.map((subItem) => ({
-          ...subItem,
-          isActive: pathname === subItem.url,
-        })),
-      }
-    })
+        isActive: pathname === item.url,
+      })),
+    }))
   }, [pathname, role])
 
   return (
@@ -125,7 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={baseNavData.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMainWithActiveState} />
+        <NavMain sections={navSectionsWithActiveState} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

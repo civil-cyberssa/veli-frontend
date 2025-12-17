@@ -1,75 +1,70 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import { type LucideIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
 export function NavMain({
-  items,
+  sections,
 }: {
-  items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-    isActive?: boolean
-    items?: {
+  sections: {
+    label: string
+    items: {
       title: string
       url: string
+      icon?: LucideIcon
       isActive?: boolean
     }[]
   }[]
 }) {
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
-      <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+    <>
+      {sections.map((section) => (
+        <SidebarGroup key={section.label} className="py-0">
+          <SidebarGroupLabel className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/50">
+            {section.label}
+          </SidebarGroupLabel>
+          <SidebarMenu className="space-y-0.5 px-2">
+            {section.items.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={item.isActive}
+                  className={cn(
+                    "group/item h-10 px-3 hover:bg-sidebar-accent/80 transition-all duration-200",
+                    item.isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm",
+                    !item.isActive && "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                  )}
+                >
+                  <Link href={item.url} className="flex items-center gap-3 w-full">
+                    {item.icon && (
+                      <div className={cn(
+                        "flex items-center justify-center transition-transform duration-200",
+                        "group-hover/item:scale-110"
+                      )}>
+                        <item.icon className={cn(
+                          "w-[18px] h-[18px]",
+                          item.isActive && "text-primary"
+                        )} />
+                      </div>
+                    )}
+                    <span className="font-medium text-[13px]">{item.title}</span>
+                  </Link>
                 </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild isActive={subItem.isActive}>
-                        <Link href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+      ))}
+    </>
   )
 }

@@ -85,15 +85,15 @@ export default function Layout({children}: {children: React.ReactNode}) {
     <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 z-10">
+          <div className="flex items-center gap-3 px-6 w-full">
+            <SidebarTrigger className="-ml-1 hover:bg-accent hover:text-accent-foreground transition-colors rounded-md" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="mr-1 h-5 bg-border/60"
             />
             <Breadcrumb>
-              <BreadcrumbList>
+              <BreadcrumbList className="text-sm">
                 {breadcrumb.map((item, index) => {
                   const isLast = index === breadcrumb.length - 1
 
@@ -101,12 +101,21 @@ export default function Layout({children}: {children: React.ReactNode}) {
                     <Fragment key={`${item.label}-${index}`}>
                       <BreadcrumbItem>
                         {isLast || !item.href ? (
-                          <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                          <BreadcrumbPage className="font-medium text-foreground">
+                            {item.label}
+                          </BreadcrumbPage>
                         ) : (
-                          <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                          <BreadcrumbLink
+                            href={item.href}
+                            className="transition-colors hover:text-foreground text-muted-foreground"
+                          >
+                            {item.label}
+                          </BreadcrumbLink>
                         )}
                       </BreadcrumbItem>
-                      {index < breadcrumb.length - 1 && <BreadcrumbSeparator />}
+                      {index < breadcrumb.length - 1 && (
+                        <BreadcrumbSeparator className="text-muted-foreground/50" />
+                      )}
                     </Fragment>
                   )
                 })}
@@ -114,7 +123,7 @@ export default function Layout({children}: {children: React.ReactNode}) {
             </Breadcrumb>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 px-6">
+        <div className="flex flex-1 flex-col gap-6 px-6 py-6">
           {children}
         </div>
       </SidebarInset>

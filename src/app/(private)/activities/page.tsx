@@ -508,6 +508,11 @@ export default function ActivitiesPage() {
                     <h2 className="text-lg font-semibold">
                       {selectedActivityId ? 'Atividade selecionada' : 'Quiz do dia'}
                     </h2>
+                    {activeActivity.category && (
+                      <Badge variant="secondary" className="text-[10px] mt-1">
+                        {activeActivity.category}
+                      </Badge>
+                    )}
                   </div>
                   {activeActivity.is_done && (
                     <Badge

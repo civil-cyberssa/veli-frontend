@@ -4,15 +4,15 @@ import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
 
 export interface NextLiveClass {
-  id: number
-  title: string
-  description: string
-  start_time: string
-  end_time: string
-  meeting_url: string
-  status: string
-  teacher_name?: string
-  topic?: string
+  event_id: number
+  lesson_id: number
+  lesson_name: string
+  module_id: number
+  module_name: string
+  scheduled_datetime: string
+  student_class_id: number
+  course_name: string
+  classroom_link: string
 }
 
 export interface UseNextLiveClassReturn {
@@ -39,7 +39,14 @@ const fetcher = async (url: string, token: string) => {
     throw new Error(`Erro ao buscar próxima aula ao vivo: ${response.status}`)
   }
 
-  return response.json()
+  const data = await response.json()
+
+  // Se retornar um array, pega o primeiro item (próxima aula)
+  if (Array.isArray(data) && data.length > 0) {
+    return data[0]
+  }
+
+  return data
 }
 
 export function useNextLiveClass(subscriptionId: number | null): UseNextLiveClassReturn {
