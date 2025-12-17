@@ -1,7 +1,8 @@
 "use client"
 
 import Image from "next/image"
-import { Calendar, Clock, ArrowRight } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Calendar, Clock, ArrowRight, CheckCircle2, FileText, XCircle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,8 +18,10 @@ import {
 } from "@/components/ui/select"
 import { useSubscriptions } from "./hooks/useSubscription"
 import { useNextLiveClass } from "./hooks/useNextLiveClass"
+import { useTodayDailyActivity } from "./hooks/useDailyActivities"
 
 export default function Dashboard() {
+  const router = useRouter()
   const {
     data: subscriptions,
     loading,
@@ -32,6 +35,11 @@ export default function Dashboard() {
     loading: loadingNextClass,
     error: errorNextClass
   } = useNextLiveClass(selectedSubscription?.id || null)
+
+  const {
+    activity: todayActivity,
+    isLoading: loadingTodayActivity
+  } = useTodayDailyActivity(selectedSubscription?.id || null)
 
   const formatNextClassDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
@@ -135,8 +143,10 @@ export default function Dashboard() {
       {/* Welcome Card */}
       <WelcomeCard />
 
-      {/* Próxima Aula ao Vivo */}
-      <Card className="border-border/50 overflow-hidden">
+      {/* Grid com Próxima Aula ao Vivo e Atividades */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Próxima Aula ao Vivo */}
+        <Card className="border-border/50 overflow-hidden">
           <div className="p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -196,6 +206,85 @@ export default function Dashboard() {
             )}
           </div>
         </Card>
+
+        {/* Atividade do Dia */}
+        <Card
+          className="border-border/50 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => router.push('/activities')}
+        >
+          <div className="p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-semibold">Atividade do Dia</h3>
+                </div>
+              </div>
+              {todayActivity && (
+                <Badge
+                  variant={todayActivity.is_done ? "default" : "secondary"}
+                  className="text-xs"
+                >
+                  {todayActivity.is_done ? "Concluída" : "Pendente"}
+                </Badge>
+              )}
+            </div>
+
+            {loadingTodayActivity ? (
+              <div className="flex items-center justify-center py-8">
+                <LogoPulseLoader label="Carregando atividade..." size={56} />
+              </div>
+            ) : todayActivity ? (
+              <div className="space-y-3">
+                <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                  <p className="text-sm font-medium mb-1">Atividade</p>
+                  <p className="text-base mb-3">{todayActivity.name}</p>
+
+                  {todayActivity.category && (
+                    <>
+                      <p className="text-sm font-medium mb-1">Categoria</p>
+                      <Badge variant="secondary" className="text-xs">
+                        {todayActivity.category}
+                      </Badge>
+                    </>
+                  )}
+                </div>
+
+                {todayActivity.is_done ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    {todayActivity.is_correct ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <span className="text-green-600">Você acertou!</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <span className="text-red-600">Você errou</span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <Button className="w-full sm:w-auto" onClick={(e) => {
+                    e.stopPropagation()
+                    router.push('/activities')
+                  }}>
+                    Responder agora
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 space-y-2">
+                <FileText className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Nenhuma atividade disponível hoje</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   )
 }
