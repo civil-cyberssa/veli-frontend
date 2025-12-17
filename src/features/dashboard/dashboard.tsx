@@ -162,7 +162,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-center py-8">
                 <p className="text-sm text-destructive">Erro ao carregar próxima aula</p>
               </div>
-            ) : nextLiveClass ? (
+            ) : nextLiveClass && nextLiveClass.event ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
