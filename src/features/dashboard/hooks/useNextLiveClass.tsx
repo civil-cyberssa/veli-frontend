@@ -3,16 +3,40 @@
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
 
-export interface NextLiveClass {
+export interface EventLesson {
   id: number
-  title: string
-  description: string
-  start_time: string
-  end_time: string
-  meeting_url: string
-  status: string
-  teacher_name?: string
-  topic?: string
+  name: string
+  lesson_type: string
+  order: number
+}
+
+export interface EventModule {
+  id: number
+  name: string
+  order: number
+}
+
+export interface LiveEvent {
+  id: number
+  scheduled_datetime: string
+  classroom_link: string
+  event_recorded_link: string
+  class_notice: string
+  lesson_content_url: string | null
+  lesson: EventLesson
+  module: EventModule
+}
+
+export interface NextLiveClass {
+  event: LiveEvent
+  progress_id: number
+  watched: boolean
+  watched_at: string | null
+  rating: number | null
+  comment: string
+  teatcher_answer: string
+  exercise_score: number
+  exercise_id: number | null
 }
 
 export interface UseNextLiveClassReturn {
@@ -39,7 +63,14 @@ const fetcher = async (url: string, token: string) => {
     throw new Error(`Erro ao buscar próxima aula ao vivo: ${response.status}`)
   }
 
-  return response.json()
+  const data = await response.json()
+
+  // Se retornar um array, pega o primeiro item (próxima aula)
+  if (Array.isArray(data) && data.length > 0) {
+    return data[0]
+  }
+
+  return data
 }
 
 export function useNextLiveClass(subscriptionId: number | null): UseNextLiveClassReturn {

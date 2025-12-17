@@ -167,30 +167,28 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   <span>
-                    {formatNextClassDateTime(nextLiveClass.start_time).date} às {formatNextClassDateTime(nextLiveClass.start_time).time}
+                    {formatNextClassDateTime(nextLiveClass.event.scheduled_datetime).date} às {formatNextClassDateTime(nextLiveClass.event.scheduled_datetime).time}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
-                  <p className="text-sm font-medium mb-1">Título</p>
-                  <p className="text-base">{nextLiveClass.title}</p>
-                  {nextLiveClass.description && (
+                  <p className="text-sm font-medium mb-1">Módulo</p>
+                  <p className="text-sm text-muted-foreground mb-3">{nextLiveClass.event.module.name}</p>
+
+                  <p className="text-sm font-medium mb-1">Aula</p>
+                  <p className="text-base">{nextLiveClass.event.lesson.name}</p>
+
+                  {nextLiveClass.event.class_notice && (
                     <>
-                      <p className="text-sm font-medium mb-1 mt-3">Descrição</p>
-                      <p className="text-sm text-muted-foreground">{nextLiveClass.description}</p>
-                    </>
-                  )}
-                  {nextLiveClass.teacher_name && (
-                    <>
-                      <p className="text-sm font-medium mb-1 mt-3">Professor(a)</p>
-                      <p className="text-sm text-muted-foreground">{nextLiveClass.teacher_name}</p>
+                      <p className="text-sm font-medium mb-1 mt-3">Aviso</p>
+                      <p className="text-sm text-muted-foreground">{nextLiveClass.event.class_notice}</p>
                     </>
                   )}
                 </div>
 
-                {nextLiveClass.meeting_url && (
+                {nextLiveClass.event.classroom_link && (
                   <Button className="w-full sm:w-auto" asChild>
-                    <a href={nextLiveClass.meeting_url} target="_blank" rel="noopener noreferrer">
+                    <a href={nextLiveClass.event.classroom_link} target="_blank" rel="noopener noreferrer">
                       Entrar na aula
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </a>
