@@ -337,7 +337,6 @@ export default function Dashboard() {
                       router.push('/activities')
                     }}
                   >
-                    <Sparkles className="mr-2 h-4 w-4 group-hover/btn:rotate-12 transition-transform" />
                     Responder agora
                     <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
                   </Button>
