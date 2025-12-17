@@ -11,7 +11,7 @@ export interface DailyActivity {
   name: string
   statement: string
   category: 'culture' | 'sport' | 'education' | 'other'
-  activity_type: 'text' | 'video' | 'audio' | 'image'
+  activity_type: 'text' | 'video' | 'audio' | 'image' | 'file' | 'video_youtube'
   answer_a: string
   answer_b: string
   answer_c: string
@@ -21,6 +21,9 @@ export interface DailyActivity {
   user_answer?: 'a' | 'b' | 'c' | 'd'
   is_correct?: boolean
   is_done: boolean
+  file?: string | null
+  video_yt_link?: string | null
+  atvideo_yt_link?: string | null
 }
 
 export type DailyActivityDetail = DailyActivity
