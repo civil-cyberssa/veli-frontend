@@ -52,7 +52,7 @@ const baseNavData = {
       items: [
         {
           title: "Minhas Aulas",
-          url: "/home",
+          url: "/minhas-aulas",
           icon: PlayCircle,
         },
         {
@@ -96,7 +96,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ...section,
       items: section.items.map((item) => ({
         ...item,
-        isActive: pathname === item.url,
+        isActive: pathname === item.url || (item.url !== "#" && pathname.startsWith(item.url)),
       })),
     }))
   }, [pathname, role])
