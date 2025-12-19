@@ -19,24 +19,6 @@ export default function MinhasAulasPage() {
   const { data: subscriptions, loading, error } = useSubscriptions()
   const { data: allLiveClasses, isLoading: loadingAllClasses, error: allClassesError } = useAllLiveClasses(subscriptions)
 
-  const sortedAllLiveClasses = allLiveClasses
-    ? [...allLiveClasses].sort((a, b) => {
-        const now = new Date()
-        const aDate = new Date(a.event.scheduled_datetime)
-        const bDate = new Date(b.event.scheduled_datetime)
-
-        const aUpcoming = aDate > now
-        const bUpcoming = bDate > now
-
-        if (aUpcoming && bUpcoming) return aDate.getTime() - bDate.getTime()
-        if (!aUpcoming && !bUpcoming) return bDate.getTime() - aDate.getTime()
-        return aUpcoming ? -1 : 1
-      })
-    : []
-  const upcomingClasses = sortedAllLiveClasses.filter((liveClass) => isUpcoming(liveClass.event.scheduled_datetime))
-  const pastClasses = sortedAllLiveClasses.filter((liveClass) => !isUpcoming(liveClass.event.scheduled_datetime))
-  const nextClass = upcomingClasses[0]
-
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
     const formattedDate = date.toLocaleDateString('pt-BR', {
@@ -70,6 +52,24 @@ export default function MinhasAulasPage() {
     if (diffHours > 0) return `Em ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`
     return 'Em breve'
   }
+
+  const sortedAllLiveClasses = allLiveClasses
+    ? [...allLiveClasses].sort((a, b) => {
+        const now = new Date()
+        const aDate = new Date(a.event.scheduled_datetime)
+        const bDate = new Date(b.event.scheduled_datetime)
+
+        const aUpcoming = aDate > now
+        const bUpcoming = bDate > now
+
+        if (aUpcoming && bUpcoming) return aDate.getTime() - bDate.getTime()
+        if (!aUpcoming && !bUpcoming) return bDate.getTime() - aDate.getTime()
+        return aUpcoming ? -1 : 1
+      })
+    : []
+  const upcomingClasses = sortedAllLiveClasses.filter((liveClass) => isUpcoming(liveClass.event.scheduled_datetime))
+  const pastClasses = sortedAllLiveClasses.filter((liveClass) => !isUpcoming(liveClass.event.scheduled_datetime))
+  const nextClass = upcomingClasses[0]
 
   const renderClassCard = (liveClass: (typeof sortedAllLiveClasses)[number], isNextClass: boolean = false) => {
     const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
