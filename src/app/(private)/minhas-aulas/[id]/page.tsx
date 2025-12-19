@@ -1,12 +1,18 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { Calendar, Clock, Video, CheckCircle2, Star, ArrowLeft, PlayCircle, FileText, Award, ChevronRight, ExternalLink, ChevronLeft } from "lucide-react"
+import { Calendar, Clock, Video, CheckCircle2, Star, ArrowLeft, PlayCircle, FileText, Award, ChevronRight, ExternalLink } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
-import { useState, useRef } from "react"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 import { cn } from "@/lib/utils"
 import { useLiveClassList } from "@/src/features/dashboard/hooks/useLiveClassList"
@@ -33,9 +39,6 @@ export default function LiveClassDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const courseId = params.id as string
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(true)
 
   const { data: liveClasses, isLoading: loadingLiveClasses, error: errorLiveClasses } = useLiveClassList(courseId)
   const { data: latestClass, isLoading: loadingLatestClass, error: errorLatestClass } = useLatestClass(courseId)
@@ -92,28 +95,6 @@ export default function LiveClassDetailsPage() {
     // One upcoming, one past: upcoming comes first
     return aIsUpcoming ? -1 : 1
   }) : []
-
-  const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
-      setCanScrollLeft(scrollLeft > 0)
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10)
-    }
-  }
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = 400
-      const newScrollLeft = direction === 'left'
-        ? scrollContainerRef.current.scrollLeft - scrollAmount
-        : scrollContainerRef.current.scrollLeft + scrollAmount
-
-      scrollContainerRef.current.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth'
-      })
-    }
-  }
 
   if (loadingLiveClasses || loadingLatestClass) {
     return (
@@ -177,52 +158,32 @@ export default function LiveClassDetailsPage() {
             <h2 className="text-lg font-semibold">
               {sortedClasses.length} {sortedClasses.length === 1 ? 'Aula' : 'Aulas'}
             </h2>
-
-            {/* Scroll Buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scroll('left')}
-                disabled={!canScrollLeft}
-                className="h-9 w-9 p-0"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scroll('right')}
-                disabled={!canScrollRight}
-                className="h-9 w-9 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
 
           {/* Carousel Container */}
-          <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          <Carousel
+            opts={{
+              align: "start",
+              loop: false,
+            }}
+            className="w-full"
           >
-            {sortedClasses.map((liveClass, index) => {
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {sortedClasses.map((liveClass, index) => {
               const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
               const past = isPast(liveClass.event.scheduled_datetime)
               const isNext = index === 0 && upcoming
               const flag = getCountryFlag(liveClass.event.module.name)
 
               return (
-                <Card
-                  key={liveClass.event.id}
-                  className={cn(
-                    "flex-shrink-0 w-[340px] border transition-all snap-start",
-                    upcoming && "hover:border-primary/50",
-                    isNext && "ring-2 ring-primary ring-offset-2"
-                  )}
-                >
+                <CarouselItem key={liveClass.event.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                  <Card
+                    className={cn(
+                      "border transition-all",
+                      upcoming && "hover:border-primary/50",
+                      isNext && "ring-2 ring-primary ring-offset-2"
+                    )}
+                  >
                   <div className="p-6 space-y-5">
                     {/* Flag and Quick Action */}
                     <div className="flex items-start justify-between">
@@ -359,30 +320,15 @@ export default function LiveClassDetailsPage() {
                     )}
                   </div>
                 </Card>
+                </CarouselItem>
               )
             })}
-          </div>
-
-          {/* Carousel Indicator Dots */}
-          <div className="flex justify-center gap-2">
-            {sortedClasses.map((_, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  index === 0 ? "w-6 bg-primary" : "w-1.5 bg-muted"
-                )}
-              />
-            ))}
-          </div>
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex" />
+            <CarouselNext className="hidden md:flex" />
+          </Carousel>
         </div>
       )}
-
-      <style jsx global>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   )
 }
