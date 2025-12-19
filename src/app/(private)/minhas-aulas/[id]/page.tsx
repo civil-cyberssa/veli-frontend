@@ -289,7 +289,7 @@ export default function LiveClassDetailsPage() {
   }
 
   return (
-    <div className=" max-h-svh pb-16 space-y-6 px-4 sm:px-6">
+    <div className="max-h-svh pb-16 space-y-6 px-4 sm:px-6">
       {/* Compact Header */}
       <div className="space-y-4">
         <Button
