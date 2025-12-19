@@ -158,7 +158,10 @@ export default function Dashboard() {
       {/* Grid com Próxima Aula ao Vivo e Atividades */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Próxima Aula ao Vivo */}
-        <Card className="group relative overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/30">
+        <Card
+          className="group relative overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:border-primary/30 hover:scale-[1.01]"
+          onClick={() => selectedSubscription && router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)}
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
           <div className="relative p-6 space-y-5">
@@ -215,17 +218,30 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {nextLiveClass.classroom_link && (
-                  <Button className="w-full h-11 shadow-sm hover:shadow-md transition-all" asChild>
-                    <a href={nextLiveClass.classroom_link} target="_blank" rel="noopener noreferrer">
-                      Entrar na aula
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </a>
+                <div className="flex flex-col gap-2">
+                  {nextLiveClass.classroom_link && (
+                    <Button className="w-full h-11 shadow-sm hover:shadow-md transition-all" asChild>
+                      <a href={nextLiveClass.classroom_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                        Entrar na aula
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 shadow-sm hover:shadow-md transition-all group/btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      selectedSubscription && router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                    }}
+                  >
+                    Ver todas as aulas
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
                   </Button>
-                )}
+                </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <div className="p-4 rounded-full bg-muted/50">
                   <Calendar className="h-8 w-8 text-muted-foreground/40" />
                 </div>
@@ -233,6 +249,17 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-muted-foreground">Nenhuma aula ao vivo agendada</p>
                   <p className="text-xs text-muted-foreground/70">Verifique novamente em breve</p>
                 </div>
+                <Button
+                  variant="outline"
+                  className="h-11 shadow-sm hover:shadow-md transition-all group/btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    selectedSubscription && router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                  }}
+                >
+                  Ver todas as aulas
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                </Button>
               </div>
             )}
           </div>
