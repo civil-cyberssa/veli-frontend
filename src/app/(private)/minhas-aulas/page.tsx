@@ -7,13 +7,9 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
-<<<<<<< HEAD
-import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription"
 
-=======
-import { useSubscriptions } from "@/features/dashboard/hooks/useSubscription"
 import { cn } from "@/lib/utils"
->>>>>>> 1d6a205a2eac5f3b62f8fa0b2913a9aa77e9e982
+import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription"
 
 export default function MinhasAulasPage() {
   const router = useRouter()
