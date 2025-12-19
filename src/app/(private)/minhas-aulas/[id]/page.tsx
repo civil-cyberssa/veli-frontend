@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { Calendar, Clock, Video, CheckCircle2, Star, ArrowLeft, PlayCircle, FileText, Award, ChevronRight } from "lucide-react"
+import { Calendar, Clock, Video, CheckCircle2, Star, ArrowLeft, PlayCircle, FileText, Award, ChevronRight, ExternalLink } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -110,7 +110,7 @@ export default function LiveClassDetailsPage() {
               </div>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               {liveClasses.map((liveClass) => {
                 const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
                 const past = isPast(liveClass.event.scheduled_datetime)
@@ -123,9 +123,9 @@ export default function LiveClassDetailsPage() {
                       upcoming && "hover:border-primary/50"
                     )}
                   >
-                    <div className="p-6">
+                    <div className="p-5">
                       <div className="space-y-4">
-                        {/* Module Info */}
+                        {/* Module Info with Live Link Icon */}
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0",
@@ -144,82 +144,119 @@ export default function LiveClassDetailsPage() {
                             </p>
                             <p className="text-sm font-medium truncate">{liveClass.event.module.name}</p>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {upcoming && (
-                              <Badge variant="outline" className="gap-1.5 whitespace-nowrap">
-                                <Clock className="h-3.5 w-3.5" />
-                                Em breve
-                              </Badge>
-                            )}
-                            {past && liveClass.watched && (
-                              <Badge variant="secondary" className="gap-1.5 whitespace-nowrap">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                Assistida
-                              </Badge>
-                            )}
+                          {upcoming && liveClass.event.classroom_link && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-9 w-9 p-0 hover:bg-primary/10"
+                              asChild
+                            >
+                              <a
+                                href={liveClass.event.classroom_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Entrar na aula ao vivo"
+                              >
+                                <ExternalLink className="h-4 w-4 text-primary" />
+                              </a>
+                            </Button>
+                          )}
+                          {past && liveClass.event.event_recorded_link && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-9 w-9 p-0 hover:bg-primary/10"
+                              asChild
+                            >
+                              <a
+                                href={liveClass.event.event_recorded_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Ver gravação"
+                              >
+                                <Video className="h-4 w-4 text-primary" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Lesson Title */}
+                        <div className="space-y-2">
+                          <p className="font-semibold leading-tight line-clamp-2">
+                            {liveClass.event.lesson.name}
+                          </p>
+                        </div>
+
+                        {/* Date and Time */}
+                        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span className="text-xs">
+                              {formatDateTime(liveClass.event.scheduled_datetime).date}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-xs">
+                              {formatDateTime(liveClass.event.scheduled_datetime).time}
+                            </span>
                           </div>
                         </div>
 
-                        {/* Lesson Title and Date */}
-                        <div className="space-y-3">
-                          <p className="text-lg font-semibold leading-tight">
-                            {liveClass.event.lesson.name}
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              <span>
-                                {formatDateTime(liveClass.event.scheduled_datetime).date}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              <span>
-                                {formatDateTime(liveClass.event.scheduled_datetime).time}
-                              </span>
-                            </div>
-                            {liveClass.rating && (
-                              <Badge variant="outline" className="gap-1.5">
-                                <Star className="h-3.5 w-3.5 fill-current" />
-                                {liveClass.rating}/5
-                              </Badge>
-                            )}
-                            {liveClass.exercise_id && (
-                              <Badge variant="outline" className="gap-1.5">
-                                <Award className="h-3.5 w-3.5" />
-                                {liveClass.exercise_score}pts
-                              </Badge>
-                            )}
-                          </div>
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-2">
+                          {upcoming && (
+                            <Badge variant="outline" className="gap-1.5 text-xs">
+                              <Clock className="h-3 w-3" />
+                              Em breve
+                            </Badge>
+                          )}
+                          {past && liveClass.watched && (
+                            <Badge variant="secondary" className="gap-1.5 text-xs">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Assistida
+                            </Badge>
+                          )}
+                          {liveClass.rating && (
+                            <Badge variant="outline" className="gap-1.5 text-xs">
+                              <Star className="h-3 w-3 fill-current" />
+                              {liveClass.rating}/5
+                            </Badge>
+                          )}
+                          {liveClass.exercise_id && (
+                            <Badge variant="outline" className="gap-1.5 text-xs">
+                              <Award className="h-3 w-3" />
+                              {liveClass.exercise_score}pts
+                            </Badge>
+                          )}
                         </div>
 
                         {/* Notice */}
                         {liveClass.event.class_notice && (
                           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50">
                             <FileText className="h-4 w-4 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-amber-900 dark:text-amber-100">
+                            <p className="text-xs text-amber-900 dark:text-amber-100 line-clamp-2">
                               {liveClass.event.class_notice}
                             </p>
                           </div>
                         )}
 
-                        {/* Action Buttons */}
+                        {/* Action Button */}
                         {((upcoming && liveClass.event.classroom_link) || (past && liveClass.event.event_recorded_link)) && (
-                          <div className="pt-2">
+                          <div className="pt-1">
                             {upcoming && liveClass.event.classroom_link && (
-                              <Button className="w-full gap-2" asChild>
+                              <Button className="w-full gap-2 text-sm h-9" asChild>
                                 <a href={liveClass.event.classroom_link} target="_blank" rel="noopener noreferrer">
-                                  Entrar na aula ao vivo
+                                  Entrar na aula
                                   <ChevronRight className="h-4 w-4" />
                                 </a>
                               </Button>
                             )}
 
                             {past && liveClass.event.event_recorded_link && (
-                              <Button variant="outline" className="w-full gap-2" asChild>
+                              <Button variant="outline" className="w-full gap-2 text-sm h-9" asChild>
                                 <a href={liveClass.event.event_recorded_link} target="_blank" rel="noopener noreferrer">
-                                  Assistir gravação
+                                  Ver gravação
                                   <Video className="h-4 w-4" />
                                 </a>
                               </Button>
@@ -262,13 +299,13 @@ export default function LiveClassDetailsPage() {
 
                   <div className="flex flex-wrap gap-2">
                     {latestClass.watched && (
-                      <Badge variant="secondary" className="gap-1.5">
+                      <Badge variant="secondary" className="gap-1.5 text-xs">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Concluída
                       </Badge>
                     )}
                     {latestClass.rating && (
-                      <Badge variant="outline" className="gap-1.5">
+                      <Badge variant="outline" className="gap-1.5 text-xs">
                         <Star className="h-3.5 w-3.5 fill-current" />
                         {latestClass.rating}/5
                       </Badge>
