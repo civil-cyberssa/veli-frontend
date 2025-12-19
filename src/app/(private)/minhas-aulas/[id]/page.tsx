@@ -6,9 +6,10 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
-import { useLiveClassList } from "@/features/dashboard/hooks/useLiveClassList"
-import { useLatestClass } from "@/features/dashboard/hooks/useLatestClass"
+
 import { cn } from "@/lib/utils"
+import { useLiveClassList } from "@/src/features/dashboard/hooks/useLiveClassList"
+import { useLatestClass } from "@/src/features/dashboard/hooks/useLatestClass"
 
 export default function LiveClassDetailsPage() {
   const params = useParams()
