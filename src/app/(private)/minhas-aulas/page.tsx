@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 
 import { cn } from "@/lib/utils"
 import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription"
@@ -361,11 +362,23 @@ export default function MinhasAulasPage() {
                       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Outras aulas
                       </h3>
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {upcomingClasses.slice(1).map((liveClass) => (
-                          <div key={`${liveClass.event.id}-${liveClass.student_class_id}`}>{renderClassCard(liveClass)}</div>
-                        ))}
-                      </div>
+                      <Carousel opts={{ align: "start", slidesToScroll: 1 }} className="relative">
+                        <CarouselContent>
+                          {upcomingClasses.slice(1).map((liveClass) => (
+                            <CarouselItem
+                              key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                              className="sm:basis-1/2 lg:basis-1/3"
+                            >
+                              {renderClassCard(liveClass)}
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+
+                        <div className="flex items-center justify-end gap-2 mt-3 pr-1">
+                          <CarouselPrevious className="static translate-y-0 h-9 w-9" />
+                          <CarouselNext className="static translate-y-0 h-9 w-9" />
+                        </div>
+                      </Carousel>
                     </div>
                   )}
                 </>
