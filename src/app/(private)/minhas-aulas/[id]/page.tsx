@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { Calendar, Clock, Video, CheckCircle2, Star, ArrowLeft, PlayCircle, FileText, Award, ChevronRight, ExternalLink } from "lucide-react"
+import { Calendar, Clock, Video, CheckCircle2, Star, ArrowLeft, PlayCircle, Award, ChevronRight, ExternalLink, Users, Bell } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { cn } from "@/lib/utils"
 import { useLiveClassList } from "@/src/features/dashboard/hooks/useLiveClassList"
@@ -32,7 +33,23 @@ const getCountryFlag = (courseName: string): string => {
   if (lowerCourseName.includes('chinês') || lowerCourseName.includes('chines') || lowerCourseName.includes('chinese')) return '🇨🇳'
   if (lowerCourseName.includes('coreano') || lowerCourseName.includes('korean')) return '🇰🇷'
 
-  return '🌐' // Default globe emoji for unknown courses
+  return '🌐'
+}
+
+// Calculate time until class
+const getTimeUntilClass = (dateTimeString: string): string => {
+  const classDate = new Date(dateTimeString)
+  const now = new Date()
+  const diffMs = classDate.getTime() - now.getTime()
+  
+  if (diffMs < 0) return ''
+  
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffHours / 24)
+  
+  if (diffDays > 0) return `Em ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`
+  if (diffHours > 0) return `Em ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`
+  return 'Em breve'
 }
 
 export default function LiveClassDetailsPage() {
@@ -62,18 +79,14 @@ export default function LiveClassDetailsPage() {
   }
 
   const isUpcoming = (dateTimeString: string) => {
-    const date = new Date(dateTimeString)
-    const now = new Date()
-    return date > now
+    return new Date(dateTimeString) > new Date()
   }
 
   const isPast = (dateTimeString: string) => {
-    const date = new Date(dateTimeString)
-    const now = new Date()
-    return date < now
+    return new Date(dateTimeString) < new Date()
   }
 
-  // Sort classes: upcoming first (chronological), then past (reverse chronological)
+  // Sort and filter classes
   const sortedClasses = liveClasses ? [...liveClasses].sort((a, b) => {
     const aDate = new Date(a.event.scheduled_datetime)
     const bDate = new Date(b.event.scheduled_datetime)
@@ -82,23 +95,22 @@ export default function LiveClassDetailsPage() {
     const aIsUpcoming = aDate > now
     const bIsUpcoming = bDate > now
 
-    // Both upcoming: sort ascending (soonest first)
-    if (aIsUpcoming && bIsUpcoming) {
-      return aDate.getTime() - bDate.getTime()
-    }
-
-    // Both past: sort descending (most recent first)
-    if (!aIsUpcoming && !bIsUpcoming) {
-      return bDate.getTime() - aDate.getTime()
-    }
-
-    // One upcoming, one past: upcoming comes first
+    if (aIsUpcoming && bIsUpcoming) return aDate.getTime() - bDate.getTime()
+    if (!aIsUpcoming && !bIsUpcoming) return bDate.getTime() - aDate.getTime()
     return aIsUpcoming ? -1 : 1
   }) : []
 
+  const upcomingClasses = sortedClasses.filter(c => isUpcoming(c.event.scheduled_datetime))
+  const pastClasses = sortedClasses.filter(c => isPast(c.event.scheduled_datetime))
+  const nextClass = upcomingClasses[0]
+
+  // Get course name from first class
+  const courseName = liveClasses && liveClasses.length > 0 ? liveClasses[0].event.module.name : ''
+  const courseFlag = getCountryFlag(courseName)
+
   if (loadingLiveClasses || loadingLatestClass) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <LogoPulseLoader label="Carregando aulas ao vivo..." />
       </div>
     )
@@ -106,228 +118,320 @@ export default function LiveClassDetailsPage() {
 
   if (errorLiveClasses) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-sm text-destructive">Erro ao carregar aulas: {errorLiveClasses.message}</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="p-4 rounded-full bg-destructive/10">
+          <Video className="h-8 w-8 text-destructive" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="font-medium text-destructive">Erro ao carregar aulas</p>
+          <p className="text-sm text-muted-foreground">{errorLiveClasses.message}</p>
+        </div>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          Tentar novamente
+        </Button>
       </div>
     )
   }
 
+  const renderClassCard = (liveClass: any, isNextClass: boolean = false) => {
+    const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
+    const past = isPast(liveClass.event.scheduled_datetime)
+    const flag = getCountryFlag(liveClass.event.module.name)
+    const timeUntil = upcoming ? getTimeUntilClass(liveClass.event.scheduled_datetime) : ''
+
+    return (
+      <Card
+        className={cn(
+          "border transition-all hover:shadow-md group overflow-hidden",
+          upcoming && "hover:border-primary/50",
+          isNextClass && "ring-2 ring-primary shadow-lg"
+        )}
+      >
+        <div className="p-5 space-y-4">
+          {/* Compact Header */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="text-3xl leading-none flex-shrink-0">{flag}</div>
+              <div className="flex-1 min-w-0 space-y-0.5">
+                {isNextClass && (
+                  <Badge className="gap-1 text-xs h-5 animate-pulse">
+                    <Bell className="h-2.5 w-2.5" />
+                    Próxima
+                  </Badge>
+                )}
+                {upcoming && !isNextClass && timeUntil && (
+                  <Badge variant="secondary" className="gap-1 text-xs h-5">
+                    <Clock className="h-2.5 w-2.5" />
+                    {timeUntil}
+                  </Badge>
+                )}
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                  Módulo {liveClass.event.module.order}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Action */}
+            {upcoming && liveClass.event.classroom_link && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 hover:bg-primary/10 flex-shrink-0"
+                asChild
+              >
+                <a
+                  href={liveClass.event.classroom_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Entrar na aula"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                </a>
+              </Button>
+            )}
+            {past && liveClass.event.event_recorded_link && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 hover:bg-primary/10 flex-shrink-0"
+                asChild
+              >
+                <a
+                  href={liveClass.event.event_recorded_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Ver gravação"
+                >
+                  <PlayCircle className="h-3.5 w-3.5 text-primary" />
+                </a>
+              </Button>
+            )}
+          </div>
+
+          {/* Lesson Title - More compact */}
+          <div>
+            <h3 className="font-semibold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+              {liveClass.event.lesson.name}
+            </h3>
+          </div>
+
+          {/* Date and Time - Inline and compact */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5 text-primary" />
+              <span className="font-medium">{formatDateTime(liveClass.event.scheduled_datetime).date}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 text-primary" />
+              <span className="font-medium">{formatDateTime(liveClass.event.scheduled_datetime).time}</span>
+            </div>
+          </div>
+
+          {/* Compact Status Badges */}
+          {(liveClass.watched || liveClass.rating || liveClass.exercise_id) && (
+            <div className="flex flex-wrap gap-1.5">
+              {liveClass.watched && (
+                <Badge variant="secondary" className="gap-1 text-[10px] h-5 px-2">
+                  <CheckCircle2 className="h-2.5 w-2.5" />
+                  Assistida
+                </Badge>
+              )}
+              {liveClass.rating && (
+                <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2">
+                  <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                  {liveClass.rating}/5
+                </Badge>
+              )}
+              {liveClass.exercise_id && (
+                <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2">
+                  <Award className="h-2.5 w-2.5 text-primary" />
+                  {liveClass.exercise_score}pts
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Notice - More compact */}
+          {liveClass.event.class_notice && (
+            <div className="p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50">
+              <p className="text-[10px] leading-relaxed text-amber-900 dark:text-amber-100 line-clamp-2">
+                💡 {liveClass.event.class_notice}
+              </p>
+            </div>
+          )}
+
+          {/* Compact Action Button */}
+          {((upcoming && liveClass.event.classroom_link) || (past && liveClass.event.event_recorded_link)) && (
+            <div className="pt-1">
+              {upcoming && liveClass.event.classroom_link && (
+                <Button className="w-full gap-2 h-9 text-sm font-semibold" asChild>
+                  <a href={liveClass.event.classroom_link} target="_blank" rel="noopener noreferrer">
+                    <Video className="h-3.5 w-3.5" />
+                    Entrar na aula
+                    <ChevronRight className="h-3.5 w-3.5 ml-auto" />
+                  </a>
+                </Button>
+              )}
+
+              {past && liveClass.event.event_recorded_link && (
+                <Button variant="outline" className="w-full gap-2 h-9 text-sm font-medium" asChild>
+                  <a href={liveClass.event.event_recorded_link} target="_blank" rel="noopener noreferrer">
+                    <PlayCircle className="h-3.5 w-3.5" />
+                    Assistir gravação
+                  </a>
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+    )
+  }
+
   return (
-    <div className="pb-16 space-y-8">
-      {/* Simple Header */}
-      <div className="space-y-6">
+    <div className=" max-h-svh pb-16 space-y-6 px-4 sm:px-6">
+      {/* Compact Header */}
+      <div className="space-y-4">
         <Button
           variant="ghost"
           size="sm"
-          className="gap-2 text-muted-foreground hover:text-foreground"
+          className="gap-2 text-muted-foreground hover:text-foreground -ml-2 h-8"
           onClick={() => router.push('/minhas-aulas')}
         >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span className="text-sm">Voltar</span>
         </Button>
 
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Aulas ao Vivo
-          </h1>
-          <p className="text-muted-foreground">
-            Próximas aulas e aulas anteriores
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="text-4xl leading-none">{courseFlag}</div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">
+              Aulas ao Vivo
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Participe e assista às gravações
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Carousel Layout */}
+      {/* Empty State */}
       {!sortedClasses || sortedClasses.length === 0 ? (
-        <Card className="border">
-          <div className="p-12 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="p-4 rounded-full bg-muted">
-                <Video className="h-8 w-8 text-muted-foreground" />
+        <Card className="border-dashed">
+          <div className="p-10 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="p-3 rounded-full bg-muted">
+                <Video className="h-6 w-6 text-muted-foreground" />
               </div>
-              <div className="space-y-1">
-                <p className="font-medium">Nenhuma aula ao vivo agendada</p>
-                <p className="text-sm text-muted-foreground">Novas aulas serão adicionadas em breve</p>
+              <div className="space-y-1.5">
+                <p className="font-semibold">Nenhuma aula agendada</p>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Novas aulas serão adicionadas em breve
+                </p>
               </div>
+              <Button variant="outline" size="sm" onClick={() => router.push('/minhas-aulas')}>
+                Ver todas as aulas
+              </Button>
             </div>
           </div>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Carousel Header */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              {sortedClasses.length} {sortedClasses.length === 1 ? 'Aula' : 'Aulas'}
-            </h2>
+        <Tabs defaultValue="upcoming" className="space-y-5">
+          {/* Compact Tabs Header */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <TabsList className="h-9">
+              <TabsTrigger value="upcoming" className="gap-1.5 text-sm">
+                <Clock className="h-3.5 w-3.5" />
+                Próximas ({upcomingClasses.length})
+              </TabsTrigger>
+              <TabsTrigger value="past" className="gap-1.5 text-sm">
+                <PlayCircle className="h-3.5 w-3.5" />
+                Anteriores ({pastClasses.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              <span>{sortedClasses.length} aulas</span>
+            </div>
           </div>
 
-          {/* Carousel Container */}
-          <Carousel
-            opts={{
-              align: "start",
-              loop: false,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {sortedClasses.map((liveClass, index) => {
-              const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
-              const past = isPast(liveClass.event.scheduled_datetime)
-              const isNext = index === 0 && upcoming
-              const flag = getCountryFlag(liveClass.event.module.name)
-
-              return (
-                <CarouselItem key={liveClass.event.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
-                  <Card
-                    className={cn(
-                      "border transition-all",
-                      upcoming && "hover:border-primary/50",
-                      isNext && "ring-2 ring-primary ring-offset-2"
-                    )}
-                  >
-                  <div className="p-6 space-y-5">
-                    {/* Flag and Quick Action */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="text-4xl leading-none">{flag}</div>
-                        <div className="space-y-0.5">
-                          {isNext && (
-                            <Badge className="mb-1">
-                              Próxima aula
-                            </Badge>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            Módulo {liveClass.event.module.order}
-                          </p>
-                          <p className="text-sm font-medium line-clamp-1">
-                            {liveClass.event.module.name}
-                          </p>
-                        </div>
-                      </div>
-
-                      {upcoming && liveClass.event.classroom_link && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-9 w-9 p-0 hover:bg-primary/10 flex-shrink-0"
-                          asChild
-                        >
-                          <a
-                            href={liveClass.event.classroom_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Entrar na aula ao vivo"
-                          >
-                            <ExternalLink className="h-4 w-4 text-primary" />
-                          </a>
-                        </Button>
-                      )}
-                      {past && liveClass.event.event_recorded_link && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-9 w-9 p-0 hover:bg-primary/10 flex-shrink-0"
-                          asChild
-                        >
-                          <a
-                            href={liveClass.event.event_recorded_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Ver gravação"
-                          >
-                            <Video className="h-4 w-4 text-primary" />
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Lesson Title */}
-                    <div className="space-y-2">
-                      <p className="font-semibold text-lg leading-tight line-clamp-2">
-                        {liveClass.event.lesson.name}
+          {/* Upcoming Classes Tab */}
+          <TabsContent value="upcoming" className="space-y-5 mt-0">
+            {upcomingClasses.length === 0 ? (
+              <Card className="border-dashed">
+                <div className="p-8 text-center">
+                  <div className="flex flex-col items-center gap-2.5">
+                    <Clock className="h-7 w-7 text-muted-foreground" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">Nenhuma aula próxima</p>
+                      <p className="text-xs text-muted-foreground">
+                        Confira as gravações disponíveis
                       </p>
                     </div>
-
-                    {/* Date and Time */}
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDateTime(liveClass.event.scheduled_datetime).date}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{formatDateTime(liveClass.event.scheduled_datetime).time}</span>
-                      </div>
-                    </div>
-
-                    {/* Badges */}
-                    <div className="flex flex-wrap gap-2">
-                      {upcoming && !isNext && (
-                        <Badge variant="outline" className="gap-1.5 text-xs">
-                          <Clock className="h-3 w-3" />
-                          Em breve
-                        </Badge>
-                      )}
-                      {past && liveClass.watched && (
-                        <Badge variant="secondary" className="gap-1.5 text-xs">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Assistida
-                        </Badge>
-                      )}
-                      {liveClass.rating && (
-                        <Badge variant="outline" className="gap-1.5 text-xs">
-                          <Star className="h-3 w-3 fill-current" />
-                          {liveClass.rating}/5
-                        </Badge>
-                      )}
-                      {liveClass.exercise_id && (
-                        <Badge variant="outline" className="gap-1.5 text-xs">
-                          <Award className="h-3 w-3" />
-                          {liveClass.exercise_score}pts
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Notice */}
-                    {liveClass.event.class_notice && (
-                      <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50">
-                        <p className="text-xs text-amber-900 dark:text-amber-100 line-clamp-2">
-                          {liveClass.event.class_notice}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Action Button */}
-                    {((upcoming && liveClass.event.classroom_link) || (past && liveClass.event.event_recorded_link)) && (
-                      <div className="pt-2">
-                        {upcoming && liveClass.event.classroom_link && (
-                          <Button className="w-full gap-2 h-10" asChild>
-                            <a href={liveClass.event.classroom_link} target="_blank" rel="noopener noreferrer">
-                              Entrar na aula
-                              <ChevronRight className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
-
-                        {past && liveClass.event.event_recorded_link && (
-                          <Button variant="outline" className="w-full gap-2 h-10" asChild>
-                            <a href={liveClass.event.event_recorded_link} target="_blank" rel="noopener noreferrer">
-                              Ver gravação
-                              <Video className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
-                      </div>
-                    )}
                   </div>
-                </Card>
-                </CarouselItem>
-              )
-            })}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex" />
-            <CarouselNext className="hidden md:flex" />
-          </Carousel>
-        </div>
+                </div>
+              </Card>
+            ) : (
+              <>
+                {/* Next Class Highlight */}
+                {nextClass && (
+                  <div className="space-y-2.5">
+                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Próxima aula
+                    </h2>
+                    <div className="max-w-md">
+                      {renderClassCard(nextClass, true)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other Upcoming Classes */}
+                {upcomingClasses.length > 1 && (
+                  <div className="space-y-3">
+                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Outras aulas
+                    </h2>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {upcomingClasses.slice(1).map((liveClass) => (
+                        <div key={liveClass.event.id}>
+                          {renderClassCard(liveClass)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          {/* Past Classes Tab */}
+          <TabsContent value="past" className="space-y-3 mt-0">
+            {pastClasses.length === 0 ? (
+              <Card className="border-dashed">
+                <div className="p-8 text-center">
+                  <div className="flex flex-col items-center gap-2.5">
+                    <PlayCircle className="h-7 w-7 text-muted-foreground" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">Nenhuma gravação</p>
+                      <p className="text-xs text-muted-foreground">
+                        As gravações aparecerão após as aulas
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {pastClasses.map((liveClass) => (
+                  <div key={liveClass.event.id}>
+                    {renderClassCard(liveClass)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )
