@@ -6,18 +6,11 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { cn } from "@/lib/utils"
 import { useLiveClassList, type LiveClassEvent } from "@/src/features/dashboard/hooks/useLiveClassList"
-import { useLatestClass, type LatestClassEvent } from "@/src/features/dashboard/hooks/useLatestClass"
+import { useLatestClass } from "@/src/features/dashboard/hooks/useLatestClass"
 import { getFlagFromCourseName, getFlagFromLanguageMetadata } from "@/src/utils/languageFlags"
 
 // Calculate time until class
@@ -42,7 +35,7 @@ export default function LiveClassDetailsPage() {
   const courseId = params.id as string
 
   const { data: liveClasses, isLoading: loadingLiveClasses, error: errorLiveClasses } = useLiveClassList(courseId)
-  const { data: latestClass, isLoading: loadingLatestClass, error: errorLatestClass } = useLatestClass(courseId)
+  const { data: latestClass, isLoading: loadingLatestClass } = useLatestClass(courseId)
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
@@ -134,7 +127,7 @@ export default function LiveClassDetailsPage() {
     )
   }
 
-  const renderClassCard = (liveClass: any, isNextClass: boolean = false) => {
+  const renderClassCard = (liveClass: LiveClassEvent, isNextClass: boolean = false) => {
     const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
     const past = isPast(liveClass.event.scheduled_datetime)
     const flag = getFlagFromLanguageMetadata(liveClass.event) || getFlagFromCourseName(liveClass.event.module.name) || '🌐'
