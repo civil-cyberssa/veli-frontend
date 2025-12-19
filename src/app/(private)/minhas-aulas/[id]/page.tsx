@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
 import { cn } from "@/lib/utils"
 import { useLiveClassList, type LiveClassEvent } from "@/src/features/dashboard/hooks/useLiveClassList"
 import { useLatestClass } from "@/src/features/dashboard/hooks/useLatestClass"

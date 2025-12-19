@@ -75,8 +75,6 @@ export default function MinhasAulasPage() {
   const renderClassCard = (liveClass: (typeof sortedAllLiveClasses)[number], isNextClass: boolean = false) => {
     const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
     const past = !upcoming
-    const flag =
-      getFlagFromLanguageMetadata(liveClass.event) || getFlagFromCourseName(liveClass.course.course_name) || '🌐'
     const timeUntil = upcoming ? getTimeUntilClass(liveClass.event.scheduled_datetime) : ''
 
     return (
@@ -88,10 +86,8 @@ export default function MinhasAulasPage() {
         )}
       >
         <div className="p-5 space-y-4">
-          {/* Compact Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <div className="text-3xl leading-none flex-shrink-0">{flag}</div>
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center gap-2 min-w-0">
                   <Image
@@ -275,21 +271,12 @@ export default function MinhasAulasPage() {
 
   return (
     <div className="max-w-7xl mx-auto pb-16 space-y-10">
-      {/* Simple Header */}
-      <div className="space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Minhas Aulas
-        </h1>
-        <p className="text-muted-foreground">
-          Acompanhe todas as aulas ao vivo dos cursos em que você está inscrito
-        </p>
-      </div>
 
       {/* Aggregated Live Classes */}
       <div className="space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold">Aulas ao vivo de todos os cursos</h2>
+            <h2 className="text-2xl font-semibold">Aulas ao vivo de todos os cursos</h2>
             <p className="text-sm text-muted-foreground">Mesmo visual e ações rápidas que você vê nas páginas individuais</p>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
