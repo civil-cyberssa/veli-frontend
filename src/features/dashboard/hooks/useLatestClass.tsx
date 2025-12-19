@@ -3,6 +3,15 @@
 import { useSession } from 'next-auth/react'
 import useSWR, { type KeyedMutator } from 'swr'
 
+interface LanguageDetails {
+  name?: string
+  code?: string
+  short_name?: string
+  flag?: string
+  flag_icon?: string
+  icon?: string
+}
+
 export interface LatestClassEvent {
   event: {
     id: number
@@ -21,7 +30,15 @@ export interface LatestClassEvent {
       id: number
       name: string
       order: number
+      language?: LanguageDetails
+      language_icon?: string
+      language_flag?: string
+      language_code?: string
     }
+    language?: LanguageDetails
+    language_icon?: string
+    language_flag?: string
+    language_code?: string
   }
   progress_id: number
   watched: boolean

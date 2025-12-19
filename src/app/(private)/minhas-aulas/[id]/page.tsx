@@ -6,35 +6,12 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { cn } from "@/lib/utils"
-import { useLiveClassList } from "@/src/features/dashboard/hooks/useLiveClassList"
+import { useLiveClassList, type LiveClassEvent } from "@/src/features/dashboard/hooks/useLiveClassList"
 import { useLatestClass } from "@/src/features/dashboard/hooks/useLatestClass"
-
-// Map course names to country flags
-const getCountryFlag = (courseName: string): string => {
-  const lowerCourseName = courseName.toLowerCase()
-
-  if (lowerCourseName.includes('francês') || lowerCourseName.includes('frances')) return '🇫🇷'
-  if (lowerCourseName.includes('inglês') || lowerCourseName.includes('ingles') || lowerCourseName.includes('english')) return '🇬🇧'
-  if (lowerCourseName.includes('espanhol') || lowerCourseName.includes('spanish')) return '🇪🇸'
-  if (lowerCourseName.includes('alemão') || lowerCourseName.includes('alemao') || lowerCourseName.includes('german')) return '🇩🇪'
-  if (lowerCourseName.includes('italiano') || lowerCourseName.includes('italian')) return '🇮🇹'
-  if (lowerCourseName.includes('português') || lowerCourseName.includes('portugues') || lowerCourseName.includes('portuguese')) return '🇵🇹'
-  if (lowerCourseName.includes('japonês') || lowerCourseName.includes('japones') || lowerCourseName.includes('japanese')) return '🇯🇵'
-  if (lowerCourseName.includes('chinês') || lowerCourseName.includes('chines') || lowerCourseName.includes('chinese')) return '🇨🇳'
-  if (lowerCourseName.includes('coreano') || lowerCourseName.includes('korean')) return '🇰🇷'
-
-  return '🌐'
-}
+import { getFlagFromCourseName, getFlagFromLanguageMetadata } from "@/src/utils/languageFlags"
 
 // Calculate time until class
 const getTimeUntilClass = (dateTimeString: string): string => {
@@ -58,7 +35,7 @@ export default function LiveClassDetailsPage() {
   const courseId = params.id as string
 
   const { data: liveClasses, isLoading: loadingLiveClasses, error: errorLiveClasses } = useLiveClassList(courseId)
-  const { data: latestClass, isLoading: loadingLatestClass, error: errorLatestClass } = useLatestClass(courseId)
+  const { data: latestClass, isLoading: loadingLatestClass } = useLatestClass(courseId)
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
@@ -104,9 +81,26 @@ export default function LiveClassDetailsPage() {
   const pastClasses = sortedClasses.filter(c => isPast(c.event.scheduled_datetime))
   const nextClass = upcomingClasses[0]
 
-  // Get course name from first class
-  const courseName = liveClasses && liveClasses.length > 0 ? liveClasses[0].event.module.name : ''
-  const courseFlag = getCountryFlag(courseName)
+  const courseName =
+    (liveClasses && liveClasses.length > 0 && liveClasses[0].event.module.name) ||
+    latestClass?.event.module.name ||
+    ''
+
+  const findCourseFlag = () => {
+    const latestFlag = getFlagFromLanguageMetadata(latestClass?.event)
+    if (latestFlag) return latestFlag
+
+    if (liveClasses) {
+      for (const liveClass of liveClasses) {
+        const flag = getFlagFromLanguageMetadata(liveClass.event)
+        if (flag) return flag
+      }
+    }
+
+    return ''
+  }
+
+  const courseFlag = findCourseFlag() || getFlagFromCourseName(courseName) || '🌐'
 
   if (loadingLiveClasses || loadingLatestClass) {
     return (
@@ -133,10 +127,10 @@ export default function LiveClassDetailsPage() {
     )
   }
 
-  const renderClassCard = (liveClass: any, isNextClass: boolean = false) => {
+  const renderClassCard = (liveClass: LiveClassEvent, isNextClass: boolean = false) => {
     const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
     const past = isPast(liveClass.event.scheduled_datetime)
-    const flag = getCountryFlag(liveClass.event.module.name)
+    const flag = getFlagFromLanguageMetadata(liveClass.event) || getFlagFromCourseName(liveClass.event.module.name) || '🌐'
     const timeUntil = upcoming ? getTimeUntilClass(liveClass.event.scheduled_datetime) : ''
 
     return (
