@@ -39,7 +39,6 @@ import { useAllLiveClasses } from "@/src/features/dashboard/hooks/useAllLiveClas
 import {
   getFlagFromCourseName,
   getFlagFromLanguageMetadata,
-  getFlagFromCountryCode,
 } from "@/src/utils/languageFlags";
 
 export default function MinhasAulasPage() {
@@ -149,35 +148,6 @@ export default function MinhasAulasPage() {
         );
       })
     : [];
-
-  // Custom day content renderer for flags
-  const renderDayContent = (date: Date) => {
-    const dateKey = date.toISOString().split("T")[0];
-    const classesForDate = dateClassMap.get(dateKey);
-
-    if (!classesForDate || classesForDate.length === 0) return null;
-
-    // Get unique flags for this date (limit to 3)
-    const flags = classesForDate
-      .map(
-        (liveClass) =>
-          getFlagFromLanguageMetadata(liveClass.event) ||
-          getFlagFromCourseName(liveClass.course.course_name)
-      )
-      .filter(Boolean)
-      .filter((flag, index, self) => self.indexOf(flag) === index)
-      .slice(0, 3);
-
-    return (
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
-        {flags.map((flag, index) => (
-          <span key={index} className="text-[8px]">
-            {flag}
-          </span>
-        ))}
-      </div>
-    );
-  };
 
   const renderClassCard = (
     liveClass: (typeof sortedAllLiveClasses)[number],
@@ -499,54 +469,34 @@ export default function MinhasAulasPage() {
                         const dateKey = day.date.toISOString().split("T")[0];
                         const classesForDate = dateClassMap.get(dateKey);
 
-                        // Helper function to ensure we always get emoji flags
-                        const ensureEmojiFlag = (flag: string): string => {
-                          if (!flag) return "";
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const currentDate = new Date(day.date);
+                        currentDate.setHours(0, 0, 0, 0);
 
-                          const tokens = flag.trim().split(/[\s,\/]+/).filter(Boolean);
+                        const isToday = currentDate.getTime() === today.getTime();
+                        const isFuture = currentDate.getTime() > today.getTime();
 
-                          if (tokens.length > 1) {
-                            return tokens
-                              .map((token) => ensureEmojiFlag(token))
-                              .filter(Boolean)
-                              .join(" ");
-                          }
+                        const indicatorColor = isToday
+                          ? "bg-green-500"
+                          : isFuture
+                            ? "bg-amber-400"
+                            : "bg-muted-foreground/40";
 
-                          const [token] = tokens;
-
-                          // If it's a 2-letter code, convert to emoji
-                          if (/^[A-Za-z]{2}$/.test(token)) {
-                            return getFlagFromCountryCode(token) || token;
-                          }
-
-                          return token;
-                        };
-
-                        // Get unique flags for this date (limit to 3)
-                        const flags = classesForDate
-                          ? classesForDate
-                              .map((liveClass) => {
-                                const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
-                                const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
-                                const rawFlag = flagFromMeta || flagFromCourse;
-                                // Ensure it's an emoji, not a code
-                                return ensureEmojiFlag(rawFlag);
-                              })
-                              .filter(Boolean)
-                              .filter((flag, index, self) => self.indexOf(flag) === index)
-                              .slice(0, 3)
-                          : [];
+                        const shouldPulse = isToday || isFuture;
 
                         return (
                           <CalendarDayButton day={day} {...props}>
                             {day.date.getDate()}
-                            {flags.length > 0 && (
-                              <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                                {flags.map((flag, index) => (
-                                  <span key={index} className="text-[8px] leading-none">
-                                    {flag}
-                                  </span>
-                                ))}
+                            {classesForDate && classesForDate.length > 0 && (
+                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                <span
+                                  className={cn(
+                                    "block h-2 w-2 rounded-full",
+                                    indicatorColor,
+                                    shouldPulse && "animate-pulse"
+                                  )}
+                                />
                               </div>
                             )}
                           </CalendarDayButton>
