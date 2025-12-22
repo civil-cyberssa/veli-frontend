@@ -494,12 +494,43 @@ export default function MinhasAulasPage() {
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     components={{
-                      DayContent: ({ date }) => (
-                        <div className="relative w-full h-full flex items-center justify-center">
-                          <span>{date.getDate()}</span>
-                          {renderDayContent(date)}
-                        </div>
-                      ),
+                      DayButton: ({ day, ...props }) => {
+                        const dateKey = day.date.toISOString().split("T")[0];
+                        const classesForDate = dateClassMap.get(dateKey);
+
+                        // Get unique flags for this date (limit to 3)
+                        const flags = classesForDate
+                          ? classesForDate
+                              .map(
+                                (liveClass) =>
+                                  getFlagFromLanguageMetadata(liveClass.event) ||
+                                  getFlagFromCourseName(liveClass.course.course_name)
+                              )
+                              .filter(Boolean)
+                              .filter((flag, index, self) => self.indexOf(flag) === index)
+                              .slice(0, 3)
+                          : [];
+
+                        return (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="relative flex flex-col items-center justify-center h-full w-full p-0"
+                            {...props}
+                          >
+                            <span>{day.date.getDate()}</span>
+                            {flags.length > 0 && (
+                              <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                {flags.map((flag, index) => (
+                                  <span key={index} className="text-[8px] leading-none">
+                                    {flag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </Button>
+                        );
+                      },
                     }}
                   />
                 </div>
