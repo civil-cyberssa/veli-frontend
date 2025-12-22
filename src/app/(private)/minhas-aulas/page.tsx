@@ -39,6 +39,7 @@ import { useAllLiveClasses } from "@/src/features/dashboard/hooks/useAllLiveClas
 import {
   getFlagFromCourseName,
   getFlagFromLanguageMetadata,
+  getFlagFromCountryCode,
 } from "@/src/utils/languageFlags";
 
 export default function MinhasAulasPage() {
@@ -498,30 +499,26 @@ export default function MinhasAulasPage() {
                         const dateKey = day.date.toISOString().split("T")[0];
                         const classesForDate = dateClassMap.get(dateKey);
 
+                        // Helper function to ensure we always get emoji flags
+                        const ensureEmojiFlag = (flag: string): string => {
+                          if (!flag) return "";
+                          // If it's a 2-letter code, convert to emoji
+                          if (/^[A-Za-z]{2}$/.test(flag.trim())) {
+                            return getFlagFromCountryCode(flag) || flag;
+                          }
+                          return flag;
+                        };
+
                         // Get unique flags for this date (limit to 3)
                         const flags = classesForDate
                           ? classesForDate
-                              .map(
-                                (liveClass) => {
-                                  const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
-                                  const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
-                                  const finalFlag = flagFromMeta || flagFromCourse;
-
-                                  // Debug log
-                                  if (finalFlag) {
-                                    console.log('Flag debug:', {
-                                      courseName: liveClass.course.course_name,
-                                      flagFromMeta,
-                                      flagFromCourse,
-                                      finalFlag,
-                                      flagLength: finalFlag.length,
-                                      flagCodePoints: [...finalFlag].map(c => c.codePointAt(0))
-                                    });
-                                  }
-
-                                  return finalFlag;
-                                }
-                              )
+                              .map((liveClass) => {
+                                const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
+                                const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
+                                const rawFlag = flagFromMeta || flagFromCourse;
+                                // Ensure it's an emoji, not a code
+                                return ensureEmojiFlag(rawFlag);
+                              })
                               .filter(Boolean)
                               .filter((flag, index, self) => self.indexOf(flag) === index)
                               .slice(0, 3)
