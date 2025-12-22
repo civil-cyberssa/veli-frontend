@@ -297,28 +297,30 @@ export default function MinhasAulasPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-16 space-y-10">
-      {/* Simple Header */}
-      <div className="space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Minhas Aulas
-        </h1>
-        <p className="text-muted-foreground">
-          Acompanhe todas as aulas ao vivo dos cursos em que você está inscrito
-        </p>
+    <div className="max-w-7xl mx-auto pb-16 space-y-12 px-4 sm:px-6 lg:px-8">
+      {/* Enhanced Header */}
+      <div className="space-y-4 pt-8">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text">
+            Minhas Aulas
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl">
+            Acompanhe todas as aulas ao vivo dos cursos em que você está inscrito
+          </p>
+        </div>
       </div>
 
       {/* Calendar View */}
-      <div className="space-y-5">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold">Calendário de Aulas</h2>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="space-y-1.5">
+            <h2 className="text-2xl font-semibold tracking-tight">Calendário de Aulas</h2>
             <p className="text-sm text-muted-foreground">Visualize e selecione suas aulas por data</p>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Badge variant="secondary" className="gap-2 px-3 py-1.5 text-xs font-medium">
             <Users className="h-3.5 w-3.5" />
-            <span>{sortedAllLiveClasses.length} aulas</span>
-          </div>
+            {sortedAllLiveClasses.length} {sortedAllLiveClasses.length === 1 ? 'aula' : 'aulas'}
+          </Badge>
         </div>
 
         {loadingAllClasses ? (
@@ -340,55 +342,89 @@ export default function MinhasAulasPage() {
             </div>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-[auto_1fr] gap-6">
+          <div className="grid lg:grid-cols-[auto_1fr] gap-8">
             {/* Calendar Section */}
-            <Card className="p-4 w-fit mx-auto lg:mx-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                modifiers={{
-                  hasClass: datesWithClasses
-                }}
-                modifiersClassNames={{
-                  hasClass: "bg-primary/20 font-bold"
-                }}
-                className="rounded-md"
-              />
+            <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm w-fit mx-auto lg:mx-0 overflow-hidden">
+              <div className="p-1.5">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  modifiers={{
+                    hasClass: datesWithClasses
+                  }}
+                  modifiersClassNames={{
+                    hasClass: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary font-semibold"
+                  }}
+                  className="rounded-xl"
+                />
+              </div>
+
+              {/* Calendar Legend */}
+              <div className="px-6 pb-5 pt-2 border-t border-border/40 bg-muted/30 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground mb-3">Legenda</p>
+                <div className="flex flex-col gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-md bg-accent/40 border border-primary/30"></div>
+                    <span className="text-muted-foreground">Hoje</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-md bg-primary"></div>
+                    <span className="text-muted-foreground">Data selecionada</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-primary"></div>
+                    <span className="text-muted-foreground">Dia com aula</span>
+                  </div>
+                </div>
+              </div>
             </Card>
 
             {/* Selected Date Classes or Latest Class */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               {selectedDate && selectedDateClasses.length > 0 ? (
-                <>
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-semibold">
-                      Aulas de {selectedDate.toLocaleDateString('pt-BR', {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long'
-                      })}
-                    </h3>
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold tracking-tight">
+                        {selectedDate.toLocaleDateString('pt-BR', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long'
+                        })}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedDateClasses.length} {selectedDateClasses.length === 1 ? 'aula' : 'aulas'} encontrada{selectedDateClasses.length === 1 ? '' : 's'}
+                      </p>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedDate(undefined)}
-                      className="h-7 text-xs"
+                      className="h-8 text-xs hover:bg-accent/60 transition-colors"
                     >
                       Limpar seleção
                     </Button>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {selectedDateClasses.map((liveClass) => (
-                      <div key={`${liveClass.event.id}-${liveClass.student_class_id}`}>
+                    {selectedDateClasses.map((liveClass, index) => (
+                      <div
+                        key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                        className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
                         {renderClassCard(liveClass)}
                       </div>
                     ))}
                   </div>
-                </>
+                </div>
               ) : latestClass ? (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Última Aula</h3>
+                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold tracking-tight">Última Aula</h3>
+                    <p className="text-sm text-muted-foreground">Detalhes da aula mais recente</p>
+                  </div>
+
                   <div className="max-w-2xl">
                     {renderClassCard(latestClass)}
                   </div>
@@ -397,61 +433,71 @@ export default function MinhasAulasPage() {
                   <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
                     {/* Student Comment */}
                     {latestClass.student_feedback && (
-                      <Card className="p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="h-4 w-4 text-primary" />
-                          <h4 className="text-sm font-semibold">Seu Comentário</h4>
+                      <Card className="p-5 space-y-3 border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-md transition-all duration-200">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <MessageSquare className="h-4 w-4 text-primary" />
+                          </div>
+                          <h4 className="text-sm font-semibold tracking-tight">Seu Comentário</h4>
                         </div>
-                        <p className="text-sm text-muted-foreground">{latestClass.student_feedback}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{latestClass.student_feedback}</p>
                       </Card>
                     )}
 
                     {/* Teacher Answer */}
                     {latestClass.teacher_answer && (
-                      <Card className="p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="h-4 w-4 text-primary" />
-                          <h4 className="text-sm font-semibold">Resposta do Professor</h4>
+                      <Card className="p-5 space-y-3 border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-md transition-all duration-200">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <MessageSquare className="h-4 w-4 text-primary" />
+                          </div>
+                          <h4 className="text-sm font-semibold tracking-tight">Resposta do Professor</h4>
                         </div>
-                        <p className="text-sm text-muted-foreground">{latestClass.teacher_answer}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{latestClass.teacher_answer}</p>
                       </Card>
                     )}
 
                     {/* Attributes */}
-                    <Card className="p-4 space-y-3">
-                      <h4 className="text-sm font-semibold">Atributos da Aula</h4>
-                      <div className="space-y-2 text-sm">
+                    <Card className="p-5 space-y-4 border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-md transition-all duration-200">
+                      <h4 className="text-sm font-semibold tracking-tight">Atributos da Aula</h4>
+                      <div className="space-y-3 text-sm">
                         {latestClass.watched && (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <span>Aula assistida</span>
+                          <div className="flex items-center gap-3 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                            <span className="text-green-900 dark:text-green-100">Aula assistida</span>
                           </div>
                         )}
                         {latestClass.rating && (
-                          <div className="flex items-center gap-2">
-                            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                            <span>Avaliação: {latestClass.rating}/5</span>
+                          <div className="flex items-center gap-3 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                            <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-400 fill-yellow-600 dark:fill-yellow-400 flex-shrink-0" />
+                            <span className="text-yellow-900 dark:text-yellow-100">Avaliação: {latestClass.rating}/5</span>
                           </div>
                         )}
                         {latestClass.exercise_id && (
-                          <div className="flex items-center gap-2">
-                            <Award className="h-4 w-4 text-primary" />
+                          <div className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                            <Award className="h-4 w-4 text-primary flex-shrink-0" />
                             <span>Exercício: {latestClass.exercise_score} pontos</span>
                           </div>
                         )}
                         {!latestClass.watched && !latestClass.rating && !latestClass.exercise_id && (
-                          <p className="text-muted-foreground text-xs">Nenhum atributo registrado</p>
+                          <p className="text-muted-foreground text-xs text-center py-2">Nenhum atributo registrado</p>
                         )}
                       </div>
                     </Card>
                   </div>
                 </div>
               ) : (
-                <Card className="border-dashed">
-                  <div className="p-10 text-center space-y-2">
-                    <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto" />
-                    <p className="font-semibold">Selecione uma data</p>
-                    <p className="text-sm text-muted-foreground">Clique em uma data no calendário para ver as aulas</p>
+                <Card className="border-dashed border-2 bg-muted/20 hover:bg-muted/30 transition-colors duration-200">
+                  <div className="p-12 text-center space-y-4">
+                    <div className="inline-flex p-4 rounded-full bg-muted">
+                      <CalendarIcon className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="font-semibold text-base">Selecione uma data</p>
+                      <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                        Clique em uma data no calendário para ver as aulas agendadas
+                      </p>
+                    </div>
                   </div>
                 </Card>
               )}
@@ -460,34 +506,43 @@ export default function MinhasAulasPage() {
         )}
       </div>
 
-      {/* Course Cards Grid - Simplified */}
-      <div className="space-y-3">
-        <h2 className="text-xl font-semibold">Cursos inscritos</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subscriptions.map((subscription) => (
+      {/* Course Cards Grid - Enhanced */}
+      <div className="space-y-6">
+        <div className="space-y-1.5">
+          <h2 className="text-2xl font-semibold tracking-tight">Cursos Inscritos</h2>
+          <p className="text-sm text-muted-foreground">Acesse as aulas dos seus cursos</p>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {subscriptions.map((subscription, index) => (
             <Card
               key={subscription.id}
-              className="group border transition-all hover:border-primary/50 cursor-pointer"
+              className="group border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden animate-in fade-in slide-in-from-bottom-4"
+              style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => router.push(`/minhas-aulas/${subscription.student_class_id}`)}
             >
               <div className="p-6 space-y-6">
                 {/* Course Icon and Info */}
                 <div className="flex items-start gap-4">
-                  <Image
-                    src={subscription.course_icon}
-                    alt={subscription.course_name}
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 rounded-lg object-cover"
-                  />
+                  <div className="relative">
+                    <Image
+                      src={subscription.course_icon}
+                      alt={subscription.course_name}
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 rounded-xl object-cover ring-2 ring-border/40 group-hover:ring-primary/40 transition-all"
+                    />
+                    {subscription.status === 'active' && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
+                    )}
+                  </div>
 
                   <div className="flex-1 space-y-2 min-w-0">
-                    <h3 className="font-semibold text-base leading-tight line-clamp-2">
+                    <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-primary transition-colors">
                       {subscription.course_name}
                     </h3>
                     <Badge
                       variant={subscription.status === 'active' ? 'secondary' : 'outline'}
-                      className="text-xs"
+                      className="text-xs font-medium"
                     >
                       {subscription.status === 'active' ? 'Ativo' : subscription.status}
                     </Badge>
@@ -497,14 +552,14 @@ export default function MinhasAulasPage() {
                 {/* CTA Button */}
                 <Button
                   variant="outline"
-                  className="w-full gap-2 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors"
+                  className="w-full gap-2 h-10 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation()
                     router.push(`/minhas-aulas/${subscription.student_class_id}`)
                   }}
                 >
-                  Acessar aulas
-                  <ChevronRight className="h-4 w-4" />
+                  <span>Acessar aulas</span>
+                  <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                 </Button>
               </div>
             </Card>
