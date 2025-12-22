@@ -502,9 +502,25 @@ export default function MinhasAulasPage() {
                         const flags = classesForDate
                           ? classesForDate
                               .map(
-                                (liveClass) =>
-                                  getFlagFromLanguageMetadata(liveClass.event) ||
-                                  getFlagFromCourseName(liveClass.course.course_name)
+                                (liveClass) => {
+                                  const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
+                                  const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
+                                  const finalFlag = flagFromMeta || flagFromCourse;
+
+                                  // Debug log
+                                  if (finalFlag) {
+                                    console.log('Flag debug:', {
+                                      courseName: liveClass.course.course_name,
+                                      flagFromMeta,
+                                      flagFromCourse,
+                                      finalFlag,
+                                      flagLength: finalFlag.length,
+                                      flagCodePoints: [...finalFlag].map(c => c.codePointAt(0))
+                                    });
+                                  }
+
+                                  return finalFlag;
+                                }
                               )
                               .filter(Boolean)
                               .filter((flag, index, self) => self.indexOf(flag) === index)

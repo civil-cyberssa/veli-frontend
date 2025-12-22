@@ -25,7 +25,16 @@ export const getFlagFromCountryCode = (code?: string): string => {
   if (isTwoLetterCode(normalized)) {
     const [first, second] = normalized
     const base = 127397
-    return String.fromCodePoint(first.charCodeAt(0) + base) + String.fromCodePoint(second.charCodeAt(0) + base)
+    const emoji = String.fromCodePoint(first.charCodeAt(0) + base) + String.fromCodePoint(second.charCodeAt(0) + base)
+
+    console.log('getFlagFromCountryCode:', {
+      input: code,
+      normalized,
+      emoji,
+      emojiCodePoints: [...emoji].map(c => c.codePointAt(0))
+    });
+
+    return emoji
   }
 
   return ""
@@ -64,14 +73,28 @@ export const getFlagFromCourseName = (courseName: string): string => {
 export const getFlagFromLanguageMetadata = (event?: LanguageCarrier) => {
   if (!event) return ""
 
+  console.log('getFlagFromLanguageMetadata input:', {
+    event,
+    language: event.language,
+    language_flag: event.language_flag,
+    language_code: event.language_code,
+    module: event.module
+  });
+
   const languageCandidates = [event.language, event.module?.language]
 
   for (const source of languageCandidates) {
     const directFlag = normalizeFlagValue(source?.flag || source?.flag_icon || source?.icon)
-    if (directFlag) return directFlag
+    if (directFlag) {
+      console.log('Returning directFlag from language:', directFlag);
+      return directFlag;
+    }
 
     const codeFlag = getFlagFromCountryCode(source?.code || source?.short_name)
-    if (codeFlag) return codeFlag
+    if (codeFlag) {
+      console.log('Returning codeFlag from language:', codeFlag);
+      return codeFlag;
+    }
   }
 
   const directEventFlag = normalizeFlagValue(
@@ -80,11 +103,19 @@ export const getFlagFromLanguageMetadata = (event?: LanguageCarrier) => {
       event.module?.language_flag ||
       event.module?.language_icon
   )
-  if (directEventFlag) return directEventFlag
+  if (directEventFlag) {
+    console.log('Returning directEventFlag:', directEventFlag);
+    return directEventFlag;
+  }
 
   const codeFlag = getFlagFromCountryCode(event.language_code || event.module?.language_code)
-  if (codeFlag) return codeFlag
+  if (codeFlag) {
+    console.log('Returning codeFlag from event:', codeFlag);
+    return codeFlag;
+  }
 
   const nameFallback = event.language?.name || event.module?.language?.name || event.module?.name
-  return nameFallback ? getFlagFromCourseName(nameFallback) : ""
+  const result = nameFallback ? getFlagFromCourseName(nameFallback) : "";
+  console.log('Returning from nameFallback:', { nameFallback, result });
+  return result;
 }
