@@ -1,14 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { PlayCircle, ChevronRight, Clock, Video, Calendar, ExternalLink, Award, CheckCircle2, Star, Bell, Users } from "lucide-react"
+import { PlayCircle, ChevronRight, Clock, Video, Calendar as CalendarIcon, ExternalLink, Award, CheckCircle2, Star, Bell, Users, MessageSquare } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
+import { Calendar } from "@/components/ui/calendar"
 
 import { cn } from "@/lib/utils"
 import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription"
@@ -19,6 +21,7 @@ export default function MinhasAulasPage() {
   const router = useRouter()
   const { data: subscriptions, loading, error } = useSubscriptions()
   const { data: allLiveClasses, isLoading: loadingAllClasses, error: allClassesError } = useAllLiveClasses(subscriptions)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
@@ -71,6 +74,26 @@ export default function MinhasAulasPage() {
   const upcomingClasses = sortedAllLiveClasses.filter((liveClass) => isUpcoming(liveClass.event.scheduled_datetime))
   const pastClasses = sortedAllLiveClasses.filter((liveClass) => !isUpcoming(liveClass.event.scheduled_datetime))
   const nextClass = upcomingClasses[0]
+  const latestClass = pastClasses[0]
+
+  // Get dates with classes for calendar highlighting
+  const datesWithClasses = sortedAllLiveClasses.map(liveClass => {
+    const date = new Date(liveClass.event.scheduled_datetime)
+    date.setHours(0, 0, 0, 0)
+    return date
+  })
+
+  // Filter classes for selected date
+  const selectedDateClasses = selectedDate
+    ? sortedAllLiveClasses.filter(liveClass => {
+        const classDate = new Date(liveClass.event.scheduled_datetime)
+        return (
+          classDate.getFullYear() === selectedDate.getFullYear() &&
+          classDate.getMonth() === selectedDate.getMonth() &&
+          classDate.getDate() === selectedDate.getDate()
+        )
+      })
+    : []
 
   const renderClassCard = (liveClass: (typeof sortedAllLiveClasses)[number], isNextClass: boolean = false) => {
     const upcoming = isUpcoming(liveClass.event.scheduled_datetime)
@@ -285,12 +308,12 @@ export default function MinhasAulasPage() {
         </p>
       </div>
 
-      {/* Aggregated Live Classes */}
+      {/* Calendar View */}
       <div className="space-y-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold">Aulas ao vivo de todos os cursos</h2>
-            <p className="text-sm text-muted-foreground">Mesmo visual e ações rápidas que você vê nas páginas individuais</p>
+            <h2 className="text-xl font-semibold">Calendário de Aulas</h2>
+            <p className="text-sm text-muted-foreground">Visualize e selecione suas aulas por data</p>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
@@ -317,96 +340,123 @@ export default function MinhasAulasPage() {
             </div>
           </Card>
         ) : (
-          <Tabs defaultValue="upcoming" className="space-y-4 mt-1">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <TabsList className="h-9">
-                <TabsTrigger value="upcoming" className="gap-1.5 text-sm">
-                  <Clock className="h-3.5 w-3.5" />
-                  Próximas ({upcomingClasses.length})
-                </TabsTrigger>
-                <TabsTrigger value="past" className="gap-1.5 text-sm">
-                  <PlayCircle className="h-3.5 w-3.5" />
-                  Anteriores ({pastClasses.length})
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          <div className="grid lg:grid-cols-[auto_1fr] gap-6">
+            {/* Calendar Section */}
+            <Card className="p-4 w-fit mx-auto lg:mx-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                modifiers={{
+                  hasClass: datesWithClasses
+                }}
+                modifiersClassNames={{
+                  hasClass: "bg-primary/20 font-bold"
+                }}
+                className="rounded-md"
+              />
+            </Card>
 
-            <TabsContent value="upcoming" className="space-y-4 mt-0">
-              {upcomingClasses.length === 0 ? (
-                <Card className="border-dashed">
-                  <div className="p-8 text-center">
-                    <div className="flex flex-col items-center gap-2.5">
-                      <Clock className="h-7 w-7 text-muted-foreground" />
-                      <div className="space-y-1">
-                        <p className="font-medium text-sm">Nenhuma aula próxima</p>
-                        <p className="text-xs text-muted-foreground">Confira as gravações disponíveis</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ) : (
+            {/* Selected Date Classes or Latest Class */}
+            <div className="space-y-4">
+              {selectedDate && selectedDateClasses.length > 0 ? (
                 <>
-                  {nextClass && (
-                    <div className="space-y-2.5">
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Próxima aula
-                      </h3>
-                      <div className="max-w-2xl">
-                        {renderClassCard(nextClass, true)}
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold">
+                      Aulas de {selectedDate.toLocaleDateString('pt-BR', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long'
+                      })}
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedDate(undefined)}
+                      className="h-7 text-xs"
+                    >
+                      Limpar seleção
+                    </Button>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {selectedDateClasses.map((liveClass) => (
+                      <div key={`${liveClass.event.id}-${liveClass.student_class_id}`}>
+                        {renderClassCard(liveClass)}
                       </div>
-                    </div>
-                  )}
-
-                  {upcomingClasses.length > 1 && (
-                    <div className="space-y-3">
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Outras aulas
-                      </h3>
-                      <Carousel opts={{ align: "start", slidesToScroll: 1 }} className="relative">
-                        <CarouselContent>
-                          {upcomingClasses.slice(1).map((liveClass) => (
-                            <CarouselItem
-                              key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                              className="sm:basis-1/2 lg:basis-1/3"
-                            >
-                              {renderClassCard(liveClass)}
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-
-                        <div className="flex items-center justify-end gap-2 mt-3 pr-1">
-                          <CarouselPrevious className="static translate-y-0 h-9 w-9" />
-                          <CarouselNext className="static translate-y-0 h-9 w-9" />
-                        </div>
-                      </Carousel>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </>
-              )}
-            </TabsContent>
+              ) : latestClass ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Última Aula</h3>
+                  <div className="max-w-2xl">
+                    {renderClassCard(latestClass)}
+                  </div>
 
-            <TabsContent value="past" className="space-y-3 mt-0">
-              {pastClasses.length === 0 ? (
-                <Card className="border-dashed">
-                  <div className="p-8 text-center">
-                    <div className="flex flex-col items-center gap-2.5">
-                      <PlayCircle className="h-7 w-7 text-muted-foreground" />
-                      <div className="space-y-1">
-                        <p className="font-medium text-sm">Nenhuma gravação</p>
-                        <p className="text-xs text-muted-foreground">As gravações aparecerão após as aulas</p>
+                  {/* Comments and Attributes */}
+                  <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+                    {/* Student Comment */}
+                    {latestClass.student_feedback && (
+                      <Card className="p-4 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4 text-primary" />
+                          <h4 className="text-sm font-semibold">Seu Comentário</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{latestClass.student_feedback}</p>
+                      </Card>
+                    )}
+
+                    {/* Teacher Answer */}
+                    {latestClass.teacher_answer && (
+                      <Card className="p-4 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4 text-primary" />
+                          <h4 className="text-sm font-semibold">Resposta do Professor</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{latestClass.teacher_answer}</p>
+                      </Card>
+                    )}
+
+                    {/* Attributes */}
+                    <Card className="p-4 space-y-3">
+                      <h4 className="text-sm font-semibold">Atributos da Aula</h4>
+                      <div className="space-y-2 text-sm">
+                        {latestClass.watched && (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            <span>Aula assistida</span>
+                          </div>
+                        )}
+                        {latestClass.rating && (
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                            <span>Avaliação: {latestClass.rating}/5</span>
+                          </div>
+                        )}
+                        {latestClass.exercise_id && (
+                          <div className="flex items-center gap-2">
+                            <Award className="h-4 w-4 text-primary" />
+                            <span>Exercício: {latestClass.exercise_score} pontos</span>
+                          </div>
+                        )}
+                        {!latestClass.watched && !latestClass.rating && !latestClass.exercise_id && (
+                          <p className="text-muted-foreground text-xs">Nenhum atributo registrado</p>
+                        )}
                       </div>
-                    </div>
+                    </Card>
+                  </div>
+                </div>
+              ) : (
+                <Card className="border-dashed">
+                  <div className="p-10 text-center space-y-2">
+                    <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto" />
+                    <p className="font-semibold">Selecione uma data</p>
+                    <p className="text-sm text-muted-foreground">Clique em uma data no calendário para ver as aulas</p>
                   </div>
                 </Card>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {pastClasses.map((liveClass) => (
-                    <div key={`${liveClass.event.id}-${liveClass.student_class_id}`}>{renderClassCard(liveClass)}</div>
-                  ))}
-                </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         )}
       </div>
 
