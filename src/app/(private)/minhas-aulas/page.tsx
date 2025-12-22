@@ -502,11 +502,24 @@ export default function MinhasAulasPage() {
                         // Helper function to ensure we always get emoji flags
                         const ensureEmojiFlag = (flag: string): string => {
                           if (!flag) return "";
-                          // If it's a 2-letter code, convert to emoji
-                          if (/^[A-Za-z]{2}$/.test(flag.trim())) {
-                            return getFlagFromCountryCode(flag) || flag;
+
+                          const tokens = flag.trim().split(/[\s,\/]+/).filter(Boolean);
+
+                          if (tokens.length > 1) {
+                            return tokens
+                              .map((token) => ensureEmojiFlag(token))
+                              .filter(Boolean)
+                              .join(" ");
                           }
-                          return flag;
+
+                          const [token] = tokens;
+
+                          // If it's a 2-letter code, convert to emoji
+                          if (/^[A-Za-z]{2}$/.test(token)) {
+                            return getFlagFromCountryCode(token) || token;
+                          }
+
+                          return token;
                         };
 
                         // Get unique flags for this date (limit to 3)
