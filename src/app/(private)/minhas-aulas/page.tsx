@@ -49,7 +49,13 @@ export default function MinhasAulasPage() {
     isLoading: loadingAllClasses,
     error: allClassesError,
   } = useAllLiveClasses(subscriptions);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  // Set selected date to today by default
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
@@ -115,11 +121,22 @@ export default function MinhasAulasPage() {
   const nextClass = upcomingClasses[0];
   const latestClass = pastClasses[0];
 
-  const datesWithClasses = sortedAllLiveClasses.map((liveClass) => {
+  // Get dates with classes and their flags for calendar highlighting
+  const dateClassMap = new Map<string, typeof sortedAllLiveClasses>();
+  sortedAllLiveClasses.forEach((liveClass) => {
     const date = new Date(liveClass.event.scheduled_datetime);
     date.setHours(0, 0, 0, 0);
-    return date;
+    const dateKey = date.toISOString().split("T")[0];
+
+    if (!dateClassMap.has(dateKey)) {
+      dateClassMap.set(dateKey, []);
+    }
+    dateClassMap.get(dateKey)!.push(liveClass);
   });
+
+  const datesWithClasses = Array.from(dateClassMap.keys()).map(
+    (dateKey) => new Date(dateKey)
+  );
 
   const selectedDateClasses = selectedDate
     ? sortedAllLiveClasses.filter((liveClass) => {
@@ -131,6 +148,35 @@ export default function MinhasAulasPage() {
         );
       })
     : [];
+
+  // Custom day content renderer for flags
+  const renderDayContent = (date: Date) => {
+    const dateKey = date.toISOString().split("T")[0];
+    const classesForDate = dateClassMap.get(dateKey);
+
+    if (!classesForDate || classesForDate.length === 0) return null;
+
+    // Get unique flags for this date (limit to 3)
+    const flags = classesForDate
+      .map(
+        (liveClass) =>
+          getFlagFromLanguageMetadata(liveClass.event) ||
+          getFlagFromCourseName(liveClass.course.course_name)
+      )
+      .filter(Boolean)
+      .filter((flag, index, self) => self.indexOf(flag) === index)
+      .slice(0, 3);
+
+    return (
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
+        {flags.map((flag, index) => (
+          <span key={index} className="text-[8px]">
+            {flag}
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   const renderClassCard = (
     liveClass: (typeof sortedAllLiveClasses)[number],
@@ -447,12 +493,13 @@ export default function MinhasAulasPage() {
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
-                    modifiers={{
-                      hasClass: datesWithClasses,
-                    }}
-                    modifiersClassNames={{
-                      hasClass:
-                        "relative after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary",
+                    components={{
+                      DayContent: ({ date }) => (
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          <span>{date.getDate()}</span>
+                          {renderDayContent(date)}
+                        </div>
+                      ),
                     }}
                   />
                 </div>
