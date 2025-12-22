@@ -30,7 +30,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 
 import { cn } from "@/lib/utils";
@@ -512,13 +512,8 @@ export default function MinhasAulasPage() {
                           : [];
 
                         return (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="relative flex flex-col items-center justify-center h-full w-full p-0"
-                            {...props}
-                          >
-                            <span>{day.date.getDate()}</span>
+                          <CalendarDayButton day={day} {...props}>
+                            {day.date.getDate()}
                             {flags.length > 0 && (
                               <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
                                 {flags.map((flag, index) => (
@@ -528,7 +523,7 @@ export default function MinhasAulasPage() {
                                 ))}
                               </div>
                             )}
-                          </Button>
+                          </CalendarDayButton>
                         );
                       },
                     }}
