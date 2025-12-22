@@ -342,42 +342,21 @@ export default function MinhasAulasPage() {
             </div>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-[auto_1fr] gap-8">
+          <div className="grid lg:grid-cols-[350px_1fr] gap-8">
             {/* Calendar Section */}
-            <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm w-fit mx-auto lg:mx-0 overflow-hidden">
-              <div className="p-1.5">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  modifiers={{
-                    hasClass: datesWithClasses
-                  }}
-                  modifiersClassNames={{
-                    hasClass: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary font-semibold"
-                  }}
-                  className="rounded-xl"
-                />
-              </div>
-
-              {/* Calendar Legend */}
-              <div className="px-6 pb-5 pt-2 border-t border-border/40 bg-muted/30 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground mb-3">Legenda</p>
-                <div className="flex flex-col gap-2 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-md bg-accent/40 border border-primary/30"></div>
-                    <span className="text-muted-foreground">Hoje</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-md bg-primary"></div>
-                    <span className="text-muted-foreground">Data selecionada</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-1 rounded-full bg-primary"></div>
-                    <span className="text-muted-foreground">Dia com aula</span>
-                  </div>
-                </div>
-              </div>
+            <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                modifiers={{
+                  hasClass: datesWithClasses
+                }}
+                modifiersClassNames={{
+                  hasClass: "relative after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary"
+                }}
+                className="w-full"
+              />
             </Card>
 
             {/* Selected Date Classes or Latest Class */}
@@ -401,7 +380,7 @@ export default function MinhasAulasPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedDate(undefined)}
-                      className="h-8 text-xs hover:bg-accent/60 transition-colors"
+                      className="h-8 text-xs hover:bg-accent transition-colors"
                     >
                       Limpar seleção
                     </Button>
@@ -417,6 +396,41 @@ export default function MinhasAulasPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+              ) : selectedDate && selectedDateClasses.length === 0 ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold tracking-tight">
+                        {selectedDate.toLocaleDateString('pt-BR', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long'
+                        })}
+                      </h3>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedDate(undefined)}
+                      className="h-8 text-xs hover:bg-accent transition-colors"
+                    >
+                      Limpar seleção
+                    </Button>
+                  </div>
+                  <Card className="border-dashed border-2">
+                    <div className="p-12 text-center space-y-3">
+                      <div className="inline-flex p-3 rounded-full bg-muted/50">
+                        <CalendarIcon className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-base">Nenhuma aula ao vivo agendada</p>
+                        <p className="text-sm text-muted-foreground">
+                          Não há aulas programadas para esta data
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
                 </div>
               ) : latestClass ? (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
