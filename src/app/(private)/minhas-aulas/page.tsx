@@ -342,7 +342,7 @@ export default function MinhasAulasPage() {
             </div>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-[350px_1fr] gap-8">
+          <div className="grid lg:grid-cols-[auto_1fr] gap-8">
             {/* Calendar Section */}
             <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
               <Calendar
@@ -353,9 +353,8 @@ export default function MinhasAulasPage() {
                   hasClass: datesWithClasses
                 }}
                 modifiersClassNames={{
-                  hasClass: "relative after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary"
+                  hasClass: "relative after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary"
                 }}
-                className="w-full"
               />
             </Card>
 
