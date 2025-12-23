@@ -21,7 +21,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogoPulseLoader } from "@/components/shared/logo-loader";
 import {
   Carousel,
@@ -587,23 +586,22 @@ export default function MinhasAulasPage() {
                   </div>
                 ) : (
                   <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <Tabs defaultValue="past" className="space-y-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="space-y-1">
-                          <h3 className="text-lg font-semibold tracking-tight">
-                            Suas aulas
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Veja próximas e aulas que já aconteceram.
-                          </p>
-                        </div>
-                        <TabsList>
-                          <TabsTrigger value="upcoming">Próximas</TabsTrigger>
-                          <TabsTrigger value="past">Passadas</TabsTrigger>
-                        </TabsList>
-                      </div>
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold tracking-tight">
+                        Suas aulas
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Veja próximas e aulas que já aconteceram.
+                      </p>
+                    </div>
 
-                      <TabsContent value="upcoming" className="space-y-3">
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold tracking-tight">
+                            Próximas
+                          </h4>
+                        </div>
                         {upcomingClasses.length === 0 ? (
                           <Card className="border-dashed">
                             <div className="p-8 text-center space-y-2">
@@ -627,9 +625,15 @@ export default function MinhasAulasPage() {
                             ))}
                           </div>
                         )}
-                      </TabsContent>
+                      </div>
 
-                      <TabsContent value="past" className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold tracking-tight">
+                            Passadas
+                          </h4>
+                        </div>
+
                         {latestClass && (
                           <div className="space-y-4 max-w-2xl">
                             <div className="space-y-1">
@@ -730,8 +734,8 @@ export default function MinhasAulasPage() {
                             </div>
                           </Card>
                         )}
-                      </TabsContent>
-                    </Tabs>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
