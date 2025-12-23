@@ -21,7 +21,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogoPulseLoader } from "@/components/shared/logo-loader";
 import {
   Carousel,
@@ -39,7 +38,6 @@ import { useAllLiveClasses } from "@/src/features/dashboard/hooks/useAllLiveClas
 import {
   getFlagFromCourseName,
   getFlagFromLanguageMetadata,
-  getFlagFromCountryCode,
 } from "@/src/utils/languageFlags";
 
 export default function MinhasAulasPage() {
@@ -149,35 +147,6 @@ export default function MinhasAulasPage() {
         );
       })
     : [];
-
-  // Custom day content renderer for flags
-  const renderDayContent = (date: Date) => {
-    const dateKey = date.toISOString().split("T")[0];
-    const classesForDate = dateClassMap.get(dateKey);
-
-    if (!classesForDate || classesForDate.length === 0) return null;
-
-    // Get unique flags for this date (limit to 3)
-    const flags = classesForDate
-      .map(
-        (liveClass) =>
-          getFlagFromLanguageMetadata(liveClass.event) ||
-          getFlagFromCourseName(liveClass.course.course_name)
-      )
-      .filter(Boolean)
-      .filter((flag, index, self) => self.indexOf(flag) === index)
-      .slice(0, 3);
-
-    return (
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
-        {flags.map((flag, index) => (
-          <span key={index} className="text-[8px]">
-            {flag}
-          </span>
-        ))}
-      </div>
-    );
-  };
 
   const renderClassCard = (
     liveClass: (typeof sortedAllLiveClasses)[number],
@@ -466,6 +435,7 @@ export default function MinhasAulasPage() {
         )}
       </div>
 
+
       <div className="border-t pt-6 space-y-6">
         {/* Calendar View */}
         <div className="space-y-6">
@@ -479,304 +449,261 @@ export default function MinhasAulasPage() {
                 Erro ao carregar aulas: {allClassesError.message}
               </p>
             </div>
-          ) : !allLiveClasses || allLiveClasses.length === 0 ? (
-            <div className="flex items-center justify-center h-48">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma aula ao vivo agendada
-              </p>
-            </div>
           ) : (
-            <div className="grid lg:grid-cols-[auto_2fr] gap-8">
-              {/* Calendar Section */}
-              <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
-                <div className="p-3">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    components={{
-                      DayButton: ({ day, ...props }) => {
-                        const dateKey = day.date.toISOString().split("T")[0];
-                        const classesForDate = dateClassMap.get(dateKey);
+            <div className="space-y-8">
+              <div className="grid gap-6 md:grid-cols-[320px,1fr] lg:grid-cols-[360px,1fr] items-start">
+                {/* Calendar Section */}
+                <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
+                  <div className="p-3">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      components={{
+                        DayButton: ({ day, ...props }) => {
+                          const dateKey = day.date.toISOString().split("T")[0];
+                          const classesForDate = dateClassMap.get(dateKey);
 
-                        // Helper function to ensure we always get emoji flags
-                        const ensureEmojiFlag = (flag: string): string => {
-                          if (!flag) return "";
-                          // If it's a 2-letter code, convert to emoji
-                          if (/^[A-Za-z]{2}$/.test(flag.trim())) {
-                            return getFlagFromCountryCode(flag) || flag;
-                          }
-                          return flag;
-                        };
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const currentDate = new Date(day.date);
+                          currentDate.setHours(0, 0, 0, 0);
 
-                        // Get unique flags for this date (limit to 3)
-                        const flags = classesForDate
-                          ? classesForDate
-                              .map((liveClass) => {
-                                const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
-                                const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
-                                const rawFlag = flagFromMeta || flagFromCourse;
-                                // Ensure it's an emoji, not a code
-                                return ensureEmojiFlag(rawFlag);
-                              })
-                              .filter(Boolean)
-                              .filter((flag, index, self) => self.indexOf(flag) === index)
-                              .slice(0, 3)
-                          : [];
+                          const isToday = currentDate.getTime() === today.getTime();
+                          const isFuture = currentDate.getTime() > today.getTime();
 
-                        return (
-                          <CalendarDayButton day={day} {...props}>
-                            {day.date.getDate()}
-                            {flags.length > 0 && (
-                              <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                                {flags.map((flag, index) => (
-                                  <span key={index} className="text-[8px] leading-none">
-                                    {flag}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </CalendarDayButton>
-                        );
-                      },
-                    }}
-                  />
-                </div>
-              </Card>
+                          const indicatorColor = isToday
+                            ? "bg-green-500"
+                            : isFuture
+                              ? "bg-amber-400"
+                              : "bg-muted-foreground/40";
 
-              {/* Selected Date Classes or Latest/Lists */}
-              <div className="space-y-5">
-                {selectedDate && selectedDateClasses.length > 0 ? (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <div className="flex items-center justify-between">
+                          const shouldPulse = isToday || isFuture;
+
+                          return (
+                            <CalendarDayButton day={day} {...props}>
+                              {day.date.getDate()}
+                              {classesForDate && classesForDate.length > 0 && (
+                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                  <span
+                                    className={cn(
+                                      "block h-2 w-2 rounded-full",
+                                      indicatorColor,
+                                      shouldPulse && "animate-pulse"
+                                    )}
+                                  />
+                                </div>
+                              )}
+                            </CalendarDayButton>
+                          );
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+
+                {/* Selected Date Classes */}
+                <Card className="border-0 shadow-sm bg-card/60 backdrop-blur-sm">
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Dia selecionado</p>
                         <h3 className="text-lg font-semibold tracking-tight">
-                          {selectedDate.toLocaleDateString("pt-BR", {
+                          {(selectedDate || new Date()).toLocaleDateString("pt-BR", {
                             weekday: "long",
                             day: "numeric",
                             month: "long",
                           })}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {selectedDateClasses.length}{" "}
-                          {selectedDateClasses.length === 1
-                            ? "aula encontrada"
-                            : "aulas encontradas"}
+                          Toque no calendário para ver aulas do dia.
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedDate(undefined)}
-                        className="h-8 text-xs hover:bg-accent transition-colors"
-                      >
-                        Limpar seleção
-                      </Button>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {selectedDateClasses.map((liveClass, index) => (
-                        <div
-                          key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-                          style={{ animationDelay: `${index * 50}ms` }}
+                      {selectedDate && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedDate(undefined)}
+                          className="h-8 text-xs hover:bg-accent transition-colors"
                         >
-                          {renderClassCard(liveClass)}
-                        </div>
-                      ))}
+                          Limpar
+                        </Button>
+                      )}
                     </div>
-                  </div>
-                ) : selectedDate && selectedDateClasses.length === 0 ? (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h3 className="text-lg font-semibold tracking-tight">
-                          {selectedDate.toLocaleDateString("pt-BR", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                          })}
-                        </h3>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedDate(undefined)}
-                        className="h-8 text-xs hover:bg-accent transition-colors"
-                      >
-                        Limpar seleção
-                      </Button>
-                    </div>
-                    <Card className="border-dashed border-2">
-                      <div className="p-12 text-center space-y-3">
-                        <div className="inline-flex p-3 rounded-full bg-muted/50">
-                          <CalendarIcon className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="font-medium text-base">
-                            Nenhuma aula ao vivo agendada
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Não há aulas programadas para esta data.
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                ) : (
-                  <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <Tabs defaultValue="upcoming" className="space-y-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="space-y-1">
-                          <h3 className="text-lg font-semibold tracking-tight">
-                            Suas aulas
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Veja próximas e aulas que já aconteceram.
-                          </p>
-                        </div>
-                        <TabsList>
-                          <TabsTrigger value="upcoming">Próximas</TabsTrigger>
-                          <TabsTrigger value="past">Passadas</TabsTrigger>
-                        </TabsList>
-                      </div>
 
-                      <TabsContent value="upcoming" className="space-y-3">
-                        {upcomingClasses.length === 0 ? (
-                          <Card className="border-dashed">
-                            <div className="p-8 text-center space-y-2">
-                              <p className="font-medium">Nenhuma aula futura</p>
-                              <p className="text-sm text-muted-foreground">
-                                Assim que novas aulas forem agendadas,
-                                aparecerão aqui.
-                              </p>
-                            </div>
-                          </Card>
-                        ) : (
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            {upcomingClasses.map((liveClass, index) => (
-                              <div
-                                key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                                className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-                                style={{ animationDelay: `${index * 40}ms` }}
-                              >
-                                {renderClassCard(liveClass, index === 0)}
-                              </div>
-                            ))}
+                    {selectedDate && selectedDateClasses.length > 0 ? (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {selectedDateClasses.map((liveClass, index) => (
+                          <div
+                            key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                            className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                            style={{ animationDelay: `${index * 40}ms` }}
+                          >
+                            {renderClassCard(liveClass, index === 0)}
                           </div>
-                        )}
-                      </TabsContent>
+                        ))}
+                      </div>
+                    ) : selectedDate ? (
+                      <Card className="border-dashed">
+                        <div className="p-8 text-center space-y-2">
+                          <div className="inline-flex p-3 rounded-full bg-muted/50">
+                            <CalendarIcon className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                          <p className="font-medium">Sem aulas ao vivo nesse dia</p>
+                          <p className="text-sm text-muted-foreground">
+                            Escolha outra data para ver aulas programadas.
+                          </p>
+                        </div>
+                      </Card>
+                    ) : (
+                      <div className="rounded-lg border border-dashed bg-muted/50 p-6 text-sm text-muted-foreground">
+                        Selecione um dia para filtrar as aulas e ver detalhes aqui.
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
 
-                      <TabsContent value="past" className="space-y-4">
-                        {latestClass && (
-                          <div className="space-y-4 max-w-2xl">
-                            <div className="space-y-1">
-                              <h4 className="text-sm font-semibold tracking-tight">
-                                Última aula
-                              </h4>
-                              <p className="text-xs text-muted-foreground">
-                                Detalhes da aula mais recente que já aconteceu.
-                              </p>
-                            </div>
-                            {renderClassCard(latestClass)}
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {latestClass.student_feedback && (
-                                <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="p-2 rounded-lg bg-primary/10">
-                                      <MessageSquare className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <h5 className="text-sm font-semibold tracking-tight">
-                                      Seu comentário
-                                    </h5>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {latestClass.student_feedback}
-                                  </p>
-                                </Card>
-                              )}
+              <div className="grid gap-6 xl:grid-cols-2">
+                <Card className="border-0 shadow-sm bg-card/70 backdrop-blur-sm">
+                  <div className="p-5 space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Próximas aulas</p>
+                      <h4 className="text-lg font-semibold tracking-tight">Prepare-se para as próximas aulas</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Veja o que vem pela frente e entre rapidamente nas aulas agendadas.
+                      </p>
+                    </div>
 
-                              {latestClass.teacher_answer && (
-                                <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="p-2 rounded-lg bg-primary/10">
-                                      <MessageSquare className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <h5 className="text-sm font-semibold tracking-tight">
-                                      Resposta do professor
-                                    </h5>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {latestClass.teacher_answer}
-                                  </p>
-                                </Card>
-                              )}
+                    {upcomingClasses.length === 0 ? (
+                      <Card className="border-dashed">
+                        <div className="p-8 text-center space-y-2">
+                          <p className="font-medium">Nenhuma aula futura</p>
+                          <p className="text-sm text-muted-foreground">
+                            Assim que novas aulas forem agendadas, aparecerão aqui.
+                          </p>
+                        </div>
+                      </Card>
+                    ) : (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {upcomingClasses.map((liveClass, index) => (
+                          <div
+                            key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                            className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                            style={{ animationDelay: `${index * 40}ms` }}
+                          >
+                            {renderClassCard(liveClass, index === 0)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Card>
 
-                              <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm sm:col-span-2">
-                                <h5 className="text-sm font-semibold tracking-tight">
-                                  Resumo da aula
-                                </h5>
-                                <div className="space-y-2 text-sm">
-                                  <ul className="space-y-1.5">
-                                    {latestClass.watched && (
-                                      <li className="flex items-center gap-2 text-green-600 dark:text-green-300">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        <span>Aula assistida</span>
-                                      </li>
-                                    )}
-                                    {latestClass.rating && (
-                                      <li className="flex items-center gap-2 text-yellow-600 dark:text-yellow-300">
-                                        <Star className="h-4 w-4" />
-                                        <span>
-                                          Avaliação: {latestClass.rating}/5
-                                        </span>
-                                      </li>
-                                    )}
-                                    {latestClass.exercise_id && (
-                                      <li className="flex items-center gap-2">
-                                        <Award className="h-4 w-4 text-primary" />
-                                        <span>
-                                          Exercício:{" "}
-                                          {latestClass.exercise_score} pontos
-                                        </span>
-                                      </li>
-                                    )}
-                                    {!latestClass.watched &&
-                                      !latestClass.rating &&
-                                      !latestClass.exercise_id && (
-                                        <li className="text-xs text-muted-foreground">
-                                          Nenhum atributo registrado.
-                                        </li>
-                                      )}
-                                  </ul>
+                <Card className="border-0 shadow-sm bg-card/70 backdrop-blur-sm">
+                  <div className="p-5 space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Aulas passadas</p>
+                      <h4 className="text-lg font-semibold tracking-tight">Reveja o que já rolou</h4>
+                      <p className="text-sm text-muted-foreground">
+                        A seção fica sempre visível logo abaixo do calendário para acesso rápido.
+                      </p>
+                    </div>
+
+                    {latestClass ? (
+                      <div className="space-y-4">
+                        {renderClassCard(latestClass)}
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {latestClass.student_feedback && (
+                            <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                  <MessageSquare className="h-4 w-4 text-primary" />
                                 </div>
-                              </Card>
-                            </div>
-                          </div>
-                        )}
+                                <h5 className="text-sm font-semibold tracking-tight">
+                                  Seu comentário
+                                </h5>
+                              </div>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {latestClass.student_feedback}
+                              </p>
+                            </Card>
+                          )}
 
-                        {!latestClass && (
-                          <Card className="border-dashed">
-                            <div className="p-8 text-center space-y-2">
-                              <p className="font-medium">
-                                Nenhuma aula passada
+                          {latestClass.teacher_answer && (
+                            <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                  <MessageSquare className="h-4 w-4 text-primary" />
+                                </div>
+                                <h5 className="text-sm font-semibold tracking-tight">
+                                  Resposta do professor
+                                </h5>
+                              </div>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {latestClass.teacher_answer}
                               </p>
-                              <p className="text-sm text-muted-foreground">
-                                Assim que você participar de aulas, elas
-                                aparecerão aqui.
-                              </p>
+                            </Card>
+                          )}
+
+                          <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm sm:col-span-2">
+                            <h5 className="text-sm font-semibold tracking-tight">
+                              Resumo da aula
+                            </h5>
+                            <div className="space-y-2 text-sm">
+                              <ul className="space-y-1.5">
+                                {latestClass.watched && (
+                                  <li className="flex items-center gap-2 text-green-600 dark:text-green-300">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    <span>Aula assistida</span>
+                                  </li>
+                                )}
+                                {latestClass.rating && (
+                                  <li className="flex items-center gap-2 text-yellow-600 dark:text-yellow-300">
+                                    <Star className="h-4 w-4" />
+                                    <span>
+                                      Avaliação: {latestClass.rating}/5
+                                    </span>
+                                  </li>
+                                )}
+                                {latestClass.exercise_id && (
+                                  <li className="flex items-center gap-2">
+                                    <Award className="h-4 w-4 text-primary" />
+                                    <span>
+                                      Exercício: {latestClass.exercise_score} pontos
+                                    </span>
+                                  </li>
+                                )}
+                                {!latestClass.watched &&
+                                  !latestClass.rating &&
+                                  !latestClass.exercise_id && (
+                                    <li className="text-xs text-muted-foreground">
+                                      Nenhum atributo registrado.
+                                    </li>
+                                  )}
+                              </ul>
                             </div>
                           </Card>
-                        )}
-                      </TabsContent>
-                    </Tabs>
+                        </div>
+                      </div>
+                    ) : (
+                      <Card className="border-dashed">
+                        <div className="p-8 text-center space-y-2">
+                          <p className="font-medium">Nenhuma aula passada</p>
+                          <p className="text-sm text-muted-foreground">
+                            Assim que você participar de aulas, elas aparecerão aqui.
+                          </p>
+                        </div>
+                      </Card>
+                    )}
                   </div>
-                )}
+                </Card>
               </div>
             </div>
           )}
         </div>
       </div>
-
       <div className="border-t pt-6 space-y-6">
         {/* Course Cards Grid */}
         <div className="space-y-1.5">
