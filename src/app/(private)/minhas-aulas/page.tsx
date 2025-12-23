@@ -451,7 +451,7 @@ export default function MinhasAulasPage() {
             </div>
           ) : (
             <div className="space-y-8">
-              <div className="grid gap-6 md:grid-cols-[320px,1fr] lg:grid-cols-[360px,1fr] items-start">
+              <div className="grid gap-6 lg:grid-cols-[360px,1fr] items-start">
                 {/* Calendar Section */}
                 <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
                   <div className="p-3">
@@ -502,105 +502,107 @@ export default function MinhasAulasPage() {
                   </div>
                 </Card>
 
-                {/* Selected Date Classes */}
-                <Card className="border-0 shadow-sm bg-card/60 backdrop-blur-sm">
-                  <div className="p-5 space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Dia selecionado</p>
-                        <h3 className="text-lg font-semibold tracking-tight">
-                          {(selectedDate || new Date()).toLocaleDateString("pt-BR", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                          })}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Toque no calendário para ver aulas do dia.
-                        </p>
+                <div className="space-y-6">
+                  {/* Selected Date Classes */}
+                  <Card className="border-0 shadow-sm bg-card/60 backdrop-blur-sm">
+                    <div className="p-5 space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="space-y-1">
+                          <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Dia selecionado</p>
+                          <h3 className="text-lg font-semibold tracking-tight">
+                            {(selectedDate || new Date()).toLocaleDateString("pt-BR", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                            })}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Toque no calendário para ver aulas do dia.
+                          </p>
+                        </div>
+                        {selectedDate && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedDate(undefined)}
+                            className="h-8 text-xs hover:bg-accent transition-colors"
+                          >
+                            Limpar
+                          </Button>
+                        )}
                       </div>
-                      {selectedDate && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedDate(undefined)}
-                          className="h-8 text-xs hover:bg-accent transition-colors"
-                        >
-                          Limpar
-                        </Button>
+
+                      {selectedDate && selectedDateClasses.length > 0 ? (
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {selectedDateClasses.map((liveClass, index) => (
+                            <div
+                              key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                              style={{ animationDelay: `${index * 40}ms` }}
+                            >
+                              {renderClassCard(liveClass, index === 0)}
+                            </div>
+                          ))}
+                        </div>
+                      ) : selectedDate ? (
+                        <Card className="border-dashed">
+                          <div className="p-8 text-center space-y-2">
+                            <div className="inline-flex p-3 rounded-full bg-muted/50">
+                              <CalendarIcon className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                            <p className="font-medium">Sem aulas ao vivo nesse dia</p>
+                            <p className="text-sm text-muted-foreground">
+                              Escolha outra data para ver aulas programadas.
+                            </p>
+                          </div>
+                        </Card>
+                      ) : (
+                        <div className="rounded-lg border border-dashed bg-muted/50 p-6 text-sm text-muted-foreground">
+                          Selecione um dia para filtrar as aulas e ver detalhes aqui.
+                        </div>
                       )}
                     </div>
+                  </Card>
 
-                    {selectedDate && selectedDateClasses.length > 0 ? (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {selectedDateClasses.map((liveClass, index) => (
-                          <div
-                            key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                            className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-                            style={{ animationDelay: `${index * 40}ms` }}
-                          >
-                            {renderClassCard(liveClass, index === 0)}
-                          </div>
-                        ))}
+                  {/* Upcoming Classes */}
+                  <Card className="border-0 shadow-sm bg-card/70 backdrop-blur-sm">
+                    <div className="p-5 space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Próximas aulas</p>
+                        <h4 className="text-lg font-semibold tracking-tight">Prepare-se para as próximas aulas</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Veja o que vem pela frente e entre rapidamente nas aulas agendadas.
+                        </p>
                       </div>
-                    ) : selectedDate ? (
-                      <Card className="border-dashed">
-                        <div className="p-8 text-center space-y-2">
-                          <div className="inline-flex p-3 rounded-full bg-muted/50">
-                            <CalendarIcon className="h-6 w-6 text-muted-foreground" />
+
+                      {upcomingClasses.length === 0 ? (
+                        <Card className="border-dashed">
+                          <div className="p-8 text-center space-y-2">
+                            <p className="font-medium">Nenhuma aula futura</p>
+                            <p className="text-sm text-muted-foreground">
+                              Assim que novas aulas forem agendadas, aparecerão aqui.
+                            </p>
                           </div>
-                          <p className="font-medium">Sem aulas ao vivo nesse dia</p>
-                          <p className="text-sm text-muted-foreground">
-                            Escolha outra data para ver aulas programadas.
-                          </p>
+                        </Card>
+                      ) : (
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {upcomingClasses.map((liveClass, index) => (
+                            <div
+                              key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                              style={{ animationDelay: `${index * 40}ms` }}
+                            >
+                              {renderClassCard(liveClass, index === 0)}
+                            </div>
+                          ))}
                         </div>
-                      </Card>
-                    ) : (
-                      <div className="rounded-lg border border-dashed bg-muted/50 p-6 text-sm text-muted-foreground">
-                        Selecione um dia para filtrar as aulas e ver detalhes aqui.
-                      </div>
-                    )}
-                  </div>
-                </Card>
+                      )}
+                    </div>
+                  </Card>
+                </div>
               </div>
 
-              <div className="grid gap-6 xl:grid-cols-2">
-                <Card className="border-0 shadow-sm bg-card/70 backdrop-blur-sm">
-                  <div className="p-5 space-y-4">
-                    <div className="space-y-1">
-                      <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Próximas aulas</p>
-                      <h4 className="text-lg font-semibold tracking-tight">Prepare-se para as próximas aulas</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Veja o que vem pela frente e entre rapidamente nas aulas agendadas.
-                      </p>
-                    </div>
-
-                    {upcomingClasses.length === 0 ? (
-                      <Card className="border-dashed">
-                        <div className="p-8 text-center space-y-2">
-                          <p className="font-medium">Nenhuma aula futura</p>
-                          <p className="text-sm text-muted-foreground">
-                            Assim que novas aulas forem agendadas, aparecerão aqui.
-                          </p>
-                        </div>
-                      </Card>
-                    ) : (
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {upcomingClasses.map((liveClass, index) => (
-                          <div
-                            key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                            className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-                            style={{ animationDelay: `${index * 40}ms` }}
-                          >
-                            {renderClassCard(liveClass, index === 0)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-
-                <Card className="border-0 shadow-sm bg-card/70 backdrop-blur-sm">
+              <Card className="border-0 shadow-sm bg-card/70 backdrop-blur-sm">
                   <div className="p-5 space-y-4">
                     <div className="space-y-1">
                       <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Aulas passadas</p>
