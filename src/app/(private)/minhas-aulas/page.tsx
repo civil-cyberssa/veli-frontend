@@ -449,12 +449,6 @@ export default function MinhasAulasPage() {
                 Erro ao carregar aulas: {allClassesError.message}
               </p>
             </div>
-          ) : !allLiveClasses || allLiveClasses.length === 0 ? (
-            <div className="flex items-center justify-center h-48">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma aula ao vivo agendada
-              </p>
-            </div>
           ) : (
             <div className="space-y-8">
               <div className="grid gap-6 md:grid-cols-[320px,1fr] lg:grid-cols-[360px,1fr] items-start">
@@ -555,7 +549,7 @@ export default function MinhasAulasPage() {
                           <div className="inline-flex p-3 rounded-full bg-muted/50">
                             <CalendarIcon className="h-6 w-6 text-muted-foreground" />
                           </div>
-                          <p className="font-medium">Nenhuma aula para este dia</p>
+                          <p className="font-medium">Sem aulas ao vivo nesse dia</p>
                           <p className="text-sm text-muted-foreground">
                             Escolha outra data para ver aulas programadas.
                           </p>
