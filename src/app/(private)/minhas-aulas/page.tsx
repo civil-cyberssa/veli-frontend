@@ -457,7 +457,7 @@ export default function MinhasAulasPage() {
             </div>
           ) : (
             <div className="space-y-8">
-              <div className="grid gap-6 lg:grid-cols-[320px,1fr] xl:grid-cols-[360px,1fr]">
+              <div className="grid gap-6 md:grid-cols-[320px,1fr] lg:grid-cols-[360px,1fr] items-start">
                 {/* Calendar Section */}
                 <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
                   <div className="p-3">
