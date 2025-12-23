@@ -36,9 +36,9 @@ const normalizeFlagValue = (flag?: string): string => {
 
   const trimmed = flag.trim()
 
+  // If it's a 2-letter code, ALWAYS convert to emoji
   if (isTwoLetterCode(trimmed)) {
-    const codeFlag = getFlagFromCountryCode(trimmed)
-    if (codeFlag) return codeFlag
+    return getFlagFromCountryCode(trimmed)
   }
 
   return trimmed

@@ -513,11 +513,14 @@ export default function MinhasAulasPage() {
                         // Helper function to ensure we always get emoji flags
                         const ensureEmojiFlag = (flag: string): string => {
                           if (!flag) return "";
-                          // If it's a 2-letter code, convert to emoji
-                          if (/^[A-Za-z]{2}$/.test(flag.trim())) {
-                            return getFlagFromCountryCode(flag) || flag;
+                          const trimmed = flag.trim();
+                          // If it's a 2-letter code, convert to emoji (never return the code)
+                          if (/^[A-Za-z]{2}$/.test(trimmed)) {
+                            const emoji = getFlagFromCountryCode(trimmed);
+                            // If conversion fails, return empty instead of the code
+                            return emoji || "";
                           }
-                          return flag;
+                          return trimmed;
                         };
 
                         // Get unique flags for this date (limit to 3)
@@ -527,8 +530,23 @@ export default function MinhasAulasPage() {
                                 const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
                                 const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
                                 const rawFlag = flagFromMeta || flagFromCourse;
-                                // Ensure it's an emoji, not a code
-                                return ensureEmojiFlag(rawFlag);
+                                const finalFlag = ensureEmojiFlag(rawFlag);
+
+                                // Debug logging
+                                if (rawFlag) {
+                                  console.log('Calendar flag debug:', {
+                                    courseName: liveClass.course.course_name,
+                                    flagFromMeta,
+                                    flagFromCourse,
+                                    rawFlag,
+                                    rawFlagLength: rawFlag?.length,
+                                    isTwoLetterCode: /^[A-Za-z]{2}$/.test(rawFlag?.trim() || ''),
+                                    finalFlag,
+                                    finalFlagCodePoints: finalFlag ? [...finalFlag].map(c => c.codePointAt(0)) : []
+                                  });
+                                }
+
+                                return finalFlag;
                               })
                               .filter(Boolean)
                               .filter((flag, index, self) => self.indexOf(flag) === index)
@@ -587,9 +605,10 @@ export default function MinhasAulasPage() {
                           getFlagFromLanguageMetadata(liveClass.event) ||
                           getFlagFromCourseName(liveClass.course.course_name) ||
                           "🌐";
-                        // Ensure it's an emoji, not a code
-                        const flag = /^[A-Za-z]{2}$/.test(rawFlag.trim())
-                          ? getFlagFromCountryCode(rawFlag) || rawFlag
+                        // Ensure it's an emoji, not a code (return empty if conversion fails)
+                        const trimmedFlag = rawFlag.trim();
+                        const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
+                          ? getFlagFromCountryCode(trimmedFlag) || "🌐"
                           : rawFlag;
                         const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
 
