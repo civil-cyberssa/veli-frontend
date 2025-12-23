@@ -428,45 +428,46 @@ export default function MinhasAulasPage() {
   return (
     <div className="max-w-7xl mx-auto pb-16 space-y-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="space-y-4 pt-8">
-        <div className="space-y-2">
+      <div className="space-y-6 pt-8 pb-2">
+        <div className="space-y-3">
          <div className="flex items-center gap-4">
-           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text">
-            Minhas Aulas{" "}
+           <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text text-transparent">
+            Minhas Aulas
           </h1>
             <Badge
-              variant="default"
-              className="gap-2 px-3 py-1.5 text-xs font-medium"
+              variant="secondary"
+              className="gap-2 px-3.5 py-1.5 text-sm font-semibold shadow-sm"
             >
-              <Users className="h-3.5 w-3.5" />
+              <Users className="h-4 w-4" />
               {sortedAllLiveClasses.length}{" "}
               {sortedAllLiveClasses.length === 1 ? "aula" : "aulas"}
             </Badge>
           </div>
-          <p className="text-muted-foreground text-lg max-w-2xl">
-            Acompanhe e acesse todas as aulas ao vivo dos cursos em que você
-            está inscrito.
+          <p className="text-muted-foreground/80 text-base max-w-3xl leading-relaxed">
+            Acompanhe e acesse todas as aulas ao vivo dos cursos em que você está inscrito.
           </p>
         </div>
 
         {nextClass && (
-          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-            <Badge variant="outline" className="gap-1 px-2 py-1 text-xs">
-              <Bell className="h-3.5 w-3.5" />
-              Próxima aula
-            </Badge>
-            <span className="font-medium">
-              {formatDateTime(nextClass.event.scheduled_datetime).date} às{" "}
-              {formatDateTime(nextClass.event.scheduled_datetime).time}
-            </span>
-            <span className="text-xs text-muted-foreground/80">
-              ({getTimeUntilClass(nextClass.event.scheduled_datetime)})
-            </span>
-          </div>
+          <Card className="border-primary/20 bg-primary/5 backdrop-blur-sm">
+            <div className="flex flex-wrap items-center gap-4 p-4">
+              <Badge variant="default" className="gap-1.5 px-3 py-1.5 text-xs font-semibold shadow-lg">
+                <Bell className="h-3.5 w-3.5" />
+                Próxima aula
+              </Badge>
+              <span className="font-semibold text-base text-foreground">
+                {formatDateTime(nextClass.event.scheduled_datetime).date} às{" "}
+                {formatDateTime(nextClass.event.scheduled_datetime).time}
+              </span>
+              <span className="text-sm text-muted-foreground/90 font-medium">
+                {getTimeUntilClass(nextClass.event.scheduled_datetime)}
+              </span>
+            </div>
+          </Card>
         )}
       </div>
 
-      <div className="border-t pt-6 space-y-6">
+      <div className="border-t border-border/50 pt-8 space-y-8">
         {/* Calendar View */}
         <div className="space-y-6">
           {loadingAllClasses ? (
@@ -488,10 +489,16 @@ export default function MinhasAulasPage() {
           ) : (
             <div className="grid lg:grid-cols-[auto_2fr] gap-8">
               {/* Left Column: Calendar and Past Classes */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {/* Calendar Section */}
-                <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
-                  <div className="p-3">
+                <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm h-fit mx-auto lg:mx-0 overflow-hidden">
+                  <div className="p-5 border-b border-border/30 bg-gradient-to-br from-card to-card/80">
+                    <h3 className="text-sm font-semibold text-foreground/90 uppercase tracking-wider flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-primary" />
+                      Calendário
+                    </h3>
+                  </div>
+                  <div className="p-4">
                     <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -530,23 +537,7 @@ export default function MinhasAulasPage() {
                                 const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
                                 const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
                                 const rawFlag = flagFromMeta || flagFromCourse;
-                                const finalFlag = ensureEmojiFlag(rawFlag);
-
-                                // Debug logging
-                                if (rawFlag) {
-                                  console.log('Calendar flag debug:', {
-                                    courseName: liveClass.course.course_name,
-                                    flagFromMeta,
-                                    flagFromCourse,
-                                    rawFlag,
-                                    rawFlagLength: rawFlag?.length,
-                                    isTwoLetterCode: /^[A-Za-z]{2}$/.test(rawFlag?.trim() || ''),
-                                    finalFlag,
-                                    finalFlagCodePoints: finalFlag ? [...finalFlag].map(c => c.codePointAt(0)) : []
-                                  });
-                                }
-
-                                return finalFlag;
+                                return ensureEmojiFlag(rawFlag);
                               })
                               .filter(Boolean)
                               .filter((flag, index, self) => self.indexOf(flag) === index)
@@ -589,55 +580,59 @@ export default function MinhasAulasPage() {
 
               {/* Past Classes Section - Below Calendar */}
               {pastClasses.length > 0 && (
-                <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
-                  <div className="p-4 space-y-4">
+                <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm h-fit mx-auto lg:mx-0 overflow-hidden">
+                  <div className="p-5 border-b border-border/30 bg-gradient-to-br from-card to-card/80">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-semibold tracking-tight">
+                      <h4 className="text-sm font-semibold text-foreground/90 uppercase tracking-wider flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary" />
                         Aulas Passadas
                       </h4>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground/70 font-medium">
                         Últimas {Math.min(pastClasses.length, 5)} aulas realizadas
                       </p>
                     </div>
-                    <div className="space-y-2">
-                      {pastClasses.slice(0, 5).map((liveClass, index) => {
-                        const rawFlag =
-                          getFlagFromLanguageMetadata(liveClass.event) ||
-                          getFlagFromCourseName(liveClass.course.course_name) ||
-                          "🌐";
-                        // Ensure it's an emoji, not a code (return empty if conversion fails)
-                        const trimmedFlag = rawFlag.trim();
-                        const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
-                          ? getFlagFromCountryCode(trimmedFlag) || "🌐"
-                          : rawFlag;
-                        const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                  </div>
+                  <div className="p-3 space-y-1">
+                    {pastClasses.slice(0, 5).map((liveClass, index) => {
+                      const rawFlag =
+                        getFlagFromLanguageMetadata(liveClass.event) ||
+                        getFlagFromCourseName(liveClass.course.course_name) ||
+                        "🌐";
+                      // Ensure it's an emoji, not a code (return empty if conversion fails)
+                      const trimmedFlag = rawFlag.trim();
+                      const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
+                        ? getFlagFromCountryCode(trimmedFlag) || "🌐"
+                        : rawFlag;
+                      const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
 
-                        return (
-                          <div
-                            key={`${liveClass.event.id}-${liveClass.student_class_id}-past`}
-                            onClick={() => router.push(`/aula/${liveClass.event.id}`)}
-                            className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors group"
-                          >
-                            <div className="flex-shrink-0 text-lg">
-                              {flag}
-                            </div>
-                            <div className="flex-1 min-w-0 space-y-0.5">
-                              <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">
-                                {liveClass.course.course_name}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {dateTime.date} às {dateTime.time}
-                              </p>
-                            </div>
-                            {liveClass.watched && (
-                              <div className="flex-shrink-0">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                              </div>
-                            )}
+                      return (
+                        <div
+                          key={`${liveClass.event.id}-${liveClass.student_class_id}-past`}
+                          onClick={() => router.push(`/aula/${liveClass.event.id}`)}
+                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/60 active:bg-accent/80 cursor-pointer transition-all group border border-transparent hover:border-border/30 hover:shadow-md"
+                        >
+                          <div className="flex-shrink-0 text-xl group-hover:scale-110 transition-transform">
+                            {flag}
                           </div>
-                        );
-                      })}
-                    </div>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
+                              {liveClass.course.course_name}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/80 font-medium">
+                              {dateTime.date} às {dateTime.time}
+                            </p>
+                          </div>
+                          {liveClass.watched && (
+                            <div className="flex-shrink-0">
+                              <div className="p-1 rounded-full bg-success/10">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                              </div>
+                            </div>
+                          )}
+                          <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      );
+                    })}
                   </div>
                 </Card>
               )}
