@@ -607,7 +607,7 @@ export default function MinhasAulasPage() {
                                 {liveClass.course.course_name}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                {dateTime}
+                                {dateTime.date} às {dateTime.time}
                               </p>
                             </div>
                             {liveClass.watched && (
