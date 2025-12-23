@@ -472,39 +472,37 @@ export default function MinhasAulasPage() {
         )}
       </div>
 
-      <div className="border-t border-border/50 pt-8 space-y-8">
-        {/* Calendar View */}
-        <div className="space-y-6">
-          {loadingAllClasses ? (
-            <div className="flex items-center justify-center h-48">
-              <LogoPulseLoader label="Carregando aulas ao vivo..." />
-            </div>
-          ) : allClassesError ? (
-            <div className="flex items-center justify-center h-48">
-              <p className="text-sm text-destructive">
-                Erro ao carregar aulas: {allClassesError.message}
-              </p>
-            </div>
-          ) : !allLiveClasses || allLiveClasses.length === 0 ? (
-            <div className="flex items-center justify-center h-48">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma aula ao vivo agendada
-              </p>
-            </div>
-          ) : (
-            <div className="grid lg:grid-cols-[auto_2fr] gap-8">
-              {/* Left Column: Calendar and Past Classes */}
-              <div className="space-y-6">
-                {/* Calendar Section */}
-                <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm h-fit mx-auto lg:mx-0 overflow-hidden">
-                  <div className="p-5 border-b border-border/30 bg-gradient-to-br from-card to-card/80">
-                    <h3 className="text-sm font-semibold text-foreground/90 uppercase tracking-wider flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4 text-primary" />
-                      Calendário
-                    </h3>
-                  </div>
-                  <div className="p-4">
-                    <Calendar
+      {/* Main Content */}
+      <div className="space-y-8">
+        {loadingAllClasses ? (
+          <div className="flex items-center justify-center h-48">
+            <LogoPulseLoader label="Carregando aulas ao vivo..." />
+          </div>
+        ) : allClassesError ? (
+          <div className="flex items-center justify-center h-48">
+            <p className="text-sm text-destructive">
+              Erro ao carregar aulas: {allClassesError.message}
+            </p>
+          </div>
+        ) : !allLiveClasses || allLiveClasses.length === 0 ? (
+          <div className="flex items-center justify-center h-48">
+            <p className="text-sm text-muted-foreground">
+              Nenhuma aula ao vivo agendada
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Calendar Section */}
+            <div className="max-w-sm mx-auto lg:mx-0">
+              <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+                <div className="p-4 border-b border-border/30">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-primary" />
+                    Calendário
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
@@ -512,37 +510,27 @@ export default function MinhasAulasPage() {
                       DayButton: ({ day, ...props }) => {
                         const dateKey = day.date.toISOString().split("T")[0];
                         const classesForDate = dateClassMap.get(dateKey);
-
-                        // Check if this date is today or in the future
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         const dateToCheck = new Date(day.date);
                         dateToCheck.setHours(0, 0, 0, 0);
-
                         const isToday = dateToCheck.getTime() === today.getTime();
                         const hasClasses = classesForDate && classesForDate.length > 0;
 
                         return (
                           <CalendarDayButton day={day} {...props}>
                             {day.date.getDate()}
-
-                            {/* Indicator states */}
                             {isToday && hasClasses && (
-                              // Today WITH classes: green pulsing ball
                               <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
                                 <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-lg shadow-success/50" />
                               </div>
                             )}
-
                             {isToday && !hasClasses && (
-                              // Today WITHOUT classes: subtle green marker
                               <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
                                 <div className="w-1 h-1 rounded-full bg-success/60" />
                               </div>
                             )}
-
                             {!isToday && hasClasses && (
-                              // Other days WITH classes: simple icon without animation
                               <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
                                 <div className="w-1 h-1 rounded-full bg-primary/60" />
                               </div>
@@ -554,405 +542,183 @@ export default function MinhasAulasPage() {
                   />
                 </div>
               </Card>
+            </div>
 
-              {/* Past Classes Carousel - Below Calendar */}
-              {pastClasses.length > 0 && (
-                <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm h-fit mx-auto lg:mx-0 overflow-visible">
-                  <div className="p-4 border-b border-border/30 bg-gradient-to-br from-card to-card/80">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-semibold text-foreground/90 flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-primary" />
-                          Aulas Passadas
-                        </h4>
-                        <p className="text-xs text-muted-foreground/70">
-                          {pastClasses.length} {pastClasses.length === 1 ? "aula" : "aulas"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="relative">
-                      <Carousel className="w-full">
-                        <CarouselContent className="-ml-2">
-                          {pastClasses.slice(0, 10).map((liveClass) => {
-                            const rawFlag =
-                              getFlagFromLanguageMetadata(liveClass.event) ||
-                              getFlagFromCourseName(liveClass.course.course_name) ||
-                              "🌐";
-                            const trimmedFlag = rawFlag.trim();
-                            const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
-                              ? getFlagFromCountryCode(trimmedFlag) || "🌐"
-                              : rawFlag;
-                            const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
-                            const classId = `${liveClass.event.id}-${liveClass.student_class_id}`;
-                            const isExpanded = expandedPastClassId === classId;
+            {/* Upcoming Classes Carousel */}
+            {upcomingClasses.length > 0 && (
+              <div>
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold">Próximas Aulas</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {upcomingClasses.length} {upcomingClasses.length === 1 ? "aula agendada" : "aulas agendadas"}
+                  </p>
+                </div>
+                <div className="relative px-12">
+                  <Carousel className="w-full">
+                    <CarouselContent className="-ml-4">
+                      {upcomingClasses.map((liveClass, index) => {
+                        const flag =
+                          getFlagFromLanguageMetadata(liveClass.event) ||
+                          getFlagFromCourseName(liveClass.course.course_name) ||
+                          "🌐";
+                        const timeUntil = getTimeUntilClass(liveClass.event.scheduled_datetime);
+                        const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                        const isNextClass = index === 0;
 
-                            return (
-                              <CarouselItem key={classId} className="pl-2">
-                                <div className="space-y-2">
-                                  <button
-                                    onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
-                                    className="w-full text-left p-3 rounded-lg bg-accent/30 hover:bg-accent/50 active:bg-accent/60 transition-colors border border-border/20 hover:border-border/40"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <span className="text-xl flex-shrink-0">{flag}</span>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold truncate">
-                                          {liveClass.course.course_name}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground/80 mt-1">
-                                          {dateTime.date} • {dateTime.time}
-                                        </p>
-                                        {(liveClass.student_feedback || liveClass.teacher_answer) && (
-                                          <p className="text-[10px] text-primary/80 mt-2 flex items-center gap-1">
-                                            <MessageSquare className="h-3 w-3" />
-                                            {isExpanded ? "Ocultar" : "Ver"} comentários
-                                          </p>
-                                        )}
-                                      </div>
-                                      {liveClass.watched && (
-                                        <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                                      )}
+                        return (
+                          <CarouselItem key={`${liveClass.event.id}-${liveClass.student_class_id}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                            <Card className={cn(
+                              "border transition-all hover:shadow-lg overflow-hidden bg-card/60 backdrop-blur-sm h-full",
+                              "hover:border-primary/50",
+                              isNextClass && "ring-2 ring-primary shadow-lg"
+                            )}>
+                              <div className="p-4 space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-2xl flex-shrink-0">{flag}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold truncate">
+                                      {liveClass.course.course_name}
+                                    </p>
+                                    {isNextClass && (
+                                      <Badge variant="default" className="text-[10px] px-2 py-0.5 mt-1">
+                                        Próxima
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="space-y-1.5 text-xs">
+                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                    <CalendarIcon className="h-3.5 w-3.5" />
+                                    <span>{dateTime.date}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    <span>{dateTime.time}</span>
+                                    {timeUntil && (
+                                      <span className="text-primary font-semibold ml-auto">
+                                        {timeUntil}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <a
+                                  href={`/aula/${liveClass.event.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={cn(
+                                    "flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-md",
+                                    "bg-primary text-primary-foreground hover:bg-primary/90",
+                                    "transition-colors font-medium text-sm"
+                                  )}
+                                >
+                                  <Camera className="h-4 w-4" />
+                                  Acessar Aula
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                            </Card>
+                          </CarouselItem>
+                        );
+                      })}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                </div>
+              </div>
+            )}
+
+            {/* Past Classes Carousel */}
+            {pastClasses.length > 0 && (
+              <div>
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold">Aulas Passadas</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {pastClasses.length} {pastClasses.length === 1 ? "aula realizada" : "aulas realizadas"}
+                  </p>
+                </div>
+                <div className="relative px-12">
+                  <Carousel className="w-full">
+                    <CarouselContent className="-ml-4">
+                      {pastClasses.slice(0, 10).map((liveClass) => {
+                        const rawFlag =
+                          getFlagFromLanguageMetadata(liveClass.event) ||
+                          getFlagFromCourseName(liveClass.course.course_name) ||
+                          "🌐";
+                        const trimmedFlag = rawFlag.trim();
+                        const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
+                          ? getFlagFromCountryCode(trimmedFlag) || "🌐"
+                          : rawFlag;
+                        const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                        const classId = `${liveClass.event.id}-${liveClass.student_class_id}`;
+                        const isExpanded = expandedPastClassId === classId;
+
+                        return (
+                          <CarouselItem key={classId} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                            <div className="space-y-2">
+                              <button
+                                onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
+                                className="w-full text-left p-4 rounded-lg bg-card border border-border hover:border-primary/50 transition-all"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <span className="text-2xl flex-shrink-0">{flag}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold truncate">
+                                      {liveClass.course.course_name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {dateTime.date} • {dateTime.time}
+                                    </p>
+                                    {(liveClass.student_feedback || liveClass.teacher_answer) && (
+                                      <p className="text-[10px] text-primary mt-2 flex items-center gap-1">
+                                        <MessageSquare className="h-3 w-3" />
+                                        {isExpanded ? "Ocultar" : "Ver"} comentários
+                                      </p>
+                                    )}
+                                  </div>
+                                  {liveClass.watched && (
+                                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                                  )}
+                                </div>
+                              </button>
+
+                              {isExpanded && (liveClass.student_feedback || liveClass.teacher_answer) && (
+                                <div className="space-y-2 animate-in slide-in-from-top duration-200">
+                                  {liveClass.student_feedback && (
+                                    <div className="p-3 rounded-lg bg-accent border border-border">
+                                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5">
+                                        Seu comentário
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {liveClass.student_feedback}
+                                      </p>
                                     </div>
-                                  </button>
-
-                                  {/* Comments (expanded) */}
-                                  {isExpanded && (liveClass.student_feedback || liveClass.teacher_answer) && (
-                                    <div className="space-y-2 px-1">
-                                      {liveClass.student_feedback && (
-                                        <div className="p-2.5 rounded-lg bg-accent/20 border border-border/20">
-                                          <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wide mb-1.5">
-                                            Seu comentário
-                                          </p>
-                                          <p className="text-xs text-muted-foreground leading-relaxed">
-                                            {liveClass.student_feedback}
-                                          </p>
-                                        </div>
-                                      )}
-                                      {liveClass.teacher_answer && (
-                                        <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20">
-                                          <p className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">
-                                            Resposta do professor
-                                          </p>
-                                          <p className="text-xs text-muted-foreground leading-relaxed">
-                                            {liveClass.teacher_answer}
-                                          </p>
-                                        </div>
-                                      )}
+                                  )}
+                                  {liveClass.teacher_answer && (
+                                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                                      <p className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">
+                                        Resposta do professor
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {liveClass.teacher_answer}
+                                      </p>
                                     </div>
                                   )}
                                 </div>
-                              </CarouselItem>
-                            );
-                          })}
-                        </CarouselContent>
-                        <CarouselPrevious className="left-0" />
-                        <CarouselNext className="right-0" />
-                      </Carousel>
-                    </div>
-                  </div>
-                </Card>
-              )}
-              </div>
-
-              {/* Selected Date Classes or Latest/Lists */}
-              <div className="space-y-5">
-                {selectedDate && selectedDateClasses.length > 0 ? (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h3 className="text-lg font-semibold tracking-tight">
-                          {selectedDate.toLocaleDateString("pt-BR", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                          })}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedDateClasses.length}{" "}
-                          {selectedDateClasses.length === 1
-                            ? "aula encontrada"
-                            : "aulas encontradas"}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedDate(undefined)}
-                        className="h-8 text-xs hover:bg-accent transition-colors"
-                      >
-                        Limpar seleção
-                      </Button>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {selectedDateClasses.map((liveClass, index) => (
-                        <div
-                          key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          {renderClassCard(liveClass)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : selectedDate && selectedDateClasses.length === 0 ? (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h3 className="text-lg font-semibold tracking-tight">
-                          {selectedDate.toLocaleDateString("pt-BR", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                          })}
-                        </h3>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedDate(undefined)}
-                        className="h-8 text-xs hover:bg-accent transition-colors"
-                      >
-                        Limpar seleção
-                      </Button>
-                    </div>
-                    <Card className="border-dashed border-2">
-                      <div className="p-12 text-center space-y-3">
-                        <div className="inline-flex p-3 rounded-full bg-muted/50">
-                          <CalendarIcon className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="font-medium text-base">
-                            Nenhuma aula ao vivo agendada
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Não há aulas programadas para esta data.
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                ) : (
-                  <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <Tabs defaultValue="upcoming" className="space-y-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="space-y-1">
-                          <h3 className="text-lg font-semibold tracking-tight">
-                            Suas aulas
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Veja próximas e aulas que já aconteceram.
-                          </p>
-                        </div>
-                        <TabsList>
-                          <TabsTrigger value="upcoming">Próximas</TabsTrigger>
-                          <TabsTrigger value="past">Passadas</TabsTrigger>
-                        </TabsList>
-                      </div>
-
-                      <TabsContent value="upcoming" className="space-y-3">
-                        {upcomingClasses.length === 0 ? (
-                          <Card className="border-dashed">
-                            <div className="p-8 text-center space-y-2">
-                              <p className="font-medium">Nenhuma aula futura</p>
-                              <p className="text-sm text-muted-foreground">
-                                Assim que novas aulas forem agendadas, aparecerão aqui.
-                              </p>
-                            </div>
-                          </Card>
-                        ) : (
-                          <div className="relative">
-                            <Carousel className="w-full">
-                              <CarouselContent className="-ml-4">
-                                {upcomingClasses.map((liveClass, index) => {
-                                  const flag =
-                                    getFlagFromLanguageMetadata(liveClass.event) ||
-                                    getFlagFromCourseName(liveClass.course.course_name) ||
-                                    "🌐";
-                                  const timeUntil = getTimeUntilClass(liveClass.event.scheduled_datetime);
-                                  const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
-                                  const isNextClass = index === 0;
-
-                                  return (
-                                    <CarouselItem key={`${liveClass.event.id}-${liveClass.student_class_id}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                                      <Card className={cn(
-                                        "border transition-all hover:shadow-lg overflow-hidden bg-card/60 backdrop-blur-sm h-full",
-                                        "hover:border-primary/50",
-                                        isNextClass && "ring-2 ring-primary shadow-lg"
-                                      )}>
-                                        <div className="p-4 space-y-3">
-                                          {/* Header */}
-                                          <div className="flex items-center gap-3">
-                                            <span className="text-2xl flex-shrink-0">{flag}</span>
-                                            <div className="flex-1 min-w-0">
-                                              <p className="text-sm font-semibold truncate">
-                                                {liveClass.course.course_name}
-                                              </p>
-                                              {isNextClass && (
-                                                <Badge variant="default" className="text-[10px] px-2 py-0.5 mt-1">
-                                                  Próxima
-                                                </Badge>
-                                              )}
-                                            </div>
-                                          </div>
-
-                                          {/* Date and Time */}
-                                          <div className="space-y-1.5 text-xs">
-                                            <div className="flex items-center gap-2 text-muted-foreground">
-                                              <CalendarIcon className="h-3.5 w-3.5" />
-                                              <span>{dateTime.date}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-muted-foreground">
-                                              <Clock className="h-3.5 w-3.5" />
-                                              <span>{dateTime.time}</span>
-                                              {timeUntil && (
-                                                <span className="text-primary font-semibold ml-auto">
-                                                  {timeUntil}
-                                                </span>
-                                              )}
-                                            </div>
-                                          </div>
-
-                                          {/* Camera button - Opens in new tab */}
-                                          <a
-                                            href={`/aula/${liveClass.event.id}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={cn(
-                                              "flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-md",
-                                              "bg-primary text-primary-foreground hover:bg-primary/90",
-                                              "transition-colors font-medium text-sm",
-                                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                            )}
-                                          >
-                                            <Camera className="h-4 w-4" />
-                                            Acessar Aula
-                                            <ExternalLink className="h-3.5 w-3.5" />
-                                          </a>
-                                        </div>
-                                      </Card>
-                                    </CarouselItem>
-                                  );
-                                })}
-                              </CarouselContent>
-                              <CarouselPrevious className="left-0" />
-                              <CarouselNext className="right-0" />
-                            </Carousel>
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="past" className="space-y-4">
-                        {latestClass && (
-                          <div className="space-y-4 max-w-2xl">
-                            <div className="space-y-1">
-                              <h4 className="text-sm font-semibold tracking-tight">
-                                Última aula
-                              </h4>
-                              <p className="text-xs text-muted-foreground">
-                                Detalhes da aula mais recente que já aconteceu.
-                              </p>
-                            </div>
-                            {renderClassCard(latestClass)}
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {latestClass.student_feedback && (
-                                <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="p-2 rounded-lg bg-primary/10">
-                                      <MessageSquare className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <h5 className="text-sm font-semibold tracking-tight">
-                                      Seu comentário
-                                    </h5>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {latestClass.student_feedback}
-                                  </p>
-                                </Card>
                               )}
-
-                              {latestClass.teacher_answer && (
-                                <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="p-2 rounded-lg bg-primary/10">
-                                      <MessageSquare className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <h5 className="text-sm font-semibold tracking-tight">
-                                      Resposta do professor
-                                    </h5>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {latestClass.teacher_answer}
-                                  </p>
-                                </Card>
-                              )}
-
-                              <Card className="p-4 space-y-3 border-0 shadow-sm bg-card/60 backdrop-blur-sm sm:col-span-2">
-                                <h5 className="text-sm font-semibold tracking-tight">
-                                  Resumo da aula
-                                </h5>
-                                <div className="space-y-2 text-sm">
-                                  <ul className="space-y-1.5">
-                                    {latestClass.watched && (
-                                      <li className="flex items-center gap-2 text-green-600 dark:text-green-300">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        <span>Aula assistida</span>
-                                      </li>
-                                    )}
-                                    {latestClass.rating && (
-                                      <li className="flex items-center gap-2 text-yellow-600 dark:text-yellow-300">
-                                        <Star className="h-4 w-4" />
-                                        <span>
-                                          Avaliação: {latestClass.rating}/5
-                                        </span>
-                                      </li>
-                                    )}
-                                    {latestClass.exercise_id && (
-                                      <li className="flex items-center gap-2">
-                                        <Award className="h-4 w-4 text-primary" />
-                                        <span>
-                                          Exercício:{" "}
-                                          {latestClass.exercise_score} pontos
-                                        </span>
-                                      </li>
-                                    )}
-                                    {!latestClass.watched &&
-                                      !latestClass.rating &&
-                                      !latestClass.exercise_id && (
-                                        <li className="text-xs text-muted-foreground">
-                                          Nenhum atributo registrado.
-                                        </li>
-                                      )}
-                                  </ul>
-                                </div>
-                              </Card>
                             </div>
-                          </div>
-                        )}
-
-                        {!latestClass && (
-                          <Card className="border-dashed">
-                            <div className="p-8 text-center space-y-2">
-                              <p className="font-medium">
-                                Nenhuma aula passada
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Assim que você participar de aulas, elas
-                                aparecerão aqui.
-                              </p>
-                            </div>
-                          </Card>
-                        )}
-                      </TabsContent>
-                    </Tabs>
-                  </div>
-                )}
+                          </CarouselItem>
+                        );
+                      })}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="border-t pt-6 space-y-6">
