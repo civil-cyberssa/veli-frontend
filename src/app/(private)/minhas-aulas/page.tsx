@@ -492,56 +492,120 @@ export default function MinhasAulasPage() {
           </div>
         ) : (
           <>
-            {/* Calendar Section */}
-            <div className=" lg:mx-0">
-              <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
-                <div className="p-4 border-b border-border/30">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4 text-primary" />
-                    Calendário
-                  </h3>
-                </div>
-                <div className="p-4">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    components={{
-                      DayButton: ({ day, ...props }) => {
-                        const dateKey = day.date.toISOString().split("T")[0];
-                        const classesForDate = dateClassMap.get(dateKey);
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        const dateToCheck = new Date(day.date);
-                        dateToCheck.setHours(0, 0, 0, 0);
-                        const isToday = dateToCheck.getTime() === today.getTime();
-                        const hasClasses = classesForDate && classesForDate.length > 0;
+            {/* Calendar Section with Selected Date Classes */}
+            <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
+              {/* Calendar */}
+              <div className="max-w-sm mx-auto lg:mx-0">
+                <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+                  <div className="p-4 border-b border-border/30">
+                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-primary" />
+                      Calendário
+                    </h3>
+                  </div>
+                  <div className="p-4">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      components={{
+                        DayButton: ({ day, ...props }) => {
+                          const dateKey = day.date.toISOString().split("T")[0];
+                          const classesForDate = dateClassMap.get(dateKey);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const dateToCheck = new Date(day.date);
+                          dateToCheck.setHours(0, 0, 0, 0);
+                          const isToday = dateToCheck.getTime() === today.getTime();
+                          const hasClasses = classesForDate && classesForDate.length > 0;
 
-                        return (
-                          <CalendarDayButton day={day} {...props}>
-                            {day.date.getDate()}
-                            {isToday && hasClasses && (
-                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-lg shadow-success/50" />
-                              </div>
-                            )}
-                            {isToday && !hasClasses && (
-                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                <div className="w-1 h-1 rounded-full bg-success/60" />
-                              </div>
-                            )}
-                            {!isToday && hasClasses && (
-                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                <div className="w-1 h-1 rounded-full bg-primary/60" />
-                              </div>
-                            )}
-                          </CalendarDayButton>
-                        );
-                      },
-                    }}
-                  />
+                          return (
+                            <CalendarDayButton day={day} {...props}>
+                              {day.date.getDate()}
+                              {isToday && hasClasses && (
+                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                  <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-lg shadow-success/50" />
+                                </div>
+                              )}
+                              {isToday && !hasClasses && (
+                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                  <div className="w-1 h-1 rounded-full bg-success/60" />
+                                </div>
+                              )}
+                              {!isToday && hasClasses && (
+                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                  <div className="w-1 h-1 rounded-full bg-primary/60" />
+                                </div>
+                              )}
+                            </CalendarDayButton>
+                          );
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+              </div>
+
+              {/* Selected Date Classes */}
+              {selectedDate && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-right duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold tracking-tight">
+                        {selectedDate.toLocaleDateString("pt-BR", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                        })}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedDateClasses.length}{" "}
+                        {selectedDateClasses.length === 1
+                          ? "aula encontrada"
+                          : "aulas encontradas"}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedDate(undefined)}
+                      className="h-8 text-xs hover:bg-accent transition-colors"
+                    >
+                      Limpar seleção
+                    </Button>
+                  </div>
+
+                  {selectedDateClasses.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {selectedDateClasses.map((liveClass, index) => (
+                        <div
+                          key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          {renderClassCard(liveClass)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card className="border-dashed border-2">
+                      <div className="p-12 text-center space-y-3">
+                        <div className="inline-flex p-3 rounded-full bg-muted/50">
+                          <CalendarIcon className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium text-base">
+                            Nenhuma aula ao vivo agendada
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Não há aulas programadas para esta data.
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
                 </div>
-              </Card>
+              )}
             </div>
 
             {/* Upcoming Classes Carousel */}
