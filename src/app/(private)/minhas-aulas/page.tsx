@@ -587,7 +587,7 @@ export default function MinhasAulasPage() {
                   </div>
                 ) : (
                   <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <Tabs defaultValue="upcoming" className="space-y-4">
+                    <Tabs defaultValue="past" className="space-y-4">
                       <div className="flex items-center justify-between gap-2">
                         <div className="space-y-1">
                           <h3 className="text-lg font-semibold tracking-tight">
