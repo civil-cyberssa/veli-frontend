@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import {
   PlayCircle,
   ChevronRight,
+  ChevronLeft,
   Clock,
   Video,
+  Camera,
   Calendar as CalendarIcon,
   ExternalLink,
   Award,
@@ -57,6 +59,9 @@ export default function MinhasAulasPage() {
     today.setHours(0, 0, 0, 0);
     return today;
   });
+
+  // State for expanded past class (to show comments)
+  const [expandedPastClassId, setExpandedPastClassId] = useState<string | null>(null);
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
@@ -515,59 +520,14 @@ export default function MinhasAulasPage() {
                         dateToCheck.setHours(0, 0, 0, 0);
 
                         const isToday = dateToCheck.getTime() === today.getTime();
-                        const isFuture = dateToCheck.getTime() > today.getTime();
-
-                        // Helper function to ensure we always get emoji flags
-                        const ensureEmojiFlag = (flag: string): string => {
-                          if (!flag) return "";
-                          const trimmed = flag.trim();
-                          // If it's a 2-letter code, convert to emoji (never return the code)
-                          if (/^[A-Za-z]{2}$/.test(trimmed)) {
-                            const emoji = getFlagFromCountryCode(trimmed);
-                            // If conversion fails, return empty instead of the code
-                            return emoji || "";
-                          }
-                          return trimmed;
-                        };
-
-                        // Get unique flags for this date (limit to 3)
-                        const flags = classesForDate
-                          ? classesForDate
-                              .map((liveClass) => {
-                                const flagFromMeta = getFlagFromLanguageMetadata(liveClass.event);
-                                const flagFromCourse = getFlagFromCourseName(liveClass.course.course_name);
-                                const rawFlag = flagFromMeta || flagFromCourse;
-                                return ensureEmojiFlag(rawFlag);
-                              })
-                              .filter(Boolean)
-                              .filter((flag, index, self) => self.indexOf(flag) === index)
-                              .slice(0, 3)
-                          : [];
+                        const hasClasses = classesForDate && classesForDate.length > 0;
 
                         return (
                           <CalendarDayButton day={day} {...props}>
                             {day.date.getDate()}
-                            {flags.length > 0 && (
-                              <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                                {flags.map((flag, index) => (
-                                  <span
-                                    key={index}
-                                    className={cn(
-                                      "text-[8px] leading-none relative inline-block",
-                                      isToday && "animate-pulse",
-                                      isFuture && "animate-pulse"
-                                    )}
-                                    style={{
-                                      filter: isToday
-                                        ? "drop-shadow(0 0 2px rgb(34 197 94))"
-                                        : isFuture
-                                        ? "drop-shadow(0 0 2px rgb(234 179 8))"
-                                        : undefined
-                                    }}
-                                  >
-                                    {flag}
-                                  </span>
-                                ))}
+                            {hasClasses && isToday && (
+                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-lg shadow-success/50" />
                               </div>
                             )}
                           </CalendarDayButton>
@@ -578,7 +538,7 @@ export default function MinhasAulasPage() {
                 </div>
               </Card>
 
-              {/* Past Classes Section - Below Calendar */}
+              {/* Past Classes Carousel - Below Calendar */}
               {pastClasses.length > 0 && (
                 <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm h-fit mx-auto lg:mx-0 overflow-hidden">
                   <div className="p-5 border-b border-border/30 bg-gradient-to-br from-card to-card/80">
@@ -588,51 +548,93 @@ export default function MinhasAulasPage() {
                         Aulas Passadas
                       </h4>
                       <p className="text-xs text-muted-foreground/70 font-medium">
-                        Últimas {Math.min(pastClasses.length, 5)} aulas realizadas
+                        {pastClasses.length} {pastClasses.length === 1 ? "aula realizada" : "aulas realizadas"}
                       </p>
                     </div>
                   </div>
-                  <div className="p-3 space-y-1">
-                    {pastClasses.slice(0, 5).map((liveClass, index) => {
-                      const rawFlag =
-                        getFlagFromLanguageMetadata(liveClass.event) ||
-                        getFlagFromCourseName(liveClass.course.course_name) ||
-                        "🌐";
-                      // Ensure it's an emoji, not a code (return empty if conversion fails)
-                      const trimmedFlag = rawFlag.trim();
-                      const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
-                        ? getFlagFromCountryCode(trimmedFlag) || "🌐"
-                        : rawFlag;
-                      const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                  <div className="p-4">
+                    <Carousel className="w-full">
+                      <CarouselContent>
+                        {pastClasses.map((liveClass) => {
+                          const rawFlag =
+                            getFlagFromLanguageMetadata(liveClass.event) ||
+                            getFlagFromCourseName(liveClass.course.course_name) ||
+                            "🌐";
+                          const trimmedFlag = rawFlag.trim();
+                          const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
+                            ? getFlagFromCountryCode(trimmedFlag) || "🌐"
+                            : rawFlag;
+                          const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                          const classId = `${liveClass.event.id}-${liveClass.student_class_id}`;
+                          const isExpanded = expandedPastClassId === classId;
 
-                      return (
-                        <div
-                          key={`${liveClass.event.id}-${liveClass.student_class_id}-past`}
-                          onClick={() => router.push(`/aula/${liveClass.event.id}`)}
-                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/60 active:bg-accent/80 cursor-pointer transition-all group border border-transparent hover:border-border/30 hover:shadow-md"
-                        >
-                          <div className="flex-shrink-0 text-xl group-hover:scale-110 transition-transform">
-                            {flag}
-                          </div>
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
-                              {liveClass.course.course_name}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground/80 font-medium">
-                              {dateTime.date} às {dateTime.time}
-                            </p>
-                          </div>
-                          {liveClass.watched && (
-                            <div className="flex-shrink-0">
-                              <div className="p-1 rounded-full bg-success/10">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                          return (
+                            <CarouselItem key={classId}>
+                              <div className="space-y-3">
+                                <div
+                                  onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
+                                  className="flex items-center gap-3 p-4 rounded-xl bg-accent/30 hover:bg-accent/50 cursor-pointer transition-all group border border-border/20 hover:border-border/40"
+                                >
+                                  <div className="flex-shrink-0 text-2xl">
+                                    {flag}
+                                  </div>
+                                  <div className="flex-1 min-w-0 space-y-1.5">
+                                    <p className="text-sm font-semibold truncate">
+                                      {liveClass.course.course_name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground/80 font-medium">
+                                      {dateTime.date} às {dateTime.time}
+                                    </p>
+                                  </div>
+                                  {liveClass.watched && (
+                                    <div className="flex-shrink-0">
+                                      <div className="p-1.5 rounded-full bg-success/10">
+                                        <CheckCircle2 className="h-4 w-4 text-success" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Comments section (expanded) */}
+                                {isExpanded && (liveClass.student_feedback || liveClass.teacher_answer) && (
+                                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                    {liveClass.student_feedback && (
+                                      <div className="p-3 rounded-lg bg-accent/20 border border-border/20">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                          <span className="text-[10px] font-semibold text-foreground/80 uppercase tracking-wide">
+                                            Seu comentário
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                          {liveClass.student_feedback}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {liveClass.teacher_answer && (
+                                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                          <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">
+                                            Resposta do professor
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                          {liveClass.teacher_answer}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          )}
-                          <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                        </div>
-                      );
-                    })}
+                            </CarouselItem>
+                          );
+                        })}
+                      </CarouselContent>
+                      <CarouselPrevious className="-left-12" />
+                      <CarouselNext className="-right-12" />
+                    </Carousel>
                   </div>
                 </Card>
               )}
@@ -746,17 +748,87 @@ export default function MinhasAulasPage() {
                             </div>
                           </Card>
                         ) : (
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            {upcomingClasses.map((liveClass, index) => (
-                              <div
-                                key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                                className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-                                style={{ animationDelay: `${index * 40}ms` }}
-                              >
-                                {renderClassCard(liveClass, index === 0)}
-                              </div>
-                            ))}
-                          </div>
+                          <Carousel className="w-full">
+                            <CarouselContent>
+                              {upcomingClasses.map((liveClass, index) => {
+                                const flag =
+                                  getFlagFromLanguageMetadata(liveClass.event) ||
+                                  getFlagFromCourseName(liveClass.course.course_name) ||
+                                  "🌐";
+                                const timeUntil = getTimeUntilClass(liveClass.event.scheduled_datetime);
+                                const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                                const isNextClass = index === 0;
+
+                                return (
+                                  <CarouselItem key={`${liveClass.event.id}-${liveClass.student_class_id}`} className="md:basis-1/2 lg:basis-1/3">
+                                    <Card className={cn(
+                                      "border transition-all hover:shadow-lg group overflow-hidden bg-card/60 backdrop-blur-sm h-full",
+                                      "hover:border-primary/50",
+                                      isNextClass && "ring-2 ring-primary shadow-lg"
+                                    )}>
+                                      <div className="p-4 space-y-4">
+                                        {/* Header */}
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="flex items-center gap-3 min-w-0">
+                                            <span className="text-2xl leading-none flex-shrink-0">
+                                              {flag}
+                                            </span>
+                                            <div className="min-w-0 space-y-1">
+                                              <div className="flex items-center gap-2 min-w-0">
+                                                <Image
+                                                  src={liveClass.course.course_icon}
+                                                  alt={liveClass.course.course_name}
+                                                  width={28}
+                                                  height={28}
+                                                  className="h-7 w-7 rounded object-cover"
+                                                />
+                                                <p className="text-sm font-semibold line-clamp-1">
+                                                  {liveClass.course.course_name}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          {isNextClass && (
+                                            <Badge variant="default" className="flex-shrink-0 text-[10px] px-2 py-0.5">
+                                              Próxima
+                                            </Badge>
+                                          )}
+                                        </div>
+
+                                        {/* Date and Time */}
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2 text-xs">
+                                            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                            <span className="font-medium">{dateTime.date}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-xs">
+                                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                            <span className="font-medium">{dateTime.time}</span>
+                                            {timeUntil && (
+                                              <span className="text-primary font-semibold">• {timeUntil}</span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Camera button - External link */}
+                                        <Button
+                                          onClick={() => router.push(`/aula/${liveClass.event.id}`)}
+                                          className="w-full gap-2"
+                                          variant="default"
+                                        >
+                                          <Camera className="h-4 w-4" />
+                                          Acessar Aula
+                                          <ExternalLink className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    </Card>
+                                  </CarouselItem>
+                                );
+                              })}
+                            </CarouselContent>
+                            <CarouselPrevious />
+                            <CarouselNext />
+                          </Carousel>
                         )}
                       </TabsContent>
 
