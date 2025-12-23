@@ -505,7 +505,16 @@ export default function MinhasAulasPage() {
                     <Calendar
                       mode="single"
                       selected={selectedDate}
-                      onSelect={setSelectedDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          setSelectedDate(date);
+                        } else {
+                          // If undefined, reset to today
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          setSelectedDate(today);
+                        }
+                      }}
                       components={{
                         DayButton: ({ day, ...props }) => {
                           const dateKey = day.date.toISOString().split("T")[0];
