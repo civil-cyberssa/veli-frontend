@@ -487,10 +487,12 @@ export default function MinhasAulasPage() {
             </div>
           ) : (
             <div className="grid lg:grid-cols-[auto_2fr] gap-8">
-              {/* Calendar Section */}
-              <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
-                <div className="p-3">
-                  <Calendar
+              {/* Left Column: Calendar and Past Classes */}
+              <div className="space-y-4">
+                {/* Calendar Section */}
+                <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
+                  <div className="p-3">
+                    <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
@@ -498,6 +500,15 @@ export default function MinhasAulasPage() {
                       DayButton: ({ day, ...props }) => {
                         const dateKey = day.date.toISOString().split("T")[0];
                         const classesForDate = dateClassMap.get(dateKey);
+
+                        // Check if this date is today or in the future
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const dateToCheck = new Date(day.date);
+                        dateToCheck.setHours(0, 0, 0, 0);
+
+                        const isToday = dateToCheck.getTime() === today.getTime();
+                        const isFuture = dateToCheck.getTime() > today.getTime();
 
                         // Helper function to ensure we always get emoji flags
                         const ensureEmojiFlag = (flag: string): string => {
@@ -530,7 +541,21 @@ export default function MinhasAulasPage() {
                             {flags.length > 0 && (
                               <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
                                 {flags.map((flag, index) => (
-                                  <span key={index} className="text-[8px] leading-none">
+                                  <span
+                                    key={index}
+                                    className={cn(
+                                      "text-[8px] leading-none relative inline-block",
+                                      isToday && "animate-pulse",
+                                      isFuture && "animate-pulse"
+                                    )}
+                                    style={{
+                                      filter: isToday
+                                        ? "drop-shadow(0 0 2px rgb(34 197 94))"
+                                        : isFuture
+                                        ? "drop-shadow(0 0 2px rgb(234 179 8))"
+                                        : undefined
+                                    }}
+                                  >
                                     {flag}
                                   </span>
                                 ))}
@@ -543,6 +568,61 @@ export default function MinhasAulasPage() {
                   />
                 </div>
               </Card>
+
+              {/* Past Classes Section - Below Calendar */}
+              {pastClasses.length > 0 && (
+                <Card className="border shadow-sm bg-card h-fit mx-auto lg:mx-0">
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-semibold tracking-tight">
+                        Aulas Passadas
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Últimas {Math.min(pastClasses.length, 5)} aulas realizadas
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {pastClasses.slice(0, 5).map((liveClass, index) => {
+                        const rawFlag =
+                          getFlagFromLanguageMetadata(liveClass.event) ||
+                          getFlagFromCourseName(liveClass.course.course_name) ||
+                          "🌐";
+                        // Ensure it's an emoji, not a code
+                        const flag = /^[A-Za-z]{2}$/.test(rawFlag.trim())
+                          ? getFlagFromCountryCode(rawFlag) || rawFlag
+                          : rawFlag;
+                        const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+
+                        return (
+                          <div
+                            key={`${liveClass.event.id}-${liveClass.student_class_id}-past`}
+                            onClick={() => router.push(`/aula/${liveClass.event.id}`)}
+                            className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors group"
+                          >
+                            <div className="flex-shrink-0 text-lg">
+                              {flag}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-0.5">
+                              <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">
+                                {liveClass.course.course_name}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {dateTime}
+                              </p>
+                            </div>
+                            {liveClass.watched && (
+                              <div className="flex-shrink-0">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Card>
+              )}
+              </div>
 
               {/* Selected Date Classes or Latest/Lists */}
               <div className="space-y-5">
