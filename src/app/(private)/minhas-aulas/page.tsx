@@ -495,7 +495,7 @@ export default function MinhasAulasPage() {
             {/* Calendar Section with Selected Date Classes */}
             <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
               {/* Calendar */}
-              <div className="max-w-sm mx-auto lg:mx-0">
+              <div className="mx-auto lg:mx-0">
                 <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
                   <div className="p-4 border-b border-border/30">
                     <h3 className="text-sm font-semibold flex items-center gap-2">
