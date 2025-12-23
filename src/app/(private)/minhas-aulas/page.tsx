@@ -525,9 +525,26 @@ export default function MinhasAulasPage() {
                         return (
                           <CalendarDayButton day={day} {...props}>
                             {day.date.getDate()}
-                            {hasClasses && isToday && (
+
+                            {/* Indicator states */}
+                            {isToday && hasClasses && (
+                              // Today WITH classes: green pulsing ball
                               <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-lg shadow-success/50" />
+                                <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-lg shadow-success/50" />
+                              </div>
+                            )}
+
+                            {isToday && !hasClasses && (
+                              // Today WITHOUT classes: subtle green marker
+                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                <div className="w-1 h-1 rounded-full bg-success/60" />
+                              </div>
+                            )}
+
+                            {!isToday && hasClasses && (
+                              // Other days WITH classes: simple icon without animation
+                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                                <div className="w-1 h-1 rounded-full bg-primary/60" />
                               </div>
                             )}
                           </CalendarDayButton>
@@ -540,101 +557,100 @@ export default function MinhasAulasPage() {
 
               {/* Past Classes Carousel - Below Calendar */}
               {pastClasses.length > 0 && (
-                <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm h-fit mx-auto lg:mx-0 overflow-hidden">
-                  <div className="p-5 border-b border-border/30 bg-gradient-to-br from-card to-card/80">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-semibold text-foreground/90 uppercase tracking-wider flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary" />
-                        Aulas Passadas
-                      </h4>
-                      <p className="text-xs text-muted-foreground/70 font-medium">
-                        {pastClasses.length} {pastClasses.length === 1 ? "aula realizada" : "aulas realizadas"}
-                      </p>
+                <Card className="border-border/40 shadow-xl bg-card/50 backdrop-blur-sm h-fit mx-auto lg:mx-0 overflow-visible">
+                  <div className="p-4 border-b border-border/30 bg-gradient-to-br from-card to-card/80">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold text-foreground/90 flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary" />
+                          Aulas Passadas
+                        </h4>
+                        <p className="text-xs text-muted-foreground/70">
+                          {pastClasses.length} {pastClasses.length === 1 ? "aula" : "aulas"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <div className="p-4">
-                    <Carousel className="w-full">
-                      <CarouselContent>
-                        {pastClasses.map((liveClass) => {
-                          const rawFlag =
-                            getFlagFromLanguageMetadata(liveClass.event) ||
-                            getFlagFromCourseName(liveClass.course.course_name) ||
-                            "🌐";
-                          const trimmedFlag = rawFlag.trim();
-                          const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
-                            ? getFlagFromCountryCode(trimmedFlag) || "🌐"
-                            : rawFlag;
-                          const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
-                          const classId = `${liveClass.event.id}-${liveClass.student_class_id}`;
-                          const isExpanded = expandedPastClassId === classId;
+                    <div className="relative">
+                      <Carousel className="w-full">
+                        <CarouselContent className="-ml-2">
+                          {pastClasses.slice(0, 10).map((liveClass) => {
+                            const rawFlag =
+                              getFlagFromLanguageMetadata(liveClass.event) ||
+                              getFlagFromCourseName(liveClass.course.course_name) ||
+                              "🌐";
+                            const trimmedFlag = rawFlag.trim();
+                            const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
+                              ? getFlagFromCountryCode(trimmedFlag) || "🌐"
+                              : rawFlag;
+                            const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                            const classId = `${liveClass.event.id}-${liveClass.student_class_id}`;
+                            const isExpanded = expandedPastClassId === classId;
 
-                          return (
-                            <CarouselItem key={classId}>
-                              <div className="space-y-3">
-                                <div
-                                  onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
-                                  className="flex items-center gap-3 p-4 rounded-xl bg-accent/30 hover:bg-accent/50 cursor-pointer transition-all group border border-border/20 hover:border-border/40"
-                                >
-                                  <div className="flex-shrink-0 text-2xl">
-                                    {flag}
-                                  </div>
-                                  <div className="flex-1 min-w-0 space-y-1.5">
-                                    <p className="text-sm font-semibold truncate">
-                                      {liveClass.course.course_name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground/80 font-medium">
-                                      {dateTime.date} às {dateTime.time}
-                                    </p>
-                                  </div>
-                                  {liveClass.watched && (
-                                    <div className="flex-shrink-0">
-                                      <div className="p-1.5 rounded-full bg-success/10">
-                                        <CheckCircle2 className="h-4 w-4 text-success" />
+                            return (
+                              <CarouselItem key={classId} className="pl-2">
+                                <div className="space-y-2">
+                                  <button
+                                    onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
+                                    className="w-full text-left p-3 rounded-lg bg-accent/30 hover:bg-accent/50 active:bg-accent/60 transition-colors border border-border/20 hover:border-border/40"
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <span className="text-xl flex-shrink-0">{flag}</span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold truncate">
+                                          {liveClass.course.course_name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground/80 mt-1">
+                                          {dateTime.date} • {dateTime.time}
+                                        </p>
+                                        {(liveClass.student_feedback || liveClass.teacher_answer) && (
+                                          <p className="text-[10px] text-primary/80 mt-2 flex items-center gap-1">
+                                            <MessageSquare className="h-3 w-3" />
+                                            {isExpanded ? "Ocultar" : "Ver"} comentários
+                                          </p>
+                                        )}
                                       </div>
+                                      {liveClass.watched && (
+                                        <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                                      )}
+                                    </div>
+                                  </button>
+
+                                  {/* Comments (expanded) */}
+                                  {isExpanded && (liveClass.student_feedback || liveClass.teacher_answer) && (
+                                    <div className="space-y-2 px-1">
+                                      {liveClass.student_feedback && (
+                                        <div className="p-2.5 rounded-lg bg-accent/20 border border-border/20">
+                                          <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wide mb-1.5">
+                                            Seu comentário
+                                          </p>
+                                          <p className="text-xs text-muted-foreground leading-relaxed">
+                                            {liveClass.student_feedback}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {liveClass.teacher_answer && (
+                                        <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20">
+                                          <p className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">
+                                            Resposta do professor
+                                          </p>
+                                          <p className="text-xs text-muted-foreground leading-relaxed">
+                                            {liveClass.teacher_answer}
+                                          </p>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
-
-                                {/* Comments section (expanded) */}
-                                {isExpanded && (liveClass.student_feedback || liveClass.teacher_answer) && (
-                                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                    {liveClass.student_feedback && (
-                                      <div className="p-3 rounded-lg bg-accent/20 border border-border/20">
-                                        <div className="flex items-center gap-2 mb-2">
-                                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                                          <span className="text-[10px] font-semibold text-foreground/80 uppercase tracking-wide">
-                                            Seu comentário
-                                          </span>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground leading-relaxed">
-                                          {liveClass.student_feedback}
-                                        </p>
-                                      </div>
-                                    )}
-
-                                    {liveClass.teacher_answer && (
-                                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                                        <div className="flex items-center gap-2 mb-2">
-                                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                                          <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">
-                                            Resposta do professor
-                                          </span>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground leading-relaxed">
-                                          {liveClass.teacher_answer}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </CarouselItem>
-                          );
-                        })}
-                      </CarouselContent>
-                      <CarouselPrevious className="-left-12" />
-                      <CarouselNext className="-right-12" />
-                    </Carousel>
+                              </CarouselItem>
+                            );
+                          })}
+                        </CarouselContent>
+                        <CarouselPrevious className="left-0" />
+                        <CarouselNext className="right-0" />
+                      </Carousel>
+                    </div>
                   </div>
                 </Card>
               )}
@@ -742,93 +758,89 @@ export default function MinhasAulasPage() {
                             <div className="p-8 text-center space-y-2">
                               <p className="font-medium">Nenhuma aula futura</p>
                               <p className="text-sm text-muted-foreground">
-                                Assim que novas aulas forem agendadas,
-                                aparecerão aqui.
+                                Assim que novas aulas forem agendadas, aparecerão aqui.
                               </p>
                             </div>
                           </Card>
                         ) : (
-                          <Carousel className="w-full">
-                            <CarouselContent>
-                              {upcomingClasses.map((liveClass, index) => {
-                                const flag =
-                                  getFlagFromLanguageMetadata(liveClass.event) ||
-                                  getFlagFromCourseName(liveClass.course.course_name) ||
-                                  "🌐";
-                                const timeUntil = getTimeUntilClass(liveClass.event.scheduled_datetime);
-                                const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
-                                const isNextClass = index === 0;
+                          <div className="relative">
+                            <Carousel className="w-full">
+                              <CarouselContent className="-ml-4">
+                                {upcomingClasses.map((liveClass, index) => {
+                                  const flag =
+                                    getFlagFromLanguageMetadata(liveClass.event) ||
+                                    getFlagFromCourseName(liveClass.course.course_name) ||
+                                    "🌐";
+                                  const timeUntil = getTimeUntilClass(liveClass.event.scheduled_datetime);
+                                  const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+                                  const isNextClass = index === 0;
 
-                                return (
-                                  <CarouselItem key={`${liveClass.event.id}-${liveClass.student_class_id}`} className="md:basis-1/2 lg:basis-1/3">
-                                    <Card className={cn(
-                                      "border transition-all hover:shadow-lg group overflow-hidden bg-card/60 backdrop-blur-sm h-full",
-                                      "hover:border-primary/50",
-                                      isNextClass && "ring-2 ring-primary shadow-lg"
-                                    )}>
-                                      <div className="p-4 space-y-4">
-                                        {/* Header */}
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="flex items-center gap-3 min-w-0">
-                                            <span className="text-2xl leading-none flex-shrink-0">
-                                              {flag}
-                                            </span>
-                                            <div className="min-w-0 space-y-1">
-                                              <div className="flex items-center gap-2 min-w-0">
-                                                <Image
-                                                  src={liveClass.course.course_icon}
-                                                  alt={liveClass.course.course_name}
-                                                  width={28}
-                                                  height={28}
-                                                  className="h-7 w-7 rounded object-cover"
-                                                />
-                                                <p className="text-sm font-semibold line-clamp-1">
-                                                  {liveClass.course.course_name}
-                                                </p>
-                                              </div>
+                                  return (
+                                    <CarouselItem key={`${liveClass.event.id}-${liveClass.student_class_id}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                                      <Card className={cn(
+                                        "border transition-all hover:shadow-lg overflow-hidden bg-card/60 backdrop-blur-sm h-full",
+                                        "hover:border-primary/50",
+                                        isNextClass && "ring-2 ring-primary shadow-lg"
+                                      )}>
+                                        <div className="p-4 space-y-3">
+                                          {/* Header */}
+                                          <div className="flex items-center gap-3">
+                                            <span className="text-2xl flex-shrink-0">{flag}</span>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-semibold truncate">
+                                                {liveClass.course.course_name}
+                                              </p>
+                                              {isNextClass && (
+                                                <Badge variant="default" className="text-[10px] px-2 py-0.5 mt-1">
+                                                  Próxima
+                                                </Badge>
+                                              )}
                                             </div>
                                           </div>
-                                          {isNextClass && (
-                                            <Badge variant="default" className="flex-shrink-0 text-[10px] px-2 py-0.5">
-                                              Próxima
-                                            </Badge>
-                                          )}
-                                        </div>
 
-                                        {/* Date and Time */}
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2 text-xs">
-                                            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                                            <span className="font-medium">{dateTime.date}</span>
+                                          {/* Date and Time */}
+                                          <div className="space-y-1.5 text-xs">
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                              <CalendarIcon className="h-3.5 w-3.5" />
+                                              <span>{dateTime.date}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                              <Clock className="h-3.5 w-3.5" />
+                                              <span>{dateTime.time}</span>
+                                              {timeUntil && (
+                                                <span className="text-primary font-semibold ml-auto">
+                                                  {timeUntil}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
-                                          <div className="flex items-center gap-2 text-xs">
-                                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                            <span className="font-medium">{dateTime.time}</span>
-                                            {timeUntil && (
-                                              <span className="text-primary font-semibold">• {timeUntil}</span>
+
+                                          {/* Camera button - Opens in new tab */}
+                                          <a
+                                            href={`/aula/${liveClass.event.id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={cn(
+                                              "flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-md",
+                                              "bg-primary text-primary-foreground hover:bg-primary/90",
+                                              "transition-colors font-medium text-sm",
+                                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                             )}
-                                          </div>
+                                          >
+                                            <Camera className="h-4 w-4" />
+                                            Acessar Aula
+                                            <ExternalLink className="h-3.5 w-3.5" />
+                                          </a>
                                         </div>
-
-                                        {/* Camera button - External link */}
-                                        <Button
-                                          onClick={() => router.push(`/aula/${liveClass.event.id}`)}
-                                          className="w-full gap-2"
-                                          variant="default"
-                                        >
-                                          <Camera className="h-4 w-4" />
-                                          Acessar Aula
-                                          <ExternalLink className="h-3.5 w-3.5" />
-                                        </Button>
-                                      </div>
-                                    </Card>
-                                  </CarouselItem>
-                                );
-                              })}
-                            </CarouselContent>
-                            <CarouselPrevious />
-                            <CarouselNext />
-                          </Carousel>
+                                      </Card>
+                                    </CarouselItem>
+                                  );
+                                })}
+                              </CarouselContent>
+                              <CarouselPrevious className="left-0" />
+                              <CarouselNext className="right-0" />
+                            </Carousel>
+                          </div>
                         )}
                       </TabsContent>
 
