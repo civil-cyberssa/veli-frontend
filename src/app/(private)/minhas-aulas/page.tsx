@@ -53,8 +53,8 @@ export default function MinhasAulasPage() {
     error: allClassesError,
   } = useAllLiveClasses(subscriptions);
 
-  // Set selected date to today by default
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+  // Set selected date to today by default - always keep a date selected
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
@@ -144,16 +144,14 @@ export default function MinhasAulasPage() {
     (dateKey) => new Date(dateKey)
   );
 
-  const selectedDateClasses = selectedDate
-    ? sortedAllLiveClasses.filter((liveClass) => {
-        const classDate = new Date(liveClass.event.scheduled_datetime);
-        return (
-          classDate.getFullYear() === selectedDate.getFullYear() &&
-          classDate.getMonth() === selectedDate.getMonth() &&
-          classDate.getDate() === selectedDate.getDate()
-        );
-      })
-    : [];
+  const selectedDateClasses = sortedAllLiveClasses.filter((liveClass) => {
+    const classDate = new Date(liveClass.event.scheduled_datetime);
+    return (
+      classDate.getFullYear() === selectedDate.getFullYear() &&
+      classDate.getMonth() === selectedDate.getMonth() &&
+      classDate.getDate() === selectedDate.getDate()
+    );
+  });
 
   // Custom day content renderer for flags
   const renderDayContent = (date: Date) => {
@@ -547,33 +545,43 @@ export default function MinhasAulasPage() {
               </div>
 
               {/* Selected Date Classes */}
-              {selectedDate && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-right duration-300">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-semibold tracking-tight">
-                        {selectedDate.toLocaleDateString("pt-BR", {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                        })}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedDateClasses.length}{" "}
-                        {selectedDateClasses.length === 1
-                          ? "aula encontrada"
-                          : "aulas encontradas"}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedDate(undefined)}
-                      className="h-8 text-xs hover:bg-accent transition-colors"
-                    >
-                      Limpar seleção
-                    </Button>
+              <div className="space-y-4 animate-in fade-in slide-in-from-right duration-300">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold tracking-tight">
+                      {selectedDate.toLocaleDateString("pt-BR", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedDateClasses.length}{" "}
+                      {selectedDateClasses.length === 1
+                        ? "aula encontrada"
+                        : "aulas encontradas"}
+                    </p>
                   </div>
+                  {(() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isToday = selectedDate.getTime() === today.getTime();
+                    return !isToday ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newToday = new Date();
+                          newToday.setHours(0, 0, 0, 0);
+                          setSelectedDate(newToday);
+                        }}
+                        className="h-8 text-xs hover:bg-accent transition-colors"
+                      >
+                        Voltar para hoje
+                      </Button>
+                    ) : null;
+                  })()}
+                </div>
 
                   {selectedDateClasses.length > 0 ? (
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -605,7 +613,6 @@ export default function MinhasAulasPage() {
                     </Card>
                   )}
                 </div>
-              )}
             </div>
 
             {/* Upcoming Classes Carousel */}
