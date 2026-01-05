@@ -90,6 +90,21 @@ export default function MinhasAulasPage() {
     return countryCode.length === 2 ? countryCode.toLowerCase() : null;
   };
 
+  // Render flag as image
+  const renderFlag = (flag: string) => {
+    const countryCode = flagEmojiToCountryCode(flag);
+    if (countryCode) {
+      return (
+        <img
+          src={`https://flagcdn.com/w40/${countryCode}.png`}
+          alt={flag}
+          className="w-6 h-4 object-cover rounded-sm shadow-sm"
+        />
+      );
+    }
+    return <span className="text-2xl">{flag}</span>;
+  };
+
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
     const formattedDate = date.toLocaleDateString("pt-BR", {
@@ -559,10 +574,17 @@ export default function MinhasAulasPage() {
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse" />
                                 </div>
                               )}
-                              {/* Indicator for dates with classes */}
-                              {!isToday && hasClasses && (
-                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                  <div className="w-1 h-1 rounded-full bg-primary/60" />
+                              {/* Flag images for dates with classes */}
+                              {hasClasses && countryCodes.length > 0 && (
+                                <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                  {countryCodes.map((code, idx) => (
+                                    <img
+                                      key={idx}
+                                      src={`https://flagcdn.com/w20/${code}.png`}
+                                      alt=""
+                                      className="w-3 h-2 object-cover rounded-[1px]"
+                                    />
+                                  ))}
                                 </div>
                               )}
                             </CalendarDayButton>
@@ -678,7 +700,7 @@ export default function MinhasAulasPage() {
                             )}>
                               <div className="p-4 space-y-3">
                                 <div className="flex items-start gap-3">
-                                  <span className="text-2xl flex-shrink-0">{flag}</span>
+                                  <div className="flex-shrink-0">{renderFlag(flag)}</div>
                                   <div className="flex-1 min-w-0 space-y-1">
                                     <p className="text-sm font-semibold truncate">
                                       {liveClass.course.course_name}
@@ -759,7 +781,7 @@ export default function MinhasAulasPage() {
                             <Card className="border transition-all hover:shadow-md overflow-hidden bg-card/60 backdrop-blur-sm h-full hover:border-primary/30">
                               <div className="p-4 space-y-3">
                                 <div className="flex items-start gap-3">
-                                  <span className="text-2xl flex-shrink-0">{flag}</span>
+                                  <div className="flex-shrink-0">{renderFlag(flag)}</div>
                                   <div className="flex-1 min-w-0 space-y-1">
                                     <p className="text-sm font-semibold truncate">
                                       {liveClass.course.course_name}
