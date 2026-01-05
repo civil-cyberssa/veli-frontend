@@ -76,6 +76,20 @@ export default function MinhasAulasPage() {
     return { student_feedback, teacher_answer };
   };
 
+  // Convert emoji flag to country code
+  const flagEmojiToCountryCode = (flag: string): string | null => {
+    if (!flag || flag.length < 2) return null;
+    const codePoints = [...flag].map(char => char.codePointAt(0));
+    if (codePoints.length !== 2) return null;
+    const countryCode = codePoints
+      .map(cp => {
+        if (!cp) return '';
+        return String.fromCharCode(cp - 127397);
+      })
+      .join('');
+    return countryCode.length === 2 ? countryCode.toLowerCase() : null;
+  };
+
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
     const formattedDate = date.toLocaleDateString("pt-BR", {
@@ -522,33 +536,40 @@ export default function MinhasAulasPage() {
                           const isToday = dateToCheck.getTime() === today.getTime();
                           const hasClasses = classesForDate && classesForDate.length > 0;
 
-                          // melhorias: flags no calendário
+                          // Get unique country codes for this date (for flag images)
+                          const countryCodes = classesForDate
+                            ? Array.from(new Set(
+                                classesForDate
+                                  .map((liveClass) => {
+                                    const flag =
+                                      getFlagFromLanguageMetadata(liveClass.event) ||
+                                      getFlagFromCourseName(liveClass.course.course_name);
+                                    return flag ? flagEmojiToCountryCode(flag) : null;
+                                  })
+                                  .filter(Boolean)
+                              )).slice(0, 2)
+                            : [];
+
                           return (
                             <CalendarDayButton day={day} {...props}>
                               {day.date.getDate()}
-                              {/* exibe flags do idioma se tiver aula no dia */}
-                              {hasClasses && (
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
-                                  {classesForDate &&
-                                    Array.from(
-                                      new Set(
-                                        classesForDate
-                                          .map((c) =>
-                                            getFlagFromLanguageMetadata(c.event) ||
-                                            getFlagFromCourseName(c.course.course_name)
-                                          )
-                                          .filter(Boolean)
-                                      )
-                                    )
-                                      .slice(0, 3)
-                                      .map((flag, idx) => (
-                                        <span key={idx} className="text-[8px]">{flag}</span>
-                                      ))}
-                                </div>
-                              )}
+                              {/* Today indicator */}
                               {isToday && (
                                 <div className="absolute top-0 right-0">
                                   <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse" />
+                                </div>
+                              )}
+                              {/* Flag images for non-today dates with classes */}
+                              {!isToday && hasClasses && countryCodes.length > 0 && (
+                                <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                  {countryCodes.map((code, idx) => (
+                                    <img
+                                      key={idx}
+                                      src={`https://flagcdn.com/w20/${code}.png`}
+                                      alt=""
+                                      className="w-3 h-2 object-cover rounded-[1px]"
+                                    />
+                                  ))}
                                 </div>
                               )}
                             </CalendarDayButton>
@@ -720,8 +741,12 @@ export default function MinhasAulasPage() {
                         );
                       })}
                     </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
+                    {upcomingClasses.length > 3 && (
+                      <>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                      </>
+                    )}
                   </Carousel>
                 </div>
               </div>
@@ -824,8 +849,12 @@ export default function MinhasAulasPage() {
                         );
                       })}
                     </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
+                    {pastClasses.slice(0, 10).length > 3 && (
+                      <>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                      </>
+                    )}
                   </Carousel>
                 </div>
               </div>
