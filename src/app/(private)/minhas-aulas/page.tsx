@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   PlayCircle,
   ChevronRight,
-  ChevronLeft,
   Clock,
   Video,
   Camera,
@@ -23,7 +22,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogoPulseLoader } from "@/components/shared/logo-loader";
 import {
   Carousel,
@@ -33,8 +31,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
-import { Progress } from "@/components/ui/progress";
-
 import { cn } from "@/lib/utils";
 import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription";
 import { useAllLiveClasses } from "@/src/features/dashboard/hooks/useAllLiveClasses";
@@ -43,6 +39,8 @@ import {
   getFlagFromLanguageMetadata,
   getFlagFromCountryCode,
 } from "@/src/utils/languageFlags";
+
+// Assume as correções: comentários/aluno e resposta/professor vêm de feedbacks: { aluno: string, professor: string } ou similar
 
 export default function MinhasAulasPage() {
   const router = useRouter();
@@ -53,15 +51,30 @@ export default function MinhasAulasPage() {
     error: allClassesError,
   } = useAllLiveClasses(subscriptions);
 
-  // Set selected date to today by default - always keep a date selected
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
   });
 
-  // State for expanded past class (to show comments)
   const [expandedPastClassId, setExpandedPastClassId] = useState<string | null>(null);
+
+  // CORREÇÃO: Função segura para pegar feedback do aluno e do professor
+  const getFeedbackFields = (liveClass: any) => {
+    // aceita feedbacks aninhados em um objeto, ou legacy direto no objeto
+    // preferencialmente usa o campo 'feedback' de liveClass se existir, senão tenta campos avulsos legacy
+    let student_feedback = "";
+    let teacher_answer = "";
+    if (liveClass.feedback && typeof liveClass.feedback === "object") {
+      student_feedback = liveClass.feedback.student || "";
+      teacher_answer = liveClass.feedback.teacher || "";
+    } else {
+      // fallback legacy
+      student_feedback = liveClass.student_feedback || "";
+      teacher_answer = liveClass.teacher_answer || "";
+    }
+    return { student_feedback, teacher_answer };
+  };
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
@@ -76,9 +89,7 @@ export default function MinhasAulasPage() {
     });
 
     return {
-      date:
-        formattedDate.charAt(0).toUpperCase() +
-        formattedDate.slice(1).replace(".", ""),
+      date: formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1).replace(".", ""),
       time: formattedTime,
     };
   };
@@ -125,9 +136,8 @@ export default function MinhasAulasPage() {
     (liveClass) => !isUpcoming(liveClass.event.scheduled_datetime)
   );
   const nextClass = upcomingClasses[0];
-  const latestClass = pastClasses[0];
 
-  // Get dates with classes and their flags for calendar highlighting
+  // Calendário
   const dateClassMap = new Map<string, typeof sortedAllLiveClasses>();
   sortedAllLiveClasses.forEach((liveClass) => {
     const date = new Date(liveClass.event.scheduled_datetime);
@@ -140,10 +150,6 @@ export default function MinhasAulasPage() {
     dateClassMap.get(dateKey)!.push(liveClass);
   });
 
-  const datesWithClasses = Array.from(dateClassMap.keys()).map(
-    (dateKey) => new Date(dateKey)
-  );
-
   const selectedDateClasses = sortedAllLiveClasses.filter((liveClass) => {
     const classDate = new Date(liveClass.event.scheduled_datetime);
     return (
@@ -153,35 +159,7 @@ export default function MinhasAulasPage() {
     );
   });
 
-  // Custom day content renderer for flags
-  const renderDayContent = (date: Date) => {
-    const dateKey = date.toISOString().split("T")[0];
-    const classesForDate = dateClassMap.get(dateKey);
-
-    if (!classesForDate || classesForDate.length === 0) return null;
-
-    // Get unique flags for this date (limit to 3)
-    const flags = classesForDate
-      .map(
-        (liveClass) =>
-          getFlagFromLanguageMetadata(liveClass.event) ||
-          getFlagFromCourseName(liveClass.course.course_name)
-      )
-      .filter(Boolean)
-      .filter((flag, index, self) => self.indexOf(flag) === index)
-      .slice(0, 3);
-
-    return (
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
-        {flags.map((flag, index) => (
-          <span key={index} className="text-[8px]">
-            {flag}
-          </span>
-        ))}
-      </div>
-    );
-  };
-
+  // Card das aulas
   const renderClassCard = (
     liveClass: (typeof sortedAllLiveClasses)[number],
     isNextClass: boolean = false
@@ -192,20 +170,35 @@ export default function MinhasAulasPage() {
       getFlagFromLanguageMetadata(liveClass.event) ||
       getFlagFromCourseName(liveClass.course.course_name) ||
       "🌐";
-    const timeUntil = upcoming
-      ? getTimeUntilClass(liveClass.event.scheduled_datetime)
-      : "";
-
+    const timeUntil = upcoming ? getTimeUntilClass(liveClass.event.scheduled_datetime) : "";
     const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+
+    // Extra: badge do idioma do curso
+    const languageBadge =
+      (liveClass.event.language && (
+        <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2">
+          {getFlagFromLanguageMetadata(liveClass.event) || "🌐"}
+          {liveClass.event.language?.toUpperCase()}
+        </Badge>
+      )) ||
+      null;
 
     return (
       <Card
         className={cn(
-          "border transition-all hover:shadow-md group overflow-hidden bg-card/60 backdrop-blur-sm",
+          "border transition-all hover:shadow-lg group overflow-hidden bg-card/60 backdrop-blur-sm relative",
           upcoming && "hover:border-primary/50",
           isNextClass && "ring-2 ring-primary shadow-lg"
         )}
       >
+        {/* Lateral colorida para indicar próxima aula */}
+        {isNextClass && (
+          <span
+            className="absolute left-0 top-0 h-full w-1 bg-primary rounded-r-md animate-pulse"
+            style={{ zIndex: 10 }}
+            aria-hidden
+          />
+        )}
         <div className="p-4 space-y-4">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
@@ -220,15 +213,17 @@ export default function MinhasAulasPage() {
                     alt={liveClass.course.course_name}
                     width={28}
                     height={28}
-                    className="h-7 w-7 rounded object-cover"
+                    className="h-7 w-7 rounded object-cover shadow"
                   />
-                  <p className="text-sm font-semibold line-clamp-1">
+                  <p className="text-base font-semibold line-clamp-1">
                     {liveClass.course.course_name}
                   </p>
                 </div>
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">
                   Módulo {liveClass.event.module.order}
                 </p>
+                {/* Badge de idioma no topo esquerdo do card */}
+                {languageBadge}
               </div>
             </div>
 
@@ -236,7 +231,11 @@ export default function MinhasAulasPage() {
               {upcoming && timeUntil && (
                 <Badge
                   variant={isNextClass ? "default" : "secondary"}
-                  className="h-5 text-[10px] font-semibold flex items-center gap-1"
+                  className={cn(
+                    "h-5 text-[11px] font-semibold flex items-center gap-1 px-2 py-1 rounded-full shadow-sm",
+                    isNextClass && "shadow-primary/30"
+                  )}
+                  title={isNextClass ? "Sua próxima aula!" : undefined}
                 >
                   {isNextClass ? (
                     <>
@@ -295,13 +294,13 @@ export default function MinhasAulasPage() {
             <h3 className="font-semibold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
               {liveClass.event.lesson.name}
             </h3>
-            <p className="text-xs text-muted-foreground line-clamp-1">
+            <p className="text-xs text-muted-foreground line-clamp-2">
               {liveClass.event.module.name}
             </p>
           </div>
 
           {/* Date and Time pill */}
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-muted-foreground">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-muted/90 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-inner">
             <CalendarIcon className="h-3 w-3" />
             <span>{dateTime.date}</span>
             <span className="w-px h-3 bg-border mx-1" />
@@ -311,24 +310,25 @@ export default function MinhasAulasPage() {
 
           {/* Status Badges */}
           {(liveClass.watched || liveClass.rating || liveClass.exercise_id) && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 mt-1">
               {liveClass.watched && (
                 <Badge
                   variant="secondary"
                   className="gap-1 text-[10px] h-5 px-2"
+                  title="Aula assistida"
                 >
                   <CheckCircle2 className="h-2.5 w-2.5" />
                   Assistida
                 </Badge>
               )}
               {liveClass.rating && (
-                <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2">
+                <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2" title="Avaliação da aula">
                   <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
                   {liveClass.rating}/5
                 </Badge>
               )}
               {liveClass.exercise_id && (
-                <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2">
+                <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2" title="Pontuação de exercício">
                   <Award className="h-2.5 w-2.5 text-primary" />
                   {liveClass.exercise_score}pts
                 </Badge>
@@ -338,18 +338,18 @@ export default function MinhasAulasPage() {
 
           {/* Notice */}
           {liveClass.event.class_notice && (
-            <div className="p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50">
-              <p className="text-[11px] leading-relaxed text-amber-900 dark:text-amber-100 line-clamp-2 flex items-start gap-1.5">
-                <AlertCircle className="h-3.5 w-3.5 mt-[1px] flex-shrink-0" />
-                <span>{liveClass.event.class_notice}</span>
-              </p>
+            <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-center gap-2 mt-2">
+              <AlertCircle className="h-4 w-4 mt-[1px] flex-shrink-0 text-amber-500" />
+              <span className="text-xs leading-relaxed text-amber-900 dark:text-amber-100 line-clamp-2">
+                {liveClass.event.class_notice}
+              </span>
             </div>
           )}
 
           {/* Actions */}
           {((upcoming && liveClass.event.classroom_link) ||
             (past && liveClass.event.event_recorded_link)) && (
-            <div className="pt-1 flex items-center gap-2">
+            <div className="pt-1 flex flex-wrap items-center gap-2">
               {upcoming && liveClass.event.classroom_link && (
                 <Button
                   className="flex-1 gap-2 h-9 text-sm font-semibold"
@@ -366,7 +366,6 @@ export default function MinhasAulasPage() {
                   </a>
                 </Button>
               )}
-
               {past && liveClass.event.event_recorded_link && (
                 <Button
                   variant="outline"
@@ -383,7 +382,6 @@ export default function MinhasAulasPage() {
                   </a>
                 </Button>
               )}
-
               <Button
                 size="icon"
                 variant="ghost"
@@ -391,7 +389,7 @@ export default function MinhasAulasPage() {
                 onClick={() =>
                   router.push(`/minhas-aulas/${liveClass.student_class_id}`)
                 }
-                title="Ver detalhes do curso"
+                title="Ver detalhes da sua aula"
               >
                 <ExternalLink className="h-4 w-4" />
               </Button>
@@ -433,10 +431,10 @@ export default function MinhasAulasPage() {
       {/* Header */}
       <div className="space-y-6 pt-8 pb-2">
         <div className="space-y-3">
-         <div className="flex items-center gap-4">
-           <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text text-transparent">
-            Minhas Aulas
-          </h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text text-transparent">
+              Minhas Aulas
+            </h1>
             <Badge
               variant="secondary"
               className="gap-2 px-3.5 py-1.5 text-sm font-semibold shadow-sm"
@@ -450,11 +448,10 @@ export default function MinhasAulasPage() {
             Acompanhe e acesse todas as aulas ao vivo dos cursos em que você está inscrito.
           </p>
         </div>
-
         {nextClass && (
-          <Card className="border-primary/20 bg-primary/5 backdrop-blur-sm">
+          <Card className="border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm shadow-md">
             <div className="flex flex-wrap items-center gap-4 p-4">
-              <Badge variant="default" className="gap-1.5 px-3 py-1.5 text-xs font-semibold shadow-lg">
+              <Badge variant="default" className="gap-1.5 px-3 py-1.5 text-xs font-semibold shadow-lg animate-pulse">
                 <Bell className="h-3.5 w-3.5" />
                 Próxima aula
               </Badge>
@@ -462,7 +459,7 @@ export default function MinhasAulasPage() {
                 {formatDateTime(nextClass.event.scheduled_datetime).date} às{" "}
                 {formatDateTime(nextClass.event.scheduled_datetime).time}
               </span>
-              <span className="text-sm text-muted-foreground/90 font-medium">
+              <span className="text-sm text-primary font-medium">
                 {getTimeUntilClass(nextClass.event.scheduled_datetime)}
               </span>
             </div>
@@ -509,7 +506,6 @@ export default function MinhasAulasPage() {
                         if (date) {
                           setSelectedDate(date);
                         } else {
-                          // If undefined, reset to today
                           const today = new Date();
                           today.setHours(0, 0, 0, 0);
                           setSelectedDate(today);
@@ -526,22 +522,33 @@ export default function MinhasAulasPage() {
                           const isToday = dateToCheck.getTime() === today.getTime();
                           const hasClasses = classesForDate && classesForDate.length > 0;
 
+                          // melhorias: flags no calendário
                           return (
                             <CalendarDayButton day={day} {...props}>
                               {day.date.getDate()}
-                              {isToday && hasClasses && (
-                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                  <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-lg shadow-success/50" />
+                              {/* exibe flags do idioma se tiver aula no dia */}
+                              {hasClasses && (
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                  {classesForDate &&
+                                    Array.from(
+                                      new Set(
+                                        classesForDate
+                                          .map((c) =>
+                                            getFlagFromLanguageMetadata(c.event) ||
+                                            getFlagFromCourseName(c.course.course_name)
+                                          )
+                                          .filter(Boolean)
+                                      )
+                                    )
+                                      .slice(0, 3)
+                                      .map((flag, idx) => (
+                                        <span key={idx} className="text-[8px]">{flag}</span>
+                                      ))}
                                 </div>
                               )}
-                              {isToday && !hasClasses && (
-                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                  <div className="w-1 h-1 rounded-full bg-success/60" />
-                                </div>
-                              )}
-                              {!isToday && hasClasses && (
-                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                                  <div className="w-1 h-1 rounded-full bg-primary/60" />
+                              {isToday && (
+                                <div className="absolute top-0 right-0">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse" />
                                 </div>
                               )}
                             </CalendarDayButton>
@@ -585,6 +592,7 @@ export default function MinhasAulasPage() {
                           setSelectedDate(newToday);
                         }}
                         className="h-8 text-xs hover:bg-accent transition-colors"
+                        title="Voltar para hoje"
                       >
                         Voltar para hoje
                       </Button>
@@ -592,48 +600,51 @@ export default function MinhasAulasPage() {
                   })()}
                 </div>
 
-                  {selectedDateClasses.length > 0 ? (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {selectedDateClasses.map((liveClass, index) => (
-                        <div
-                          key={`${liveClass.event.id}-${liveClass.student_class_id}`}
-                          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          {renderClassCard(liveClass)}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <Card className="border-dashed border-2">
-                      <div className="p-12 text-center space-y-3">
-                        <div className="inline-flex p-3 rounded-full bg-muted/50">
-                          <CalendarIcon className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="font-medium text-base">
-                            Nenhuma aula ao vivo agendada
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Não há aulas programadas para esta data.
-                          </p>
-                        </div>
+                {selectedDateClasses.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {selectedDateClasses.map((liveClass, index) => (
+                      <div
+                        key={`${liveClass.event.id}-${liveClass.student_class_id}`}
+                        className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                        style={{ animationDelay: `${index * 60}ms` }}
+                      >
+                        {renderClassCard(liveClass)}
                       </div>
-                    </Card>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="border-dashed border-2">
+                    <div className="p-12 text-center space-y-3">
+                      <div className="inline-flex p-3 rounded-full bg-muted/50">
+                        <CalendarIcon className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-base">
+                          Nenhuma aula ao vivo agendada
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Não há aulas programadas para esta data.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </div>
             </div>
 
             {/* Upcoming Classes Carousel */}
             {upcomingClasses.length > 0 && (
               <div>
-                <div className="mb-4">
+                <div className="mb-4 flex items-center gap-3">
                   <h2 className="text-2xl font-bold">Próximas Aulas</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {upcomingClasses.length} {upcomingClasses.length === 1 ? "aula agendada" : "aulas agendadas"}
-                  </p>
+                  <Badge variant="outline" className="ml-2">
+                    {upcomingClasses.length}{" "}
+                    {upcomingClasses.length === 1
+                      ? "aula agendada"
+                      : "aulas agendadas"}
+                  </Badge>
                 </div>
-                <div className="relative px-12">
+                <div className="relative px-2 md:px-12">
                   <Carousel className="w-full">
                     <CarouselContent className="-ml-4">
                       {upcomingClasses.map((liveClass, index) => {
@@ -644,19 +655,25 @@ export default function MinhasAulasPage() {
                         const timeUntil = getTimeUntilClass(liveClass.event.scheduled_datetime);
                         const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
                         const isNextClass = index === 0;
-
                         return (
                           <CarouselItem key={`${liveClass.event.id}-${liveClass.student_class_id}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
                             <Card className={cn(
-                              "border transition-all hover:shadow-lg overflow-hidden bg-card/60 backdrop-blur-sm h-full",
+                              "border transition-all hover:shadow-lg overflow-hidden bg-card/60 backdrop-blur-sm h-full relative",
                               "hover:border-primary/50",
-                              isNextClass && "ring-2 ring-primary shadow-lg"
+                              isNextClass && "ring-2 ring-primary shadow-md"
                             )}>
+                              {/* Lateral do card: highlight só na próxima aula */}
+                              {isNextClass && (
+                                <span
+                                  className="absolute left-0 top-0 h-full w-1.5 bg-primary rounded-r-md animate-pulse"
+                                  style={{ zIndex: 9 }}
+                                />
+                              )}
                               <div className="p-4 space-y-3">
                                 <div className="flex items-center gap-3">
                                   <span className="text-2xl flex-shrink-0">{flag}</span>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold truncate">
+                                    <p className="text-base font-semibold truncate">
                                       {liveClass.course.course_name}
                                     </p>
                                     {isNextClass && (
@@ -682,17 +699,19 @@ export default function MinhasAulasPage() {
                                   </div>
                                 </div>
                                 <a
-                                  href={`/aula/${liveClass.event.id}`}
+                                  href={liveClass.event.classroom_link || `/aula/${liveClass.event.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className={cn(
                                     "flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-md",
                                     "bg-primary text-primary-foreground hover:bg-primary/90",
-                                    "transition-colors font-medium text-sm"
+                                    "transition-colors font-medium text-sm ring-primary/30 ring-1 hover:ring-2"
                                   )}
                                 >
                                   <Camera className="h-4 w-4" />
-                                  Acessar Aula
+                                  {liveClass.event.classroom_link
+                                    ? "Entrar na aula"
+                                    : "Acessar Aula"}
                                   <ExternalLink className="h-3.5 w-3.5" />
                                 </a>
                               </div>
@@ -711,13 +730,14 @@ export default function MinhasAulasPage() {
             {/* Past Classes Carousel */}
             {pastClasses.length > 0 && (
               <div>
-                <div className="mb-4">
+                <div className="mb-4 flex items-center gap-3">
                   <h2 className="text-2xl font-bold">Aulas Passadas</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {pastClasses.length} {pastClasses.length === 1 ? "aula realizada" : "aulas realizadas"}
-                  </p>
+                  <Badge variant="outline" className="ml-2">
+                    {pastClasses.length}{' '}
+                    {pastClasses.length === 1 ? "aula realizada" : "aulas realizadas"}
+                  </Badge>
                 </div>
-                <div className="relative px-12">
+                <div className="relative px-2 md:px-12">
                   <Carousel className="w-full">
                     <CarouselContent className="-ml-4">
                       {pastClasses.slice(0, 10).map((liveClass) => {
@@ -725,62 +745,75 @@ export default function MinhasAulasPage() {
                           getFlagFromLanguageMetadata(liveClass.event) ||
                           getFlagFromCourseName(liveClass.course.course_name) ||
                           "🌐";
-                        const trimmedFlag = rawFlag.trim();
-                        const flag = /^[A-Za-z]{2}$/.test(trimmedFlag)
-                          ? getFlagFromCountryCode(trimmedFlag) || "🌐"
-                          : rawFlag;
+                        const trimmedFlag = typeof rawFlag === "string" ? rawFlag.trim() : rawFlag;
+                        const flag =
+                          /^[A-Za-z]{2}$/.test(trimmedFlag)
+                            ? getFlagFromCountryCode(trimmedFlag) || "🌐"
+                            : rawFlag;
                         const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
                         const classId = `${liveClass.event.id}-${liveClass.student_class_id}`;
                         const isExpanded = expandedPastClassId === classId;
+                        // Corrigir acesso a comentários/anotações
+                        const { student_feedback, teacher_answer } = getFeedbackFields(liveClass);
+                        const hasFeedback = Boolean(student_feedback) || Boolean(teacher_answer);
 
                         return (
                           <CarouselItem key={classId} className="pl-4 md:basis-1/2 lg:basis-1/3">
                             <div className="space-y-2">
                               <button
                                 onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
-                                className="w-full text-left p-4 rounded-lg bg-card border border-border hover:border-primary/50 transition-all"
+                                className={cn(
+                                  "w-full text-left p-4 rounded-lg bg-card border border-border transition-all relative overflow-hidden",
+                                  "hover:border-primary/50 hover:shadow-lg",
+                                  isExpanded && "ring-2 ring-primary"
+                                )}
+                                style={{ minHeight: hasFeedback ? 112 : 72 }}
+                                aria-expanded={isExpanded}
                               >
                                 <div className="flex items-start gap-3">
                                   <span className="text-2xl flex-shrink-0">{flag}</span>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold truncate">
+                                    <p className="text-base font-semibold truncate">
                                       {liveClass.course.course_name}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-1">
                                       {dateTime.date} • {dateTime.time}
                                     </p>
-                                    {(liveClass.student_feedback || liveClass.teacher_answer) && (
-                                      <p className="text-[10px] text-primary mt-2 flex items-center gap-1">
+                                    {hasFeedback && (
+                                      <p className="text-[10px] text-primary mt-2 flex items-center gap-1 transition-colors">
                                         <MessageSquare className="h-3 w-3" />
                                         {isExpanded ? "Ocultar" : "Ver"} comentários
                                       </p>
                                     )}
                                   </div>
                                   {liveClass.watched && (
-                                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                                    <CheckCircle2
+                                      className="h-4 w-4 text-success flex-shrink-0"
+                                      title="Aula assistida"
+                                    />
                                   )}
                                 </div>
                               </button>
 
-                              {isExpanded && (liveClass.student_feedback || liveClass.teacher_answer) && (
-                                <div className="space-y-2 animate-in slide-in-from-top duration-200">
-                                  {liveClass.student_feedback && (
+                              {isExpanded && hasFeedback && (
+                                <div className="space-y-2 animate-in fade-in slide-in-from-top duration-200">
+                                  {student_feedback && (
                                     <div className="p-3 rounded-lg bg-accent border border-border">
-                                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5">
+                                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5 text-muted-foreground">
                                         Seu comentário
                                       </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {liveClass.student_feedback}
+                                      <p className="text-xs text-foreground">
+                                        {student_feedback}
                                       </p>
                                     </div>
                                   )}
-                                  {liveClass.teacher_answer && (
-                                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                                  {teacher_answer && (
+                                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                                       <p className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">
                                         Resposta do professor
                                       </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {liveClass.teacher_answer}
+                                      <p className="text-xs text-foreground">
+                                        {teacher_answer}
                                       </p>
                                     </div>
                                   )}
@@ -799,101 +832,6 @@ export default function MinhasAulasPage() {
             )}
           </>
         )}
-      </div>
-
-      <div className="border-t pt-6 space-y-6">
-        {/* Course Cards Grid */}
-        <div className="space-y-1.5">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Cursos Inscritos
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Acesse rapidamente as aulas dos seus cursos.
-          </p>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {subscriptions.map((subscription, index) => {
-            const totalLessons = subscription.total_lessons ?? 0;
-            const watchedLessons = subscription.watched_lessons ?? 0;
-            const progress =
-              totalLessons > 0 ? (watchedLessons / totalLessons) * 100 : 0;
-
-            const isActive = subscription.status === "active";
-
-            return (
-              <Card
-                key={subscription.id}
-                className={cn(
-                  "group border-0 shadow-sm bg-card/60 backdrop-blur-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden animate-in fade-in slide-in-from-bottom-4",
-                  !isActive && "opacity-80"
-                )}
-                style={{ animationDelay: `${index * 50}ms` }}
-                onClick={() =>
-                  router.push(`/minhas-aulas/${subscription.student_class_id}`)
-                }
-              >
-                <div className="p-6 space-y-5">
-                  {/* Course Icon and Info */}
-                  <div className="flex items-start gap-4">
-                    <div className="relative">
-                      <Image
-                        src={subscription.course_icon}
-                        alt={subscription.course_name}
-                        width={56}
-                        height={56}
-                        className="h-14 w-14 rounded-xl object-cover ring-2 ring-border/40 group-hover:ring-primary/40 transition-all"
-                      />
-                      {isActive && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 space-y-2 min-w-0">
-                      <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                        {subscription.course_name}
-                      </h3>
-                      <Badge
-                        variant={isActive ? "secondary" : "outline"}
-                        className="text-xs font-medium"
-                      >
-                        {isActive ? "Ativo" : subscription.status}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Progress + CTA */}
-                  <div className="space-y-3">
-                    {totalLessons > 0 && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>
-                            {watchedLessons}/{totalLessons} aulas concluídas
-                          </span>
-                          <span>{Math.round(progress)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-1.5" />
-                      </div>
-                    )}
-
-                    <Button
-                      variant="outline"
-                      className="w-full gap-2 h-10 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(
-                          `/minhas-aulas/${subscription.student_class_id}`
-                        );
-                      }}
-                    >
-                      <span>Acessar aulas</span>
-                      <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
