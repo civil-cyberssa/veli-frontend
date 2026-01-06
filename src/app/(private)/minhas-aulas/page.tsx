@@ -811,10 +811,20 @@ export default function MinhasAulasPage() {
                                       className="flex items-center justify-center gap-2 flex-1 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all text-sm font-medium group"
                                     >
                                       <PlayCircle className="h-3.5 w-3.5" />
-                                      <span>Ver gravação</span>
+                                      <span>Gravação</span>
                                       <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </a>
                                   )}
+                                  <a
+                                    href={`/aula/${liveClass.event.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 flex-1 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all text-sm font-medium group"
+                                  >
+                                    <Video className="h-3.5 w-3.5" />
+                                    <span>Ver detalhes</span>
+                                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </a>
                                   {hasFeedback && (
                                     <button
                                       onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
