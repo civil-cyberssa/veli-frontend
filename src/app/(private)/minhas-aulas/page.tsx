@@ -98,7 +98,7 @@ export default function MinhasAulasPage() {
         <img
           src={`https://flagcdn.com/w40/${countryCode}.png`}
           alt={flag}
-          className="w-6 h-4 object-cover rounded-sm shadow-sm"
+          className="w-10 h-6 object-cover rounded-sm shadow-sm"
         />
       );
     }
@@ -207,7 +207,7 @@ export default function MinhasAulasPage() {
       (liveClass.event.language && (
         <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2">
           {getFlagFromLanguageMetadata(liveClass.event) || "🌐"}
-          {liveClass.event.language?.toUpperCase()}
+          {liveClass.event.language.name}
         </Badge>
       )) ||
       null;
@@ -699,7 +699,7 @@ export default function MinhasAulasPage() {
                               isNextClass && "ring-1 ring-primary/40 shadow-sm"
                             )}>
                               <div className="p-4 space-y-3">
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-center gap-3">
                                   <div className="flex-shrink-0">{renderFlag(flag)}</div>
                                   <div className="flex-1 min-w-0 space-y-1">
                                     <p className="text-sm font-semibold truncate">

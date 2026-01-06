@@ -103,7 +103,7 @@ function ModuleItem({
       "transition-all rounded-lg mb-2 overflow-hidden",
       "border",
       isCurrentModule
-        ? "border-primary/30 bg-gradient-to-br from-primary/5 to-transparent shadow-sm"
+        ? "border-primary/30 bg-background"
         : "border-border/30 hover:border-border/50"
     )}>
       {/* Header do módulo */}
@@ -278,7 +278,7 @@ export function LessonSidebarTabs({
       label: 'Conteúdo',
       icon: MonitorPlay,
       disabled: false,
-      gradient: 'from-blue-500 to-blue-600',
+      gradient: 'from-green-500 to-green-600',
     },
     {
       value: 'material' as TabValue,
@@ -371,7 +371,7 @@ export function LessonSidebarTabs({
               className={cn(
                 'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium transition-all relative rounded-t-lg group',
                 activeTab === tab.value
-                  ? 'text-foreground bg-background'
+                  ? 'text-foreground '
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/20',
                 tab.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
               )}

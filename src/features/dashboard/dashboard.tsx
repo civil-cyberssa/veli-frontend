@@ -160,7 +160,7 @@ export default function Dashboard() {
         {/* Próxima Aula ao Vivo */}
         <Card
           className="group relative overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:border-primary/30 hover:scale-[1.01]"
-          onClick={() => selectedSubscription && router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)}
+          onClick={() => selectedSubscription && router.push(`/minhas-aulas`)}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
