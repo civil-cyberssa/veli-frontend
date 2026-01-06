@@ -39,6 +39,7 @@ import {
   getFlagFromLanguageMetadata,
   getFlagFromCountryCode,
 } from "@/src/utils/languageFlags";
+import { ClassDetailsModal } from "@/components/class-details-modal";
 
 // Assume as correções: comentários/aluno e resposta/professor vêm de feedbacks: { aluno: string, professor: string } ou similar
 
@@ -58,6 +59,14 @@ export default function MinhasAulasPage() {
   });
 
   const [expandedPastClassId, setExpandedPastClassId] = useState<string | null>(null);
+
+  // State para o modal de detalhes
+  const [selectedClassDetails, setSelectedClassDetails] = useState<{
+    eventId: number;
+    lessonId?: number;
+    registrationId?: number;
+    className?: string;
+  } | null>(null);
 
   // CORREÇÃO: Função segura para pegar feedback do aluno e do professor
   const getFeedbackFields = (liveClass: any) => {
@@ -815,16 +824,20 @@ export default function MinhasAulasPage() {
                                       <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </a>
                                   )}
-                                  <a
-                                    href={`/aula/${liveClass.event.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                  <button
+                                    onClick={() =>
+                                      setSelectedClassDetails({
+                                        eventId: liveClass.event.id,
+                                        lessonId: liveClass.event.lesson?.id,
+                                        registrationId: liveClass.subscription_id,
+                                        className: liveClass.course.course_name,
+                                      })
+                                    }
                                     className="flex items-center justify-center gap-2 flex-1 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all text-sm font-medium group"
                                   >
                                     <Video className="h-3.5 w-3.5" />
                                     <span>Ver detalhes</span>
-                                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </a>
+                                  </button>
                                   {hasFeedback && (
                                     <button
                                       onClick={() => setExpandedPastClassId(isExpanded ? null : classId)}
@@ -879,6 +892,18 @@ export default function MinhasAulasPage() {
           </>
         )}
       </div>
+
+      {/* Modal de detalhes da aula */}
+      {selectedClassDetails && (
+        <ClassDetailsModal
+          open={!!selectedClassDetails}
+          onOpenChange={(open) => !open && setSelectedClassDetails(null)}
+          eventId={selectedClassDetails.eventId}
+          lessonId={selectedClassDetails.lessonId}
+          registrationId={selectedClassDetails.registrationId}
+          className={selectedClassDetails.className}
+        />
+      )}
     </div>
   );
 }
