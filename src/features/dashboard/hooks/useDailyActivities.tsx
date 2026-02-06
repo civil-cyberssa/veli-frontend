@@ -219,17 +219,18 @@ export function useSubmitActivityAnswer() {
 
     const endpoint = `${NEXT_PUBLIC_API_URL}/student-portal/daily-activities/${arg.courseId}/answers/`
 
-    const hasFile = arg.fileAnswer instanceof File
+    const fileAnswer = arg.fileAnswer
+    const hasFile = fileAnswer instanceof File
     const payload = hasFile ? new FormData() : JSON.stringify({
       daily_activity: arg.activityId,
       user_answer: arg.userAnswer,
       file_answer: null,
     })
 
-    if (hasFile && payload instanceof FormData) {
+    if (fileAnswer instanceof File && payload instanceof FormData) {
       payload.append('daily_activity', String(arg.activityId))
       if (arg.userAnswer) payload.append('user_answer', arg.userAnswer)
-      payload.append('file_answer', arg.fileAnswer)
+      payload.append('file_answer', fileAnswer)
     }
 
     const response = await fetch(endpoint, {

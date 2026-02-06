@@ -266,7 +266,16 @@ export default function ActivitiesPage() {
     if (activity.activity_type === 'image' && activity.file) {
       return (
         <div className="overflow-hidden rounded-lg border bg-muted/30">
-          <img src={activity.file} alt={activity.name} className="h-full w-full object-contain" />
+          <div className="relative h-64 w-full">
+            <Image
+              src={activity.file}
+              alt={activity.name}
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 640px"
+              unoptimized
+            />
+          </div>
         </div>
       )
     }

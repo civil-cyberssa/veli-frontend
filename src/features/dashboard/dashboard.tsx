@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Calendar, Clock, ArrowRight, CheckCircle2, FileText, XCircle, Sparkles } from "lucide-react"
+import { Calendar, Clock, ArrowRight, CheckCircle2, FileText, XCircle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -160,7 +160,11 @@ export default function Dashboard() {
         {/* Próxima Aula ao Vivo */}
         <Card
           className="group relative overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:border-primary/30 hover:scale-[1.01]"
-          onClick={() => selectedSubscription && router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)}
+          onClick={() => {
+            if (selectedSubscription) {
+              router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+            }
+          }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -232,7 +236,9 @@ export default function Dashboard() {
                     className="w-full h-11 shadow-sm hover:shadow-md transition-all group/btn"
                     onClick={(e) => {
                       e.stopPropagation()
-                      selectedSubscription && router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                      if (selectedSubscription) {
+                        router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                      }
                     }}
                   >
                     Ver todas as aulas
@@ -254,7 +260,9 @@ export default function Dashboard() {
                   className="h-11 shadow-sm hover:shadow-md transition-all group/btn"
                   onClick={(e) => {
                     e.stopPropagation()
-                    selectedSubscription && router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                    if (selectedSubscription) {
+                      router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                    }
                   }}
                 >
                   Ver todas as aulas

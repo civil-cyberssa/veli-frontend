@@ -395,7 +395,6 @@ export default function LessonPage() {
                 exerciseScore={selectedLessonProgress?.exercise_score ?? null}
                 supportMaterialUrl={lesson?.support_material_url}
                 onOpenQuiz={handleOpenQuiz}
-                teacherAnswer={selectedLessonProgress?.teacher_answer ?? null}
               />
             </div>
 

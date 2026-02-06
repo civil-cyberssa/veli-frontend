@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Clock,
   Video,
-  Camera,
   Calendar as CalendarIcon,
   ExternalLink,
   Award,
@@ -33,7 +32,7 @@ import {
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useSubscriptions } from "@/src/features/dashboard/hooks/useSubscription";
-import { useAllLiveClasses } from "@/src/features/dashboard/hooks/useAllLiveClasses";
+import { useAllLiveClasses, type AggregatedLiveClass } from "@/src/features/dashboard/hooks/useAllLiveClasses";
 import {
   getFlagFromCourseName,
   getFlagFromLanguageMetadata,
@@ -41,6 +40,14 @@ import {
 } from "@/src/utils/languageFlags";
 
 // Assume as correções: comentários/aluno e resposta/professor vêm de feedbacks: { aluno: string, professor: string } ou similar
+type LiveClassWithFeedback = AggregatedLiveClass & {
+  feedback?: {
+    student?: string | null;
+    teacher?: string | null;
+  };
+  student_feedback?: string | null;
+  teacher_answer?: string | null;
+};
 
 export default function MinhasAulasPage() {
   const router = useRouter();
@@ -60,18 +67,18 @@ export default function MinhasAulasPage() {
   const [expandedPastClassId, setExpandedPastClassId] = useState<string | null>(null);
 
   // CORREÇÃO: Função segura para pegar feedback do aluno e do professor
-  const getFeedbackFields = (liveClass: any) => {
+  const getFeedbackFields = (liveClass: LiveClassWithFeedback) => {
     // aceita feedbacks aninhados em um objeto, ou legacy direto no objeto
     // preferencialmente usa o campo 'feedback' de liveClass se existir, senão tenta campos avulsos legacy
     let student_feedback = "";
     let teacher_answer = "";
     if (liveClass.feedback && typeof liveClass.feedback === "object") {
-      student_feedback = liveClass.feedback.student || "";
-      teacher_answer = liveClass.feedback.teacher || "";
+      student_feedback = liveClass.feedback.student ?? "";
+      teacher_answer = liveClass.feedback.teacher ?? "";
     } else {
       // fallback legacy
-      student_feedback = liveClass.student_feedback || "";
-      teacher_answer = liveClass.teacher_answer || "";
+      student_feedback = liveClass.student_feedback ?? "";
+      teacher_answer = liveClass.teacher_answer ?? "";
     }
     return { student_feedback, teacher_answer };
   };
@@ -95,10 +102,13 @@ export default function MinhasAulasPage() {
     const countryCode = flagEmojiToCountryCode(flag);
     if (countryCode) {
       return (
-        <img
+        <Image
           src={`https://flagcdn.com/w40/${countryCode}.png`}
           alt={flag}
+          width={24}
+          height={16}
           className="w-6 h-4 object-cover rounded-sm shadow-sm"
+          unoptimized
         />
       );
     }
@@ -201,13 +211,18 @@ export default function MinhasAulasPage() {
       "🌐";
     const timeUntil = upcoming ? getTimeUntilClass(liveClass.event.scheduled_datetime) : "";
     const dateTime = formatDateTime(liveClass.event.scheduled_datetime);
+    const languageLabel =
+      liveClass.event.language?.short_name ||
+      liveClass.event.language?.code ||
+      liveClass.event.language?.name ||
+      "";
 
     // Extra: badge do idioma do curso
     const languageBadge =
       (liveClass.event.language && (
         <Badge variant="outline" className="gap-1 text-[10px] h-5 px-2">
           {getFlagFromLanguageMetadata(liveClass.event) || "🌐"}
-          {liveClass.event.language?.toUpperCase()}
+          {languageLabel ? languageLabel.toUpperCase() : null}
         </Badge>
       )) ||
       null;
@@ -578,11 +593,14 @@ export default function MinhasAulasPage() {
                               {hasClasses && countryCodes.length > 0 && (
                                 <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
                                   {countryCodes.map((code, idx) => (
-                                    <img
+                                    <Image
                                       key={idx}
                                       src={`https://flagcdn.com/w20/${code}.png`}
                                       alt=""
+                                      width={12}
+                                      height={8}
                                       className="w-3 h-2 object-cover rounded-[1px]"
+                                      unoptimized
                                     />
                                   ))}
                                 </div>

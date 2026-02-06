@@ -55,7 +55,7 @@ export interface UseLatestClassReturn {
   data: LatestClassEvent | null
   isLoading: boolean
   error: Error | null
-  refetch: KeyedMutator<LatestClassEvent>
+  refetch: KeyedMutator<LatestClassEvent | null>
 }
 
 const fetcher = async (url: string, token: string): Promise<LatestClassEvent | null> => {
