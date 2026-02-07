@@ -38,7 +38,7 @@ import {
   getFlagFromLanguageMetadata,
   getFlagFromCountryCode,
 } from "@/src/utils/languageFlags";
-import { ClassDetailsModal } from "@/components/class-details-modal";
+import { ClassDetailsModal } from "@/src/components/class-details-modal";
 
 // Assume as correções: comentários/aluno e resposta/professor vêm de feedbacks: { aluno: string, professor: string } ou similar
 type LiveClassWithFeedback = AggregatedLiveClass & {
@@ -847,7 +847,7 @@ export default function MinhasAulasPage() {
                                       setSelectedClassDetails({
                                         eventId: liveClass.event.id,
                                         lessonId: liveClass.event.lesson?.id,
-                                        registrationId: liveClass.subscription_id,
+                                        registrationId: liveClass.student_class_id,
                                         className: liveClass.course.course_name,
                                       })
                                     }
