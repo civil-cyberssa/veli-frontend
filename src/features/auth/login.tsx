@@ -129,10 +129,10 @@ export default function LoginScreen() {
       if (isFirstLogin) {
         localStorage.setItem("hasLoggedBefore", "true");
         setTimeout(() => {
-          router.replace("/course-selection");
+          router.replace("/home");
         }, 1500);
       } else {
-        router.replace("/course-selection");
+        router.replace("/home");
       }
     } catch (error) {
       console.error("Erro durante autenticação:", error);

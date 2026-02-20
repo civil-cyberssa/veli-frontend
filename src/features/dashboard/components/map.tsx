@@ -14,7 +14,7 @@ export function WelcomeCard() {
   const { data: session } = useSession()
   const { data: nextLesson, isLoading } = useNextAsyncLesson()
 
-  const firstName = session?.user?.name || "aluno"
+  const fullName = session?.student_full_name
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     day: 'numeric',
     month: 'short'
@@ -55,7 +55,9 @@ export function WelcomeCard() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-semibold">Olá, {firstName}</h2>
+            <h2 className="text-2xl font-semibold">
+              {fullName ? `Olá, ${fullName}` : "Olá!"}
+            </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Continue de onde parou
             </p>

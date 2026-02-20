@@ -3,6 +3,50 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes veli-reveal {
+  0% {
+    -webkit-mask-position: -140% 50%;
+    mask-position: -140% 50%;
+    opacity: 0.0;
+  }
+  20% {
+    opacity: 0.55;
+  }
+  50% {
+    -webkit-mask-position: 50% 50%;
+    mask-position: 50% 50%;
+    opacity: 0.55;
+  }
+  80% {
+    opacity: 0.55;
+  }
+  100% {
+    -webkit-mask-position: 140% 50%;
+    mask-position: 140% 50%;
+    opacity: 0.0;
+  }
+}
+
+.veli-thinking {
+  position: relative;
+  color: #0548BE;
+}
+
+.veli-thinking::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: rgba(255, 255, 255, 0.6);
+  /* Máscara curva para o efeito de "surgir" */
+  -webkit-mask-image: radial-gradient(140% 100% at 0% 50%, #000 35%, transparent 65%);
+  mask-image: radial-gradient(140% 100% at 0% 50%, #000 35%, transparent 65%);
+  -webkit-mask-size: 200% 100%;
+  mask-size: 200% 100%;
+  -webkit-mask-position: -140% 50%;
+  mask-position: -140% 50%;
+  animation: veli-reveal 2.2s ease-in-out infinite;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -53,8 +97,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
   
-  /* 🔴 COR PRIMÁRIA: #F2542D (Laranja/Vermelho) */
-  --primary: oklch(86.305% 0.15256 177.535);
+  /* 🔵 COR PRIMÁRIA: #0EA5A4 (Verde-azulado/Turquesa) */
+  --primary: #0ea5a4;
   --primary-foreground: oklch(1 0 0);
   
   /* 🔵 COR SECUNDÁRIA: #0f9d9c (Verde-azulado/Turquesa) */
@@ -96,8 +140,8 @@
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
   
-  /* 🔴 COR PRIMÁRIA: #F2542D (Laranja/Vermelho) - Dark Mode */
-  --primary: oklch(0.656 0.201 34.773);
+  /* 🔵 COR PRIMÁRIA: #0EA5A4 (Verde-azulado/Turquesa) - Dark Mode */
+  --primary: #0ea5a4;
   --primary-foreground: oklch(1 0 0);
   
   /* 🔵 COR SECUNDÁRIA: #0f9d9c (Verde-azulado/Turquesa) - Dark Mode */

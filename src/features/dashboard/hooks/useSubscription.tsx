@@ -71,33 +71,20 @@ export function useSubscriptions(): UseSubscriptionsReturn {
     }
   }, [])
 
-  // Seleciona automaticamente o primeiro curso quando os dados são carregados
-  // APENAS se houver 1 curso ou se já foi feita a seleção inicial
+  // Seleciona automaticamente a matrícula com menor ID quando os dados são carregados
   useEffect(() => {
     if (data && data.length > 0 && !selectedSubscription) {
-      // Se houver apenas 1 curso, seleciona automaticamente e marca como selecionado
-      if (data.length === 1) {
-        setSelectedSubscription(data[0])
-        setHasSelectedCourse(true)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('courseSelectionCompleted', 'true')
-        }
-      }
-      // Se já foi feita a seleção inicial anteriormente, carrega o último curso selecionado
-      else if (hasSelectedCourse) {
-        const lastSelectedId = typeof window !== 'undefined'
-          ? localStorage.getItem('lastSelectedCourseId')
-          : null
-
-        if (lastSelectedId) {
-          const lastCourse = data.find(s => s.id === parseInt(lastSelectedId))
-          setSelectedSubscription(lastCourse || data[0])
-        } else {
-          setSelectedSubscription(data[0])
-        }
+      const minSubscription = data.reduce((min, current) =>
+        current.id < min.id ? current : min
+      )
+      setSelectedSubscription(minSubscription)
+      setHasSelectedCourse(true)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('courseSelectionCompleted', 'true')
+        localStorage.setItem('lastSelectedCourseId', minSubscription.id.toString())
       }
     }
-  }, [data, selectedSubscription, hasSelectedCourse])
+  }, [data, selectedSubscription])
 
   // Atualiza o localStorage quando o curso selecionado muda
   useEffect(() => {

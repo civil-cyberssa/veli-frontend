@@ -36,6 +36,16 @@ export default function CourseSelectionPage() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Auto-seleciona se houver apenas 1 curso (fora do render)
+  useEffect(() => {
+    if (!subscriptions || subscriptions.length !== 1 || selectedCourse) return
+    const onlyCourse = subscriptions[0]
+    setSelectedCourse(onlyCourse)
+    setSelectedSubscription(onlyCourse)
+    markCourseAsSelected()
+    router.push("/home")
+  }, [subscriptions, selectedCourse, setSelectedSubscription, markCourseAsSelected, router])
+
   const handleConfirm = async () => {
     if (selectedCourse) {
       setIsConfirming(true)
@@ -98,14 +108,6 @@ export default function CourseSelectionPage() {
         </div>
       </div>
     )
-  }
-
-  // Auto-seleciona se houver apenas 1 curso
-  if (subscriptions.length === 1 && !selectedCourse) {
-    setSelectedSubscription(subscriptions[0])
-    markCourseAsSelected()
-    router.push("/home")
-    return null
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import {
@@ -13,7 +14,6 @@ import {
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -24,13 +24,6 @@ import {
 import { NavUser } from "./nav-user"
 
 const baseNavData = {
-  teams: [
-    {
-      name: "Área do Aluno",
-      logo: LayoutDashboard,
-      plan: "Portal do Estudante",
-    },
-  ],
   sections: [
     {
       label: "PRINCIPAL",
@@ -104,7 +97,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={baseNavData.teams} />
+        <div className="flex items-center gap-3 px-3 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+          <div className="flex size-10 items-center justify-center rounded-xl">
+            <Image
+              src="/veli_logo.png"
+              alt="Veli"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain"
+              priority
+            />
+          </div>
+          <div className="leading-none group-data-[collapsible=icon]:hidden">
+            <span
+              className="veli-thinking text-base font-bold tracking-wide"
+              data-text="Veli"
+            >
+              Veli
+            </span>
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain sections={navSectionsWithActiveState} />
