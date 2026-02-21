@@ -9,7 +9,13 @@ const authOptions = {
         password: { label: "password", type: "password" },
       },
       async authorize(credentials) {
-        const response = await fetch("https://veli-backend.onrender.com/student-portal/auth/login/", {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL
+
+        if (!baseUrl) {
+          throw new Error("NEXT_PUBLIC_API_URL não configurada")
+        }
+
+        const response = await fetch(`${baseUrl}/student-portal/auth/login/`, {
           method: "POST",
           headers: {
             "Content-type": "application/json",
