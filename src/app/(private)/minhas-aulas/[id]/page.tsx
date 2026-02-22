@@ -32,10 +32,10 @@ const getTimeUntilClass = (dateTimeString: string): string => {
 export default function LiveClassDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const courseId = params.id as string
+  const subscriptionId = params.id as string
 
-  const { data: liveClasses, isLoading: loadingLiveClasses, error: errorLiveClasses } = useLiveClassList(courseId)
-  const { data: latestClass, isLoading: loadingLatestClass } = useLatestClass(courseId)
+  const { data: liveClasses, isLoading: loadingLiveClasses, error: errorLiveClasses } = useLiveClassList(subscriptionId)
+  const { data: latestClass, isLoading: loadingLatestClass } = useLatestClass(subscriptionId)
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)

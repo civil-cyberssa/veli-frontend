@@ -10,9 +10,9 @@ import { useNextAsyncLesson } from "../hooks/useNextAsyncLesson"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
 
-export function WelcomeCard() {
+export function WelcomeCard({ subscriptionId }: { subscriptionId: number | null }) {
   const { data: session } = useSession()
-  const { data: nextLesson, isLoading } = useNextAsyncLesson()
+  const { data: nextLesson, isLoading } = useNextAsyncLesson(subscriptionId)
 
   const fullName = session?.student_full_name
   const currentDate = new Date().toLocaleDateString('pt-BR', {

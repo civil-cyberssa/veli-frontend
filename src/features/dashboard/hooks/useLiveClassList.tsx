@@ -85,12 +85,12 @@ const fetcher = async (url: string, token: string): Promise<LiveClassEvent[]> =>
   }))
 }
 
-export function useLiveClassList(courseId: string | null): UseLiveClassListReturn {
+export function useLiveClassList(subscriptionId: string | null): UseLiveClassListReturn {
   const { data: session, status } = useSession()
 
   const { data, error, mutate, isLoading } = useSWR<LiveClassEvent[]>(
-    status === 'authenticated' && session?.access && courseId
-      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/event-progress/live/${courseId}/`, session.access]
+    status === 'authenticated' && session?.access && subscriptionId
+      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/event-progress/live/${subscriptionId}/`, session.access]
       : null,
     ([url, token]: [string, string]) => fetcher(url, token),
     {

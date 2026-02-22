@@ -2,7 +2,6 @@
 
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
-import { useSubscriptions } from './useSubscription'
 
 export interface NextAsyncLesson {
   event_id: number
@@ -49,13 +48,12 @@ const fetcher = async (url: string, token: string): Promise<NextAsyncLesson | nu
   return response.json()
 }
 
-export function useNextAsyncLesson(): UseNextAsyncLessonReturn {
+export function useNextAsyncLesson(subscriptionId: number | null): UseNextAsyncLessonReturn {
   const { data: session, status } = useSession()
-  const { selectedId } = useSubscriptions()
 
   const { data, error, mutate, isLoading } = useSWR<NextAsyncLesson | null>(
-    status === 'authenticated' && session?.access && selectedId
-      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/subscriptions/${selectedId}/next-async/`, session.access]
+    status === 'authenticated' && session?.access && subscriptionId
+      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/subscriptions/${subscriptionId}/next-async/`, session.access]
       : null,
     ([url, token]: [string, string]) => fetcher(url, token),
     {

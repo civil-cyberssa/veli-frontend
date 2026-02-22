@@ -42,7 +42,7 @@ export function NavMain({
                   className={cn(
                     "group/item h-10 px-3 hover:bg-sidebar-accent/80 transition-all duration-200",
                     "pr-[11px]",
-                    item.isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm",
+                    item.isActive && "bg-[#109697] text-white font-medium shadow-sm",
                     !item.isActive && "text-sidebar-foreground/70 hover:text-sidebar-foreground"
                   )}
                 >

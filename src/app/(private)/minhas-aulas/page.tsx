@@ -39,6 +39,13 @@ import {
   getFlagFromCountryCode,
 } from "@/src/utils/languageFlags";
 import { ClassDetailsModal } from "@/src/components/class-details-modal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Assume as correções: comentários/aluno e resposta/professor vêm de feedbacks: { aluno: string, professor: string } ou similar
 type LiveClassWithFeedback = AggregatedLiveClass & {
@@ -52,12 +59,19 @@ type LiveClassWithFeedback = AggregatedLiveClass & {
 
 export default function MinhasAulasPage() {
   const router = useRouter();
-  const { data: subscriptions, loading, error } = useSubscriptions();
+  const {
+    data: subscriptions,
+    loading,
+    error,
+    selectedSubscription,
+    setSelectedSubscription,
+  } = useSubscriptions();
+  const selectedSubscriptionId = selectedSubscription?.id ?? null;
   const {
     data: allLiveClasses,
     isLoading: loadingAllClasses,
     error: allClassesError,
-  } = useAllLiveClasses(subscriptions);
+  } = useAllLiveClasses(subscriptions, selectedSubscriptionId);
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const today = new Date();
@@ -162,8 +176,14 @@ export default function MinhasAulasPage() {
     return "Em breve";
   };
 
-  const sortedAllLiveClasses = allLiveClasses
-    ? [...allLiveClasses].sort((a, b) => {
+  const filteredLiveClasses = allLiveClasses
+    ? allLiveClasses.filter((liveClass) =>
+        selectedSubscriptionId ? liveClass.course.id === selectedSubscriptionId : true
+      )
+    : [];
+
+  const sortedAllLiveClasses = filteredLiveClasses.length > 0
+    ? [...filteredLiveClasses].sort((a, b) => {
         const now = new Date();
         const aDate = new Date(a.event.scheduled_datetime);
         const bDate = new Date(b.event.scheduled_datetime);
@@ -440,7 +460,7 @@ export default function MinhasAulasPage() {
                 variant="ghost"
                 className="h-9 w-9"
                 onClick={() =>
-                  router.push(`/minhas-aulas/${liveClass.student_class_id}`)
+                  router.push(`/minhas-aulas/${liveClass.course.id}`)
                 }
                 title="Ver detalhes da sua aula"
               >
@@ -483,23 +503,66 @@ export default function MinhasAulasPage() {
     <div className="max-w-7xl mx-auto pb-16 space-y-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="space-y-6 pt-8 pb-2">
-        <div className="space-y-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text text-transparent">
-              Minhas Aulas
-            </h1>
-            <Badge
-              variant="secondary"
-              className="gap-2 px-3.5 py-1.5 text-sm font-semibold shadow-sm"
-            >
-              <Users className="h-4 w-4" />
-              {sortedAllLiveClasses.length}{" "}
-              {sortedAllLiveClasses.length === 1 ? "aula" : "aulas"}
-            </Badge>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text text-transparent">
+                Minhas Aulas
+              </h1>
+              <Badge
+                variant="secondary"
+                className="gap-2 px-3.5 py-1.5 text-sm font-semibold shadow-sm"
+              >
+                <Users className="h-4 w-4" />
+                {sortedAllLiveClasses.length}{" "}
+                {sortedAllLiveClasses.length === 1 ? "aula" : "aulas"}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground/80 text-base max-w-3xl leading-relaxed">
+              Acompanhe e acesse todas as aulas ao vivo dos cursos em que você está inscrito.
+            </p>
           </div>
-          <p className="text-muted-foreground/80 text-base max-w-3xl leading-relaxed">
-            Acompanhe e acesse todas as aulas ao vivo dos cursos em que você está inscrito.
-          </p>
+          {subscriptions.length > 1 && (
+            <div className="flex w-full max-w-sm flex-col gap-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Selecione o curso
+              </label>
+              <Select
+              value={selectedSubscription?.id?.toString()}
+              onValueChange={(value) => {
+                const subscription = subscriptions.find(
+                  (item) => item.id === Number(value)
+                );
+                  if (subscription) {
+                    setSelectedSubscription(subscription);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-11 shadow-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {subscriptions.map((subscription) => (
+                    <SelectItem
+                      key={subscription.id}
+                      value={subscription.id.toString()}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Image
+                          src={subscription.course_icon}
+                          alt={subscription.course_name}
+                          width={18}
+                          height={18}
+                          className="h-[18px] w-[18px] rounded-full object-cover"
+                        />
+                        <span>{subscription.course_name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         {nextClass && (
           <Card className="border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm shadow-md">

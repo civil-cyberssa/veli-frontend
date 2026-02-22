@@ -52,7 +52,7 @@ const fetchLiveClasses = async (
     return data.map((item: LiveClassEvent) => ({
       ...item,
       teacher_answer: item.teacher_answer ?? item.teatcher_answer ?? '',
-      student_class_id: courseId,
+      student_class_id: course.student_class_id,
       course,
     }))
   })
@@ -62,19 +62,26 @@ const fetchLiveClasses = async (
 }
 
 export function useAllLiveClasses(
-  subscriptions: Subscription[] | undefined
+  subscriptions: Subscription[] | undefined,
+  selectedSubscriptionId?: number | null
 ): UseAllLiveClassesReturn {
   const { data: session, status } = useSession()
   const subscriptionMap = useMemo(
     () =>
       new Map(
-        (subscriptions || []).map((subscription) => [subscription.student_class_id, subscription])
+        (subscriptions || []).map((subscription) => [subscription.id, subscription])
       ),
     [subscriptions]
   )
   const courseIds = useMemo(
-    () => (subscriptions || []).map((subscription) => subscription.student_class_id),
-    [subscriptions]
+    () => {
+      if (selectedSubscriptionId) {
+        return [selectedSubscriptionId]
+      }
+
+      return (subscriptions || []).map((subscription) => subscription.id)
+    },
+    [subscriptions, selectedSubscriptionId]
   )
 
   const shouldFetch =

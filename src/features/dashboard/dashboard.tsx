@@ -124,7 +124,6 @@ export default function Dashboard() {
                 const subscription = subscriptions.find(s => s.id === parseInt(value))
                 if (subscription) {
                   setSelectedSubscription(subscription)
-                  setTimeout(() => window.location.reload(), 100)
                 }
               }}
             >
@@ -153,7 +152,7 @@ export default function Dashboard() {
       </div>
 
       {/* Welcome Card */}
-      <WelcomeCard />
+      <WelcomeCard subscriptionId={selectedSubscription?.id ?? null} />
 
       {/* Grid com Próxima Aula ao Vivo e Atividades */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -162,7 +161,7 @@ export default function Dashboard() {
           className="group relative overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:border-primary/30 hover:scale-[1.01]"
           onClick={() => {
             if (selectedSubscription) {
-              router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+              router.push(`/minhas-aulas/${selectedSubscription.id}`)
             }
           }}
         >
@@ -237,7 +236,7 @@ export default function Dashboard() {
                     onClick={(e) => {
                       e.stopPropagation()
                       if (selectedSubscription) {
-                        router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                        router.push(`/minhas-aulas/${selectedSubscription.id}`)
                       }
                     }}
                   >
@@ -261,7 +260,7 @@ export default function Dashboard() {
                   onClick={(e) => {
                     e.stopPropagation()
                     if (selectedSubscription) {
-                      router.push(`/minhas-aulas/${selectedSubscription.student_class_id}`)
+                      router.push(`/minhas-aulas/${selectedSubscription.id}`)
                     }
                   }}
                 >
