@@ -118,8 +118,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
   
-  /* 🔵 COR PRIMÁRIA: #0EA5A4 (Verde-azulado/Turquesa) */
-  --primary: #0ea5a4;
+  /* 🔵 COR PRIMÁRIA: #109697 (Verde-azulado/Turquesa) */
+  --primary: #109697;
   --primary-foreground: oklch(1 0 0);
   
   /* 🔵 COR SECUNDÁRIA: #0f9d9c (Verde-azulado/Turquesa) */
@@ -161,8 +161,8 @@
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
   
-  /* 🔵 COR PRIMÁRIA: #0EA5A4 (Verde-azulado/Turquesa) - Dark Mode */
-  --primary: #0ea5a4;
+  /* 🔵 COR PRIMÁRIA: #109697 (Verde-azulado/Turquesa) - Dark Mode */
+  --primary: #109697;
   --primary-foreground: oklch(1 0 0);
   
   /* 🔵 COR SECUNDÁRIA: #0f9d9c (Verde-azulado/Turquesa) - Dark Mode */

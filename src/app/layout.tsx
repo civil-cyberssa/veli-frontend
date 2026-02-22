@@ -4,7 +4,6 @@ import "./globals.css";
 import { ThemeProvider } from "../providers/theme-provider";
 import { Toaster } from "sonner";
 import NextAuthSessionProvider from "../providers/auth-provider";
-import { ColorProvider } from "../providers/color-provider";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -38,7 +37,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <ColorProvider>{children}</ColorProvider>
+            {children}
           </ThemeProvider>
         </NextAuthSessionProvider>
         <Toaster

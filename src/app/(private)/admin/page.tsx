@@ -1,7 +1,6 @@
 'use client'
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ColorSettings } from "@/src/features/admin/color-settings"
 import { useSession } from "next-auth/react"
 
 export default function AdminPage() {
@@ -17,15 +16,15 @@ export default function AdminPage() {
     }
   }, [session, status, router])
 
-  const managerName = session?.student_full_name || "Gestor"
-
   if (!session || (session.role as string | undefined)?.toLowerCase() !== "manager") {
     return null
   }
 
   return (
     <div className="py-8">
-      <ColorSettings managerName={managerName} />
+      <div className="rounded-lg border border-border/50 bg-card/60 p-6 text-sm text-muted-foreground">
+        Personalização de cores removida.
+      </div>
     </div>
   )
 }
