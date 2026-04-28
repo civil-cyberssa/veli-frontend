@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
 import { WelcomeCard } from "./components/map"
+import { CourseGreeting } from "./components/course-greeting"
 import { cn } from "@/lib/utils"
 
 import {
@@ -88,21 +89,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="pb-8 space-y-8">
+    <div className="pb-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-            Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Acompanhe seu progresso e próximas atividades
-          </p>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <CourseGreeting courseName={selectedSubscription?.course_name} />
 
         {/* Seletor de curso */}
         {subscriptions.length === 1 && selectedSubscription ? (
-          <div className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-muted/80 to-muted/50 rounded-xl border border-border/50 shadow-sm">
+          <div className="flex items-center gap-3 self-start rounded-xl border border-border/50 bg-gradient-to-r from-muted/80 to-muted/50 px-4 py-2.5 shadow-sm sm:self-auto">
             <Image
               src={selectedSubscription.course_icon}
               alt={selectedSubscription.course_name}
@@ -116,7 +110,7 @@ export default function Dashboard() {
             </div>
           </div>
         ) : subscriptions.length > 1 && (
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 self-start sm:self-auto">
             <label className="text-xs font-medium text-muted-foreground">Selecione o curso</label>
             <Select
               value={selectedSubscription?.id.toString()}

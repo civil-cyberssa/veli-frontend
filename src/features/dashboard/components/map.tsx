@@ -3,7 +3,6 @@
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Play, Clock, CheckCircle2 } from "lucide-react"
-import { useSession } from "next-auth/react"
 import React from "react"
 import Link from "next/link"
 import { useNextAsyncLesson } from "../hooks/useNextAsyncLesson"
@@ -11,10 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { LogoPulseLoader } from "@/components/shared/logo-loader"
 
 export function WelcomeCard({ subscriptionId }: { subscriptionId: number | null }) {
-  const { data: session } = useSession()
   const { data: nextLesson, isLoading } = useNextAsyncLesson(subscriptionId)
 
-  const fullName = session?.student_full_name
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     day: 'numeric',
     month: 'short'
@@ -52,16 +49,7 @@ export function WelcomeCard({ subscriptionId }: { subscriptionId: number | null 
 
       {/* Conteúdo */}
       <div className="relative border-0">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold">
-              {fullName ? `Olá, ${fullName}` : "Olá!"}
-            </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Continue de onde parou
-            </p>
-          </div>
+        <div className="mb-6 flex justify-end">
           <div className="flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-sm ">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="font-medium">{currentDate}</span>

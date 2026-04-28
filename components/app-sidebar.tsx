@@ -5,6 +5,8 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import {
+  ChevronsLeft,
+  ChevronsRight,
   LayoutDashboard,
   PlayCircle,
   ClipboardList,
@@ -17,11 +19,10 @@ import { NavMain } from "@/components/nav-main"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
-import { NavUser } from "./nav-user"
 
 const baseNavData = {
   sections: [
@@ -66,6 +67,7 @@ const baseNavData = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const { open, toggleSidebar } = useSidebar()
   const role = (session?.role as string | undefined)?.toLowerCase()
 
   // Calcula dinamicamente o isActive baseado na rota atual
@@ -97,14 +99,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex items-center gap-3 px-3 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
-          <div className="flex size-10 items-center justify-center rounded-xl">
+        <div className="flex justify-end px-2 pt-2 group-data-[collapsible=icon]:justify-center">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label={open ? "Recolher menu" : "Expandir menu"}
+            title={open ? "Recolher menu" : "Expandir menu"}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            {open ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
+          </button>
+        </div>
+        <div className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+          <div className="flex size-10 items-center justify-center rounded-xl group-data-[collapsible=icon]:size-12">
             <Image
               src="/veli_logo.png"
               alt="Veli"
-              width={36}
-              height={36}
-              className="h-9 w-9 object-contain"
+              width={44}
+              height={44}
+              className="h-9 w-9 object-contain group-data-[collapsible=icon]:h-11 group-data-[collapsible=icon]:w-11"
               priority
             />
           </div>
@@ -121,9 +134,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain sections={navSectionsWithActiveState} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

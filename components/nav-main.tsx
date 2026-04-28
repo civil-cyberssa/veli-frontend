@@ -51,7 +51,7 @@ export function NavMain({
                     className="flex w-full items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                   >
                     {item.icon && (
-                      <div className="flex items-center justify-center">
+                      <div className="flex h-6 w-6 items-center justify-center">
                         <item.icon
                           className={cn(
                             "w-[18px] h-[18px] text-current origin-center",
@@ -60,7 +60,9 @@ export function NavMain({
                         />
                       </div>
                     )}
-                    <span className="font-medium text-[13px]">{item.title}</span>
+                    <span className="font-medium text-[13px] group-data-[collapsible=icon]:hidden">
+                      {item.title}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

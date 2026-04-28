@@ -1,10 +1,9 @@
 "use client"
 
 import { type ReactNode } from "react"
-import { LogOut, Moon, Sun, UserCog } from "lucide-react"
+import { LogOut, UserCog } from "lucide-react"
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
-import { useTheme } from "next-themes"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -35,7 +34,6 @@ export function UserDropdown({
   className,
 }: UserDropdownProps) {
   const { data: session, status } = useSession()
-  const { theme, setTheme } = useTheme()
 
   if (status === "loading") {
     return <>{trigger}</>
@@ -53,8 +51,6 @@ export function UserDropdown({
       ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
       : fullName.substring(0, 2).toUpperCase()
 
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark")
-
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/auth" })
   }
@@ -70,9 +66,9 @@ export function UserDropdown({
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 rounded-lg">
+            <Avatar className="h-8 w-8 rounded-full">
               <AvatarImage src={profilePic} alt={fullName} />
-              <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+              <AvatarFallback className="rounded-full">{initials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{fullName}</span>
@@ -85,18 +81,14 @@ export function UserDropdown({
           <DropdownMenuItem asChild>
             <Link href="/profile/edit" className="cursor-pointer">
               <UserCog />
-              Editar Perfil
+              Meu perfil
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={toggleTheme}>
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut />
-          Log out
+          Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
