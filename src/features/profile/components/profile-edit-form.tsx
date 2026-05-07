@@ -97,6 +97,8 @@ export function ProfileEditForm() {
       gender: "",
       phone: "",
       cep: "",
+      street: "",
+      address_number: "",
       country: "",
       state: "",
       city: "",
@@ -158,6 +160,8 @@ export function ProfileEditForm() {
       gender: genderValue,
       phone: user.phone ? formatPhone(user.phone) : "",
       cep: user.cep ? formatCEP(user.cep) : "",
+      street: user.street || "",
+      address_number: user.address_number || "",
       country: user.country || "",
       state: user.state || "",
       city: user.city || "",
@@ -206,6 +210,7 @@ export function ProfileEditForm() {
       const data = await fetchAddressByCEP(cep)
 
       // Preenche automaticamente os campos
+      if (data.logradouro) setValue("street", data.logradouro)
       if (data.localidade) setValue("city", data.localidade)
       if (data.uf) setValue("state", data.uf)
       setValue("country", "Brasil")
@@ -265,6 +270,8 @@ export function ProfileEditForm() {
         cpf: 'CPF',
         phone: 'Telefone',
         cep: 'CEP',
+        street: 'Rua',
+        address_number: 'Número',
         date_of_birth: 'Data de Nascimento',
         gender: 'Gênero',
         bio: 'Biografia',
@@ -303,39 +310,63 @@ export function ProfileEditForm() {
         gender: data.gender || "",
         phone: data.phone ? cleanPhone(data.phone) : "",
         cep: data.cep ? cleanCEP(data.cep) : "",
+        street: data.street || "",
+        address_number: data.address_number || "",
         country: data.country || "",
         state: data.state || "",
         city: data.city || "",
         bio: data.bio || "",
       }
 
+      const currentData = {
+        first_name: studentData?.user.first_name || "",
+        last_name: studentData?.user.last_name || "",
+        email: studentData?.user.email || "",
+        username: studentData?.user.username || "",
+        cpf: studentData?.user.cpf ? cleanCPF(studentData.user.cpf) : "",
+        date_of_birth: studentData?.user.date_of_birth
+          ? cleanDate(studentData.user.date_of_birth)
+          : "",
+        gender: studentData?.user.gender || "",
+        phone: studentData?.user.phone ? cleanPhone(studentData.user.phone) : "",
+        cep: studentData?.user.cep ? cleanCEP(studentData.user.cep) : "",
+        street: studentData?.user.street || "",
+        address_number: studentData?.user.address_number || "",
+        country: studentData?.user.country || "",
+        state: studentData?.user.state || "",
+        city: studentData?.user.city || "",
+        bio: studentData?.student_profile?.bio || "",
+      }
+
       // Criar FormData para enviar arquivo e dados
       const submitData = new FormData()
+      let hasChanges = false
 
-      // ENVIAR TODOS OS CAMPOS - limpos e sem formatação
-      submitData.append("first_name", cleanedData.first_name)
-      submitData.append("last_name", cleanedData.last_name)
-      submitData.append("email", cleanedData.email)
-      submitData.append("username", cleanedData.username)
-      submitData.append("cpf", cleanedData.cpf)
-      submitData.append("date_of_birth", cleanedData.date_of_birth)
-      submitData.append("gender", cleanedData.gender)
-      submitData.append("phone", cleanedData.phone)
-      submitData.append("cep", cleanedData.cep)
-      submitData.append("country", cleanedData.country)
-      submitData.append("state", cleanedData.state)
-      submitData.append("city", cleanedData.city)
+      const changedEntries = Object.entries(cleanedData).filter(([key, value]) => {
+        return value !== currentData[key as keyof typeof currentData]
+      })
 
-      // Campo do perfil
-      submitData.append("bio", data.bio || "")
+      changedEntries.forEach(([key, value]) => {
+        submitData.append(key, value)
+        hasChanges = true
+      })
 
       // Adicionar imagem se houver
       if (profileImage) {
         submitData.append("profile_pic", profileImage)
+        hasChanges = true
+      }
+
+      if (!hasChanges) {
+        toast.success("Nenhuma alteração para salvar", {
+          description: "Seus dados já estão atualizados"
+        })
+        setIsEditing(false)
+        return
       }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/student-portal/student/`, {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Authorization": `Bearer ${session.access}`,
         },
@@ -520,7 +551,7 @@ export function ProfileEditForm() {
                         <Badge
                           key={language.id}
                           variant="secondary"
-                          className="flex items-center gap-2 rounded-full border border-border/50 bg-background/80 px-4 py-2 text-sm shadow-sm"
+                          className="flex items-center gap-2 rounded-full border border-border/50 bg-background/80 px-4 py-2 text-sm text-foreground shadow-sm"
                         >
                           {language.lang_icon && (
                             <Image
@@ -531,7 +562,7 @@ export function ProfileEditForm() {
                               className="h-5 w-5 rounded-full object-cover"
                             />
                           )}
-                          <span className="font-medium">{language.name}</span>
+                          <span className="font-medium text-foreground">{language.name}</span>
                         </Badge>
                       ))
                     ) : (
@@ -551,7 +582,7 @@ export function ProfileEditForm() {
               </TabsTrigger>
               <TabsTrigger value="contact" className="rounded-xl px-4 py-2.5">
                 <MapPin className="h-4 w-4" />
-                Contato e Localização
+                Endereço
               </TabsTrigger>
             </TabsList>
 
@@ -675,48 +706,6 @@ export function ProfileEditForm() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="gender" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Gênero
-                      </Label>
-                      <select
-                        id="gender"
-                        {...register("gender")}
-                        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100 ${errors.gender ? 'border-destructive' : ''}`}
-                      >
-                        <option value="">Selecione seu gênero</option>
-                        <option value="M">♂ Masculino</option>
-                        <option value="F">♀ Feminino</option>
-                        <option value="N">⚧ Não-binário</option>
-                        <option value="O">◯ Outro</option>
-                        <option value="U">🔒 Prefiro não dizer</option>
-                      </select>
-                      {errors.gender && (
-                        <p className="text-xs text-destructive flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          {errors.gender.message}
-                        </p>
-                      )}
-                    </div>
-                  </fieldset>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="contact" className="mt-0">
-              <Card className="border-2 transition-colors hover:border-primary/30">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    <CardTitle>Contato e Localização</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Informações de contato e endereço. Use o CEP para preencher automaticamente.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <fieldset disabled={!isEditing} className="space-y-4 disabled:opacity-100">
-                    <div className="space-y-2">
                       <Label htmlFor="phone" className="flex items-center gap-2">
                         <Phone className="h-4 w-4" />
                         Telefone
@@ -758,6 +747,48 @@ export function ProfileEditForm() {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="gender" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Gênero
+                      </Label>
+                      <select
+                        id="gender"
+                        {...register("gender")}
+                        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100 ${errors.gender ? 'border-destructive' : ''}`}
+                      >
+                        <option value="">Selecione seu gênero</option>
+                        <option value="M">♂ Masculino</option>
+                        <option value="F">♀ Feminino</option>
+                        <option value="N">⚧ Não-binário</option>
+                        <option value="O">◯ Outro</option>
+                        <option value="U">🔒 Prefiro não dizer</option>
+                      </select>
+                      {errors.gender && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.gender.message}
+                        </p>
+                      )}
+                    </div>
+                  </fieldset>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="contact" className="mt-0">
+              <Card className="border-2 transition-colors hover:border-primary/30">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    <CardTitle>Endereço</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Dados de endereço. Use o CEP para preencher automaticamente.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <fieldset disabled={!isEditing} className="space-y-4 disabled:opacity-100">
+                    <div className="space-y-2">
                       <Label htmlFor="cep" className="flex items-center gap-2">
                         <Search className="h-4 w-4" />
                         CEP
@@ -789,6 +820,46 @@ export function ProfileEditForm() {
                           )}
                         </p>
                       )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_180px]">
+                      <div className="space-y-2">
+                        <Label htmlFor="street" className="flex items-center gap-2">
+                          <Home className="h-4 w-4" />
+                          Rua
+                        </Label>
+                        <Input
+                          id="street"
+                          {...register("street")}
+                          placeholder="Ex: Avenida Paulista"
+                          className={`transition-all ${errors.street ? 'border-destructive' : ''}`}
+                        />
+                        {errors.street && (
+                          <p className="text-xs text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.street.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="address_number" className="flex items-center gap-2">
+                          <Home className="h-4 w-4" />
+                          Número
+                        </Label>
+                        <Input
+                          id="address_number"
+                          {...register("address_number")}
+                          placeholder="Ex: 100"
+                          className={`transition-all ${errors.address_number ? 'border-destructive' : ''}`}
+                        />
+                        {errors.address_number && (
+                          <p className="text-xs text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.address_number.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

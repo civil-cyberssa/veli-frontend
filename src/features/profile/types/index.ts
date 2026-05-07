@@ -19,6 +19,8 @@ export interface User {
   country: string
   phone: string
   cep: string
+  street: string
+  address_number: string
   role: string
   profile_pic_url: string
 }
@@ -51,6 +53,8 @@ export interface ProfileFormData {
   gender: string
   phone: string
   cep: string
+  street: string
+  address_number: string
   country: string
   state: string
   city: string

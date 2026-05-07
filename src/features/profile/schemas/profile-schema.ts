@@ -89,6 +89,22 @@ export const profileFormSchema = z.object({
       { message: 'CEP inválido. Use o formato: 00000-000' }
     ),
 
+  street: z
+    .string()
+    .transform((val) => val?.trim() || '')
+    .refine(
+      (val) => val === '' || val.length <= 120,
+      { message: 'Rua deve ter no máximo 120 caracteres' }
+    ),
+
+  address_number: z
+    .string()
+    .transform((val) => val?.trim() || '')
+    .refine(
+      (val) => val === '' || val.length <= 20,
+      { message: 'Número deve ter no máximo 20 caracteres' }
+    ),
+
   country: z
     .string()
     .transform((val) => val?.trim() || '')

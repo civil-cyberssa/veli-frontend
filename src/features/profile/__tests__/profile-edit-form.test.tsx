@@ -239,10 +239,10 @@ describe('ProfileEditForm', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
+        expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/student-portal/student/'),
         expect.objectContaining({
-          method: 'PUT',
+          method: 'PATCH',
           headers: expect.objectContaining({
             Authorization: 'Bearer mock-token',
           }),

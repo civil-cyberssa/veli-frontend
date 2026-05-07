@@ -13,6 +13,8 @@ import {
   MonitorPlay,
   FileText,
   Palette,
+  CreditCard,
+  BookOpen,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -38,6 +40,16 @@ const baseNavData = {
           title: "Atividades Diárias",
           url: "/activities",
           icon: ClipboardList,
+        },
+        {
+          title: "Financeiro",
+          url: "/financeiro",
+          icon: CreditCard,
+        },
+        {
+          title: "Cursos disponíveis",
+          url: "/cursos-disponiveis",
+          icon: BookOpen,
         },
       ],
     },
