@@ -40,10 +40,14 @@ import {
 
 const statusToneMap: Record<string, string> = {
   pending_payment: 'bg-amber-100 text-amber-800 border-amber-200',
+  processing: 'bg-sky-100 text-sky-800 border-sky-200',
   pending_contract: 'bg-slate-100 text-slate-700 border-slate-200',
   paid: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  active: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   pending_signature: 'bg-amber-100 text-amber-800 border-amber-200',
 }
+
+const pendingCheckoutStatuses = new Set(['pending_payment', 'processing'])
 
 function StatusBadge({ value, label }: { value: string; label: string }) {
   return (
@@ -110,6 +114,9 @@ export default function FinanceiroPage() {
   const isLoading = isLoadingCurrentOffer || isLoadingPendingPayments
   const hasError = currentOfferError || pendingPaymentsError
   const hasMultipleOffers = (contractedOffers?.length ?? 0) > 1
+  const pendingVisiblePayments = pendingPayments.filter((payment) =>
+    pendingCheckoutStatuses.has(payment.checkout_status)
+  )
 
   if (isLoading) {
     return (
@@ -331,7 +338,7 @@ export default function FinanceiroPage() {
 
           </div>
           <Badge variant="secondary" className="rounded-full px-3 py-1">
-            {pendingPayments.length} pendente{pendingPayments.length === 1 ? '' : 's'}
+            {pendingVisiblePayments.length} pendente{pendingVisiblePayments.length === 1 ? '' : 's'}
           </Badge>
         </div>
 
@@ -346,7 +353,10 @@ export default function FinanceiroPage() {
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
             {pendingPayments.map((payment) => (
-              <Link key={payment.order_id} href={`/financeiro/pagamentos/${payment.order_id}`}>
+              <Link
+                key={payment.order_id}
+                href={`/financeiro/pagamentos/${payment.order_id}?payment_type=${payment.payment_type}`}
+              >
                 <Card className="group h-full border-border/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-2">
@@ -354,7 +364,9 @@ export default function FinanceiroPage() {
                         <StatusBadge
                           value={payment.checkout_status}
                           label={
-                            checkoutStatusMap[payment.checkout_status] ?? payment.checkout_status
+                            payment.checkout_status === 'active'
+                              ? 'Pago'
+                              : checkoutStatusMap[payment.checkout_status] ?? payment.checkout_status
                           }
                         />
                         <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
@@ -371,11 +383,14 @@ export default function FinanceiroPage() {
                         <p className="text-sm text-muted-foreground">{payment.course_name}</p>
                       </div>
                     </div>
-                    <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+                    <div className="flex items-center gap-2 rounded-xl bg-primary/10 p-2.5 text-primary">
                       {payment.payment_type === 'pix' ? (
                         <PixIcon />
                       ) : (
                         <CreditCard className="h-5 w-5" />
+                      )}
+                      {payment.checkout_status === 'active' && (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                       )}
                     </div>
                   </div>

@@ -2,9 +2,11 @@
 
 import { use, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   CalendarRange,
   CheckCircle2,
+  Copy,
   CreditCard,
   ExternalLink,
   Landmark,
@@ -30,6 +32,7 @@ import {
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
 import { useStudentProfile } from '@/src/features/profile/hooks/use-student-profile'
 import {
+  useOrderPaymentStatus,
   usePendingPayment,
   useStartPayment,
 } from '@/src/features/finance/hooks/useFinanceData'
@@ -46,7 +49,6 @@ import {
   formatCardNumber,
   formatCurrency,
   formatDate,
-  formatDateTime,
   formatExpiry,
   paymentModeMap,
   paymentTypeMap,
@@ -248,7 +250,13 @@ function validateForm(payment: PendingPayment, form: CardFormState) {
 
 export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) {
   const orderId = Number(use(params).orderId)
+  const searchParams = useSearchParams()
   const { data: payment, error, isLoading } = usePendingPayment(orderId)
+  const {
+    data: paymentStatus,
+    error: paymentStatusError,
+    isLoading: isLoadingPaymentStatus,
+  } = useOrderPaymentStatus(orderId)
   const { data: profileData, loading: loadingProfile } = useStudentProfile()
   const { startPayment } = useStartPayment()
 
@@ -259,11 +267,29 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
   const [successResult, setSuccessResult] = useState<StartPaymentResponse | null>(null)
   const [submittedCardBrand, setSubmittedCardBrand] = useState<string>('CRÉDITO')
   const [selectedInstallments, setSelectedInstallments] = useState<string>('')
+  const [hasCopiedPix, setHasCopiedPix] = useState(false)
 
-  const isCreditCardPayment = payment
-    ? ['credit', 'credit_card'].includes(payment.payment_type) ||
-      payment.latest_charge?.billing_method === 'credit_card'
-    : false
+  const latestCharge = paymentStatus?.latest_charge ?? payment?.latest_charge ?? null
+  const billingSubscription =
+    paymentStatus?.billing_subscription ?? payment?.billing_subscription ?? null
+  const checkoutStatus = paymentStatus?.checkout_status ?? payment?.checkout_status ?? ''
+  const paymentType = paymentStatus?.payment_type ?? payment?.payment_type ?? ''
+  const paymentMode = paymentStatus?.payment_mode ?? payment?.payment_mode ?? ''
+  const paymentInstallments = paymentStatus?.installments ?? payment?.installments ?? null
+  const isPaid =
+    latestCharge?.status === 'paid' || checkoutStatus === 'paid' || checkoutStatus === 'active'
+  const pixQrCode = latestCharge?.pix_qr_code ?? null
+  const pixCopyPaste = latestCharge?.pix_copy_paste ?? pixQrCode?.payload ?? ''
+  const receiptUrl = latestCharge?.payment_receipt_url ?? null
+  const paymentValue = payment?.value ?? latestCharge?.amount_gross ?? null
+  const isPixPayment = paymentType === 'pix' || latestCharge?.billing_method === 'pix'
+  const shouldUsePaymentStatus =
+    searchParams.get('payment_type') === 'pix' ||
+    isPixPayment ||
+    payment?.payment_type === 'pix'
+  const isCreditCardPayment =
+    ['credit', 'credit_card'].includes(paymentType) ||
+    latestCharge?.billing_method === 'credit_card'
   const cardBrand = detectCardBrand(form.cardNumber)
   const isCardBackVisible = focusedField === 'cvv' || focusedField === 'expiry'
   const shortExpiryHint = useMemo(() => {
@@ -281,12 +307,12 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
       return [...payment.allowed_installments].sort((a, b) => a - b)
     }
 
-    if (payment?.installments) {
-      return [payment.installments]
+    if (paymentInstallments) {
+      return [paymentInstallments]
     }
 
     return [1]
-  }, [payment?.allowed_installments, payment?.installments])
+  }, [payment?.allowed_installments, paymentInstallments])
 
   useEffect(() => {
     if (!profileData) return
@@ -382,7 +408,24 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     }
   }
 
-  if (isLoading || loadingProfile) {
+  const handleCopyPix = async () => {
+    if (!pixCopyPaste) return
+
+    try {
+      await navigator.clipboard.writeText(pixCopyPaste)
+      setHasCopiedPix(true)
+      toast.success('Código Pix copiado.')
+      window.setTimeout(() => setHasCopiedPix(false), 2500)
+    } catch {
+      toast.error('Não foi possível copiar o código Pix.')
+    }
+  }
+
+  if (
+    (isLoading && isLoadingPaymentStatus) ||
+    (shouldUsePaymentStatus && isLoadingPaymentStatus && !paymentStatus) ||
+    loadingProfile
+  ) {
     return (
       <div className="flex h-96 items-center justify-center">
         <LogoPulseLoader label="Carregando pagamento..." />
@@ -390,17 +433,20 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     )
   }
 
-  if (error) {
+  if (
+    (error && paymentStatusError && !paymentStatus) ||
+    (shouldUsePaymentStatus && paymentStatusError && !paymentStatus)
+  ) {
     return (
       <div className="flex h-96 items-center justify-center">
         <p className="text-sm text-destructive">
-          Erro ao carregar pagamento: {error.message}
+          Erro ao carregar pagamento: {paymentStatusError.message || error.message}
         </p>
       </div>
     )
   }
 
-  if (!payment) {
+  if (!payment && !paymentStatus) {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-semibold">Pagamento não encontrado</h1>
@@ -422,10 +468,11 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
             Pagamento
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Pedido #{payment.order_id}
+            Pedido #{payment?.order_id ?? paymentStatus?.order_id ?? orderId}
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Consulte os dados da cobrança e conclua o pagamento quando o método exigir cartão.
+            {isPixPayment && !isPaid ? ' O status do Pix é atualizado automaticamente.' : ''}
           </p>
         </div>
 
@@ -439,73 +486,97 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge
-                value={payment.checkout_status}
-                label={checkoutStatusMap[payment.checkout_status] ?? payment.checkout_status}
+                value={checkoutStatus}
+                label={checkoutStatusMap[checkoutStatus] ?? checkoutStatus}
               />
               <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
-                {paymentTypeMap[payment.payment_type] ?? payment.payment_type}
+                {paymentTypeMap[paymentType] ?? paymentType}
               </Badge>
               <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
-                {paymentModeMap[payment.payment_mode] ?? payment.payment_mode}
+                {paymentModeMap[paymentMode] ?? paymentMode}
               </Badge>
             </div>
             <div>
-              <h2 className="text-2xl font-semibold">{payment.offer_name}</h2>
-              <p className="text-sm text-muted-foreground">{payment.course_name}</p>
+              <h2 className="text-2xl font-semibold">
+                {payment?.offer_name ?? `Pedido #${orderId}`}
+              </h2>
+              {payment?.course_name && (
+                <p className="text-sm text-muted-foreground">{payment.course_name}</p>
+              )}
             </div>
           </div>
 
           <div className="rounded-2xl bg-primary/10 p-3 text-primary">
-            <CreditCard className="h-6 w-6" />
+            {isPaid ? (
+              <CheckCircle2 className="h-6 w-6" />
+            ) : isPixPayment ? (
+              <QrCode className="h-6 w-6" />
+            ) : (
+              <CreditCard className="h-6 w-6" />
+            )}
           </div>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">Valor</p>
-            <p className="mt-1 text-2xl font-semibold">{formatCurrency(payment.value)}</p>
+            <p className="mt-1 text-2xl font-semibold">{formatCurrency(paymentValue)}</p>
           </div>
-          <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-            <p className="text-xs text-muted-foreground">Parcelamento</p>
-            <p className="mt-1 text-base font-semibold">
-              {payment.installments ? `${payment.installments}x` : 'À vista'}
-            </p>
-          </div>
+          {!isPixPayment && (
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+              <p className="text-xs text-muted-foreground">Parcelamento</p>
+              <p className="mt-1 text-base font-semibold">
+                {paymentInstallments ? `${paymentInstallments}x` : 'À vista'}
+              </p>
+            </div>
+          )}
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">Status da cobrança</p>
             <p className="mt-1 text-base font-semibold">
-              {chargeStatusMap[payment.latest_charge?.status ?? ''] ??
-                payment.latest_charge?.status ??
+              {checkoutStatus === 'pending_payment'
+                ? checkoutStatusMap.pending_payment
+                : chargeStatusMap[latestCharge?.status ?? ''] ??
+                latestCharge?.status ??
                 'Não informado'}
             </p>
           </div>
+          {isPixPayment && billingSubscription?.next_due_date && (
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+              <p className="text-xs text-muted-foreground">Próxima data de pagamento</p>
+              <p className="mt-1 text-base font-semibold">
+                {formatDate(billingSubscription.next_due_date)}
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="flex gap-3 rounded-xl border border-border/60 p-4">
-            <CalendarRange className="mt-0.5 h-4 w-4 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Período de vigência</p>
-              <p className="text-sm font-medium">
-                {formatDate(payment.current_period_start)} até {formatDate(payment.current_period_end)}
-              </p>
+        {payment && (
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="flex gap-3 rounded-xl border border-border/60 p-4">
+              <CalendarRange className="mt-0.5 h-4 w-4 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">Período de vigência</p>
+                <p className="text-sm font-medium">
+                  {formatDate(payment.current_period_start)} até {formatDate(payment.current_period_end)}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 rounded-xl border border-border/60 p-4">
+              <Landmark className="mt-0.5 h-4 w-4 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">Contrato</p>
+                <p className="text-sm font-medium">
+                  {contractStatusMap[payment.contract?.status ?? ''] ??
+                    payment.contract?.status ??
+                    'Não informado'}
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex gap-3 rounded-xl border border-border/60 p-4">
-            <Landmark className="mt-0.5 h-4 w-4 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Contrato</p>
-              <p className="text-sm font-medium">
-                {contractStatusMap[payment.contract?.status ?? ''] ??
-                  payment.contract?.status ??
-                  'Não informado'}
-              </p>
-            </div>
-          </div>
-        </div>
+        )}
       </Card>
 
-      {isCreditCardPayment ? (
+      {isCreditCardPayment && payment ? (
         successResult ? (
           <Card className="border-border/60 p-8 shadow-sm">
             <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
@@ -928,74 +999,109 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
       ) : (
         <Card className="border-border/60 p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
-            <QrCode className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Visualização do pagamento</h2>
+            {isPaid ? (
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            ) : (
+              <QrCode className="h-5 w-5 text-primary" />
+            )}
+            <h2 className="text-lg font-semibold">
+              {isPaid ? 'Pagamento confirmado' : 'Pagamento via Pix'}
+            </h2>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
-            <div className="space-y-4">
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-                <p className="text-xs text-muted-foreground">Método</p>
-                <p className="mt-1 text-sm font-medium">
-                  {payment.latest_charge?.billing_method
-                    ? paymentTypeMap[payment.latest_charge.billing_method] ??
-                      payment.latest_charge.billing_method
-                    : paymentTypeMap[payment.payment_type] ?? payment.payment_type}
+          {isPaid ? (
+            <div className="grid gap-4">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+                <div className="success-ring mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-white">
+                  <div className="success-check flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+                    <CheckCircle2 className="h-9 w-9" />
+                  </div>
+                </div>
+                <Badge className="rounded-full bg-emerald-600 px-3 py-1 text-white hover:bg-emerald-600">
+                  Pago
+                </Badge>
+                <h3 className="mt-4 text-xl font-semibold text-emerald-950">
+                  Cobrança paga
+                </h3>
+                <p className="mt-2 text-sm text-emerald-800">
+                  O pagamento Pix foi identificado e o pedido já está atualizado.
                 </p>
-              </div>
-
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-                <p className="text-xs text-muted-foreground">Contrato</p>
-                <p className="mt-1 text-sm font-medium">
-                  {payment.contract?.contract_file_url ? 'Disponível para consulta' : 'Indisponível'}
-                </p>
-                {payment.contract?.contract_file_url && (
-                  <a
-                    href={payment.contract.contract_file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary"
-                  >
-                    Abrir contrato
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+                <div className="mt-5 grid gap-3 text-left sm:grid-cols-2">
+                  <div className="rounded-xl border border-emerald-200 bg-white/80 p-4">
+                    <p className="text-xs text-emerald-700">Valor pago</p>
+                    <p className="mt-1 text-base font-semibold text-emerald-950">
+                      {formatCurrency(paymentValue)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-200 bg-white/80 p-4">
+                    <p className="text-xs text-emerald-700">Status</p>
+                    <p className="mt-1 text-base font-semibold text-emerald-950">
+                      {chargeStatusMap[latestCharge?.status ?? ''] ?? latestCharge?.status ?? 'Pago'}
+                    </p>
+                  </div>
+                </div>
+                {receiptUrl && (
+                  <Button asChild className="mt-5">
+                    <a href={receiptUrl} target="_blank" rel="noopener noreferrer">
+                      Ver recibo
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
                 )}
               </div>
             </div>
-
-            {payment.latest_charge?.pix_qr_code ? (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-border/60 bg-white p-4">
+          ) : pixQrCode ? (
+            <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
+              <div className="rounded-xl border border-border/60 bg-white p-5">
+                <div className="flex h-full min-h-72 items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`data:image/png;base64,${payment.latest_charge.pix_qr_code.encodedImage}`}
+                    src={`data:image/png;base64,${pixQrCode.encodedImage}`}
                     alt="QR Code Pix"
-                    className="mx-auto h-56 w-56 rounded-lg object-contain"
+                    className="h-64 w-64 rounded-lg object-contain"
                   />
                 </div>
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-                  <p className="text-xs text-muted-foreground">Descrição</p>
-                  <p className="mt-1 text-sm font-medium">
-                    {payment.latest_charge.pix_qr_code.description}
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-5">
+                  <p className="text-xs text-muted-foreground">Valor</p>
+                  <p className="mt-2 text-3xl font-semibold text-foreground">
+                    {formatCurrency(paymentValue)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-                  <p className="text-xs text-muted-foreground">Expiração</p>
-                  <p className="mt-1 text-sm font-medium">
-                    {formatDateTime(payment.latest_charge.pix_qr_code.expirationDate)}
-                  </p>
-                </div>
+
+                {pixCopyPaste && (
+                  <div className="rounded-xl border border-border/60 bg-muted/20 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-muted-foreground">Pix copia e cola</p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCopyPix}
+                        className="shrink-0"
+                      >
+                        <Copy className="h-4 w-4" />
+                        {hasCopiedPix ? 'Copiado' : 'Copiar'}
+                      </Button>
+                    </div>
+                    <p className="mt-4 break-all rounded-lg bg-background p-4 text-xs font-medium leading-relaxed text-foreground">
+                      {pixCopyPaste}
+                    </p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-border/60 p-6 text-center">
-                <Receipt className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-                <p className="text-sm font-medium">Visualização disponível em breve</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Este pedido ainda não tem conteúdo detalhado de cobrança para exibir.
-                </p>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border/60 p-6 text-center">
+              <Receipt className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium">Visualização disponível em breve</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Este pedido ainda não tem conteúdo detalhado de cobrança para exibir.
+              </p>
+            </div>
+          )}
         </Card>
       )}
 

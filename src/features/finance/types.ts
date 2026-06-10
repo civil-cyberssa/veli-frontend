@@ -57,6 +57,12 @@ export interface AvailableOffer extends ContractedOffer {
   user_has_this_offer: boolean
 }
 
+export interface SimpleLanguage {
+  id: number
+  name: string
+  image: string
+}
+
 export interface ContractSummary {
   id: number
   status: string
@@ -92,6 +98,32 @@ export interface LatestCharge {
   due_date: string | null
   pix_qr_code: PixQrCode | null
   pix_copy_paste: string | null
+  payment_receipt_url?: string | null
+}
+
+export interface BillingSubscription {
+  id: number
+  status: string
+  gateway?: string
+  gateway_subscription_id: string
+  gateway_customer_id: string
+  billing_method: string
+  next_due_date: string | null
+  cancel_at_period_end: boolean
+  canceled_at: string | null
+  last_charge_status: string | null
+}
+
+export interface PaymentStatusResponse {
+  order_id: number
+  order_status: string
+  checkout_status: string
+  contract_acceptance_status: string
+  payment_mode: string
+  payment_type: string
+  installments: number
+  latest_charge: LatestCharge | null
+  billing_subscription: BillingSubscription | null
 }
 
 export interface PendingPayment {
@@ -112,7 +144,7 @@ export interface PendingPayment {
   current_period_start: string
   current_period_end: string
   contract: ContractSummary | null
-  billing_subscription: unknown | null
+  billing_subscription: BillingSubscription | null
   latest_charge: LatestCharge | null
 }
 

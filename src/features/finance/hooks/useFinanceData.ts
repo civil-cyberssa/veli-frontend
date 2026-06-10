@@ -8,6 +8,8 @@ import type {
   CreateOrderResponse,
   CurrentContractedOfferResponse,
   PendingPayment,
+  PaymentStatusResponse,
+  SimpleLanguage,
   StartPaymentPayload,
   StartPaymentResponse,
 } from '@/src/features/finance/types'
@@ -52,14 +54,42 @@ export function useCurrentContractedOffer() {
   }
 }
 
-export function useAvailableOffers() {
+export function useAvailableOffers(languageId?: number | null) {
   const { data: session, status } = useSession()
+  const offersUrl =
+    languageId && languageId > 0
+      ? `${process.env.NEXT_PUBLIC_API_URL}/student-portal/offers/?language=${languageId}`
+      : `${process.env.NEXT_PUBLIC_API_URL}/student-portal/offers/`
 
   const { data, error, isLoading, mutate } = useSWR<AvailableOffer[]>(
     status === 'authenticated' && session?.access
-      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/offers/`, session.access]
+      ? [offersUrl, session.access]
       : null,
     ([url, token]: [string, string]) => fetcher<AvailableOffer[]>(url, token),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 60000,
+      keepPreviousData: true,
+    }
+  )
+
+  return {
+    data: data ?? [],
+    error: error ?? null,
+    isLoading,
+    mutate,
+  }
+}
+
+export function useSimpleLanguages() {
+  const { data: session, status } = useSession()
+
+  const { data, error, isLoading, mutate } = useSWR<SimpleLanguage[]>(
+    status === 'authenticated' && session?.access
+      ? [`${process.env.NEXT_PUBLIC_API_URL}/student-portal/languages/simple/`, session.access]
+      : null,
+    ([url, token]: [string, string]) => fetcher<SimpleLanguage[]>(url, token),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
@@ -117,6 +147,38 @@ export function usePendingPayment(orderId: number | null) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 60000,
+    }
+  )
+
+  return {
+    data,
+    error: error ?? null,
+    isLoading,
+    mutate,
+  }
+}
+
+export function useOrderPaymentStatus(orderId: number | null) {
+  const { data: session, status } = useSession()
+
+  const { data, error, isLoading, mutate } = useSWR<PaymentStatusResponse>(
+    status === 'authenticated' && session?.access && orderId
+      ? [
+          `${process.env.NEXT_PUBLIC_API_URL}/student-portal/orders/${orderId}/payment-status`,
+          session.access,
+        ]
+      : null,
+    ([url, token]: [string, string]) => fetcher<PaymentStatusResponse>(url, token),
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      refreshInterval: (latestData) =>
+        latestData?.latest_charge?.status === 'paid' ||
+        latestData?.checkout_status === 'active' ||
+        latestData?.checkout_status === 'paid'
+          ? 0
+          : 5000,
+      dedupingInterval: 1000,
     }
   )
 

@@ -82,8 +82,14 @@ export default function Dashboard() {
 
   if (!subscriptions || subscriptions.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-sm text-muted-foreground">Nenhuma inscrição encontrada</p>
+      <div className="flex h-96 items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="text-sm text-muted-foreground">Nenhuma inscrição encontrada</p>
+          <Button onClick={() => router.push('/cursos-disponiveis')}>
+            Conheça nossos cursos
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     )
   }

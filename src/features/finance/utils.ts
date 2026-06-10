@@ -11,7 +11,7 @@ export const weekdayMap: Record<string, string> = {
 export const checkoutStatusMap: Record<string, string> = {
   draft: 'Rascunho',
   pending_contract: 'Contrato pendente',
-  pending_payment: 'Pagamento pendente',
+  pending_payment: 'Aguardando pagamento',
   processing: 'Processando',
   paid: 'Pago',
   active: 'Ativo',
