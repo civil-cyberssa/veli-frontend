@@ -290,6 +290,12 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
   const isCreditCardPayment =
     ['credit', 'credit_card'].includes(paymentType) ||
     latestCharge?.billing_method === 'credit_card'
+  const isEnrollmentPaymentFlow = !searchParams.has('payment_type')
+  const shouldShowCreditCardForm =
+    isCreditCardPayment &&
+    Boolean(payment) &&
+    !isPaid &&
+    (isEnrollmentPaymentFlow || checkoutStatus === 'pending_payment')
   const cardBrand = detectCardBrand(form.cardNumber)
   const isCardBackVisible = focusedField === 'cvv' || focusedField === 'expiry'
   const shortExpiryHint = useMemo(() => {
@@ -576,7 +582,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
         )}
       </Card>
 
-      {isCreditCardPayment && payment ? (
+      {isCreditCardPayment && payment && (successResult || shouldShowCreditCardForm) ? (
         successResult ? (
           <Card className="border-border/60 p-8 shadow-sm">
             <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
@@ -1001,11 +1007,17 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
           <div className="mb-4 flex items-center gap-2">
             {isPaid ? (
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            ) : (
+            ) : isPixPayment ? (
               <QrCode className="h-5 w-5 text-primary" />
+            ) : (
+              <CreditCard className="h-5 w-5 text-primary" />
             )}
             <h2 className="text-lg font-semibold">
-              {isPaid ? 'Pagamento confirmado' : 'Pagamento via Pix'}
+              {isPaid
+                ? 'Pagamento confirmado'
+                : isPixPayment
+                  ? 'Pagamento via Pix'
+                  : 'Pagamento em andamento'}
             </h2>
           </div>
 
@@ -1024,7 +1036,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                   Cobrança paga
                 </h3>
                 <p className="mt-2 text-sm text-emerald-800">
-                  O pagamento Pix foi identificado e o pedido já está atualizado.
+                  O pagamento foi identificado e o pedido já está atualizado.
                 </p>
                 <div className="mt-5 grid gap-3 text-left sm:grid-cols-2">
                   <div className="rounded-xl border border-emerald-200 bg-white/80 p-4">
