@@ -177,7 +177,7 @@ export default function FinanceiroPage() {
 
       {selectedOffer ? (
         <Card className="overflow-hidden border-border/60 shadow-sm">
-          <div className="border-b border-border/50 bg-gradient-to-r from-[#109697]/10 via-background to-background px-6 py-5">
+          <div className="border-b border-border/50 bg-gradient-to-r from-[#2462EB]/10 via-background to-background px-6 py-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-border/60">

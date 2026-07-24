@@ -674,7 +674,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                   className={`relative h-64 w-full transition-transform duration-700 [transform-style:preserve-3d] ${isCardBackVisible ? '[transform:rotateY(180deg)]' : ''}`}
                 >
                   <div className="absolute inset-0 [backface-visibility:hidden]">
-                    <div className="relative h-full overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#073b56_0%,#109697_45%,#8ce8de_100%)] p-6 text-white shadow-[0_26px_70px_rgba(10,54,79,0.28)]">
+                    <div className="relative h-full overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#073b56_0%,#2462EB_45%,#8ce8de_100%)] p-6 text-white shadow-[0_26px_70px_rgba(10,54,79,0.28)]">
                       <div className="absolute -left-10 top-6 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
                       <div className="absolute -right-8 bottom-2 h-32 w-32 rounded-full bg-[#d9fff9]/20 blur-2xl" />
                       <div className="relative flex h-full flex-col justify-between">

@@ -118,12 +118,12 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
   
-  /* 🔵 COR PRIMÁRIA: #109697 (Verde-azulado/Turquesa) */
-  --primary: #109697;
+  /* 🔵 COR PRIMÁRIA: #2462EB (Azul) */
+  --primary: #2462EB;
   --primary-foreground: oklch(1 0 0);
   
-  /* 🔵 COR SECUNDÁRIA: #0f9d9c (Verde-azulado/Turquesa) */
-  --secondary: oklch(0.631 0.106 194.024);
+  /* 🔵 COR SECUNDÁRIA: #2462EB (Azul) */
+  --secondary: #2462EB;
   --secondary-foreground: oklch(1 0 0);
   
   /* ✅ COR DE SUCESSO: #29E0A9 (Verde claro) */
@@ -161,12 +161,12 @@
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
   
-  /* 🔵 COR PRIMÁRIA: #109697 (Verde-azulado/Turquesa) - Dark Mode */
-  --primary: #109697;
+  /* 🔵 COR PRIMÁRIA: #2462EB (Azul) - Dark Mode */
+  --primary: #2462EB;
   --primary-foreground: oklch(1 0 0);
   
-  /* 🔵 COR SECUNDÁRIA: #0f9d9c (Verde-azulado/Turquesa) - Dark Mode */
-  --secondary: oklch(0.631 0.106 194.024);
+  /* 🔵 COR SECUNDÁRIA: #2462EB (Azul) - Dark Mode */
+  --secondary: #2462EB;
   --secondary-foreground: oklch(1 0 0);
   
   /* ✅ COR DE SUCESSO: #29E0A9 (Verde claro) - Dark Mode */

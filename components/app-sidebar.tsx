@@ -110,25 +110,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {open ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
           </button>
         </div>
-        <div className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
-          <div className="flex size-10 items-center justify-center rounded-xl group-data-[collapsible=icon]:size-12">
-            <Image
-              src="/veli_logo.png"
-              alt="Veli"
-              width={44}
-              height={44}
-              className="h-9 w-9 object-contain group-data-[collapsible=icon]:h-11 group-data-[collapsible=icon]:w-11"
-              priority
-            />
-          </div>
-          <div className="leading-none group-data-[collapsible=icon]:hidden">
-            <span
-              className="veli-thinking text-base font-bold tracking-wide"
-              data-text="Veli"
-            >
-              Veli
-            </span>
-          </div>
+        <div className="flex items-center justify-center px-3 py-2 group-data-[collapsible=icon]:px-2">
+          <Image
+            src="/Veli_logo fundo azul médio.png"
+            alt="Veli"
+            width={1080}
+            height={671}
+            className="h-auto w-[5.6rem] rounded-xl object-contain group-data-[collapsible=icon]:w-[2.1rem]"
+            priority
+          />
         </div>
       </SidebarHeader>
       <SidebarContent>

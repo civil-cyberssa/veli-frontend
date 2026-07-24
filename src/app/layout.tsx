@@ -15,22 +15,11 @@ export const metadata: Metadata = {
   title: "Veli",
   description: "Veli a sua melhor escola de idiomas online",
   icons: {
-    icon: [
-      {
-        url: "/Veli_símbolo_positivo_sem_fundo_48x48.png",
-        media: "(prefers-color-scheme: light)",
-        sizes: "48x48",
-      },
-      {
-        url: "/Veli_símbolo_negativo_sem_fundo_48x48.png",
-        media: "(prefers-color-scheme: dark)",
-        sizes: "48x48",
-      },
-      {
-        url: "/Veli_símbolo_positivo_sem_fundo_48x48.png",
-        sizes: "48x48",
-      },
-    ],
+    icon: {
+      url: "/Veli_símbolo fundo azul escuro.png",
+      type: "image/png",
+      sizes: "671x671",
+    },
   },
 };
 
