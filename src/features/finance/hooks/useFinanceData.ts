@@ -1,8 +1,11 @@
 'use client'
 
+import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
 import type {
+  AdvancePaymentPayload,
+  AdvancePaymentResponse,
   AvailableOffer,
   CreateOrderPayload,
   CreateOrderResponse,
@@ -158,26 +161,40 @@ export function usePendingPayment(orderId: number | null) {
   }
 }
 
-export function useOrderPaymentStatus(orderId: number | null) {
+export function useOrderPaymentStatus(
+  orderId: number | null,
+  cycleNumber?: number | null
+) {
   const { data: session, status } = useSession()
+  const paymentStatusUrl =
+    orderId && cycleNumber
+      ? `${process.env.NEXT_PUBLIC_API_URL}/student-portal/orders/${orderId}/cycles/${cycleNumber}/payment-status`
+      : orderId
+        ? `${process.env.NEXT_PUBLIC_API_URL}/student-portal/orders/${orderId}/payment-status`
+        : null
 
   const { data, error, isLoading, mutate } = useSWR<PaymentStatusResponse>(
-    status === 'authenticated' && session?.access && orderId
-      ? [
-          `${process.env.NEXT_PUBLIC_API_URL}/student-portal/orders/${orderId}/payment-status`,
-          session.access,
-        ]
+    status === 'authenticated' && session?.access && paymentStatusUrl
+      ? [paymentStatusUrl, session.access]
       : null,
     ([url, token]: [string, string]) => fetcher<PaymentStatusResponse>(url, token),
     {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      refreshInterval: (latestData) =>
-        latestData?.latest_charge?.status === 'paid' ||
-        latestData?.checkout_status === 'active' ||
-        latestData?.checkout_status === 'paid'
+      refreshInterval: (latestData) => {
+        const chargeIsPaid =
+          latestData?.is_paid ||
+          latestData?.payment_status === 'paid' ||
+          latestData?.latest_charge?.status === 'paid'
+
+        if (cycleNumber) return chargeIsPaid ? 0 : 5000
+
+        return chargeIsPaid ||
+          latestData?.checkout_status === 'active' ||
+          latestData?.checkout_status === 'paid'
           ? 0
-          : 5000,
+          : 5000
+      },
       dedupingInterval: 1000,
     }
   )
@@ -232,6 +249,56 @@ export function useStartPayment() {
   }
 
   return { startPayment }
+}
+
+export function useAdvancePayment() {
+  const { data: session } = useSession()
+
+  const advancePayment = useCallback(async (
+    orderId: number,
+    payload: AdvancePaymentPayload
+  ) => {
+    if (!session?.access) {
+      throw new Error('Sessão inválida para antecipar o pagamento.')
+    }
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/student-portal/orders/${orderId}/cycles/advance-payment`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (!response.ok) {
+      let message = `Erro ao antecipar pagamento: ${response.status}`
+
+      try {
+        const errorData = await response.json()
+        if (typeof errorData?.detail === 'string') {
+          message = errorData.detail
+        } else if (typeof errorData?.message === 'string') {
+          message = errorData.message
+        }
+      } catch {
+        // Mantém a mensagem padrão quando o backend não retornar JSON legível.
+      }
+
+      throw new Error(message)
+    }
+
+    return response.json() as Promise<AdvancePaymentResponse>
+  }, [session?.access])
+
+  return {
+    advancePayment,
+    isReady: Boolean(session?.access),
+  }
 }
 
 export function useCreateOrder() {

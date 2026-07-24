@@ -96,7 +96,7 @@ export interface LatestCharge {
   amount_gross: string
   installments: number | null
   due_date: string | null
-  pix_qr_code: PixQrCode | null
+  pix_qr_code: PixQrCode | string | null
   pix_copy_paste: string | null
   payment_receipt_url?: string | null
 }
@@ -124,6 +124,44 @@ export interface PaymentStatusResponse {
   installments: number
   latest_charge: LatestCharge | null
   billing_subscription: BillingSubscription | null
+  cycle_number?: number
+  cycle_total?: number
+  period_start?: string
+  period_end?: string
+  is_current_cycle?: boolean
+  payment_status?: string
+  is_paid?: boolean
+  qr_code_synced?: boolean
+  gateway_sync?: {
+    synced: number
+    gateway_available: boolean
+    next_due_date: string | null
+  }
+}
+
+export interface PaymentCycleItem {
+  id: number | null
+  amount: string
+  status: string
+  paid_at: string | null
+  installment_number: number
+  installment_total: number
+  is_projected: boolean
+}
+
+export interface PaymentCycle {
+  cycle_number: number
+  invoice_id: number | null
+  status: string
+  amount_due: string
+  amount_paid: string
+  due_date: string
+  period_start: string
+  period_end: string
+  is_current_cycle: boolean
+  is_projected: boolean
+  payment_available?: boolean
+  payments: PaymentCycleItem[]
 }
 
 export interface PendingPayment {
@@ -146,6 +184,7 @@ export interface PendingPayment {
   contract: ContractSummary | null
   billing_subscription: BillingSubscription | null
   latest_charge: LatestCharge | null
+  payment_cycles?: PaymentCycle[]
 }
 
 export interface PaymentHolderPayload {
@@ -169,6 +208,34 @@ export interface StartPaymentPayload {
   credit_card: CreditCardPayload
   installments: number
   accept_contract: boolean
+}
+
+export interface AdvancePaymentPayload {
+  cycle_numbers: number[]
+  billing_method: 'pix' | 'credit_card'
+  holder_is_customer?: boolean
+  holder?: PaymentHolderPayload
+  credit_card?: CreditCardPayload
+}
+
+export interface AdvancePaymentResponse {
+  order_id: number
+  cycle_total: number
+  current_cycle_number: number
+  billing_method: 'pix' | 'credit_card'
+  consolidated: boolean
+  cycle_numbers: number[]
+  total_amount: string
+  consolidated_payment: {
+    cycle_numbers: number[]
+    total_amount: string
+    payment: LatestCharge
+  } | null
+  payments: Array<{
+    cycle_number: number
+    payment: LatestCharge
+  }>
+  errors: unknown[]
 }
 
 export interface PaymentGatewayCreditCard {

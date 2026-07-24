@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useEffect, useMemo, useState } from 'react'
+import { use, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -32,11 +32,13 @@ import {
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
 import { useStudentProfile } from '@/src/features/profile/hooks/use-student-profile'
 import {
+  useAdvancePayment,
   useOrderPaymentStatus,
   usePendingPayment,
   useStartPayment,
 } from '@/src/features/finance/hooks/useFinanceData'
 import type {
+  AdvancePaymentResponse,
   PendingPayment,
   StartPaymentPayload,
   StartPaymentResponse,
@@ -192,7 +194,11 @@ function detectCardBrand(value: string) {
   return 'CRÉDITO'
 }
 
-function validateForm(payment: PendingPayment, form: CardFormState) {
+function validateForm(
+  payment: PendingPayment,
+  form: CardFormState,
+  requireContract = true
+) {
   const errors: Partial<Record<keyof CardFormState, string>> = {}
 
   if (!form.cardName.trim()) {
@@ -241,7 +247,7 @@ function validateForm(payment: PendingPayment, form: CardFormState) {
     }
   }
 
-  if (!payment.contract?.contract_file_url) {
+  if (requireContract && !payment.contract?.contract_file_url) {
     errors.cardName = errors.cardName ?? 'Contrato indisponível para aceite.'
   }
 
@@ -251,42 +257,106 @@ function validateForm(payment: PendingPayment, form: CardFormState) {
 export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) {
   const orderId = Number(use(params).orderId)
   const searchParams = useSearchParams()
+  const requestedPaymentType = searchParams.get('payment_type')
+  const advanceCyclesParam = searchParams.get('cycle_numbers') ?? ''
+  const advanceCycleNumbers = useMemo(
+    () =>
+      [...new Set(
+        advanceCyclesParam
+          .split(',')
+          .map(Number)
+          .filter((cycle) => Number.isInteger(cycle) && cycle > 0)
+      )].sort((a, b) => a - b),
+    [advanceCyclesParam]
+  )
+  const isAdvancePaymentFlow =
+    searchParams.get('advance_payment') === 'true' &&
+    advanceCycleNumbers.length > 0
+  const requestedCycleNumber = Number(searchParams.get('cycle_number'))
+  const cycleNumber =
+    Number.isInteger(requestedCycleNumber) && requestedCycleNumber > 0
+      ? requestedCycleNumber
+      : null
   const { data: payment, error, isLoading } = usePendingPayment(orderId)
   const {
     data: paymentStatus,
     error: paymentStatusError,
     isLoading: isLoadingPaymentStatus,
-  } = useOrderPaymentStatus(orderId)
+  } = useOrderPaymentStatus(orderId, cycleNumber)
   const { data: profileData, loading: loadingProfile } = useStudentProfile()
   const { startPayment } = useStartPayment()
+  const { advancePayment, isReady: canAdvancePayment } = useAdvancePayment()
 
   const [form, setForm] = useState<CardFormState>(initialFormState)
   const [errors, setErrors] = useState<Partial<Record<keyof CardFormState, string>>>({})
   const [focusedField, setFocusedField] = useState<FocusField>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successResult, setSuccessResult] = useState<StartPaymentResponse | null>(null)
+  const [advanceResult, setAdvanceResult] = useState<AdvancePaymentResponse | null>(null)
+  const [advanceError, setAdvanceError] = useState<string | null>(null)
+  const [advanceAttempt, setAdvanceAttempt] = useState(0)
+  const advanceRequestRef = useRef<string | null>(null)
   const [submittedCardBrand, setSubmittedCardBrand] = useState<string>('CRÉDITO')
   const [selectedInstallments, setSelectedInstallments] = useState<string>('')
   const [hasCopiedPix, setHasCopiedPix] = useState(false)
 
-  const latestCharge = paymentStatus?.latest_charge ?? payment?.latest_charge ?? null
+  const advanceCharge =
+    advanceResult?.consolidated_payment?.payment ??
+    advanceResult?.payments[0]?.payment ??
+    null
+  const latestCharge = isAdvancePaymentFlow
+    ? advanceCharge
+    : cycleNumber
+      ? paymentStatus?.latest_charge ?? null
+      : paymentStatus?.latest_charge ?? payment?.latest_charge ?? null
   const billingSubscription =
     paymentStatus?.billing_subscription ?? payment?.billing_subscription ?? null
   const checkoutStatus = paymentStatus?.checkout_status ?? payment?.checkout_status ?? ''
-  const paymentType = paymentStatus?.payment_type ?? payment?.payment_type ?? ''
+  const paymentType = isAdvancePaymentFlow
+    ? requestedPaymentType ?? paymentStatus?.payment_type ?? payment?.payment_type ?? ''
+    : paymentStatus?.payment_type ?? payment?.payment_type ?? ''
   const paymentMode = paymentStatus?.payment_mode ?? payment?.payment_mode ?? ''
   const paymentInstallments = paymentStatus?.installments ?? payment?.installments ?? null
-  const isPaid =
-    latestCharge?.status === 'paid' || checkoutStatus === 'paid' || checkoutStatus === 'active'
   const pixQrCode = latestCharge?.pix_qr_code ?? null
-  const pixCopyPaste = latestCharge?.pix_copy_paste ?? pixQrCode?.payload ?? ''
+  const pixQrImage =
+    typeof pixQrCode === 'string' ? pixQrCode : pixQrCode?.encodedImage ?? ''
+  const pixCopyPaste =
+    latestCharge?.pix_copy_paste ??
+    (typeof pixQrCode === 'string' ? '' : pixQrCode?.payload ?? '')
   const receiptUrl = latestCharge?.payment_receipt_url ?? null
-  const paymentValue = payment?.value ?? latestCharge?.amount_gross ?? null
+  const paymentValue =
+    advanceResult?.total_amount ??
+    (isAdvancePaymentFlow
+      ? payment
+        ? advanceCycleNumbers.reduce((total, cycleNumber) => {
+            const cycle = payment.payment_cycles?.find(
+              (item) => item.cycle_number === cycleNumber
+            )
+            return total + Number(cycle?.amount_due ?? 0)
+          }, 0)
+        : null
+      : payment?.value ?? latestCharge?.amount_gross ?? null)
+  const cycleStatus = paymentStatus?.payment_status ?? latestCharge?.status ?? ''
+  const displayedStatus = isAdvancePaymentFlow
+    ? latestCharge?.status ?? 'pending'
+    : cycleNumber
+      ? cycleStatus
+      : checkoutStatus
+  const isPaid = isAdvancePaymentFlow
+    ? latestCharge?.status === 'paid'
+    : cycleNumber
+    ? paymentStatus?.is_paid === true ||
+      cycleStatus === 'paid'
+    : latestCharge?.status === 'paid' ||
+      checkoutStatus === 'paid' ||
+      checkoutStatus === 'active'
   const isPixPayment = paymentType === 'pix' || latestCharge?.billing_method === 'pix'
   const shouldUsePaymentStatus =
-    searchParams.get('payment_type') === 'pix' ||
-    isPixPayment ||
-    payment?.payment_type === 'pix'
+    !isAdvancePaymentFlow &&
+    (Boolean(cycleNumber) ||
+      searchParams.get('payment_type') === 'pix' ||
+      isPixPayment ||
+      payment?.payment_type === 'pix')
   const isCreditCardPayment =
     ['credit', 'credit_card'].includes(paymentType) ||
     latestCharge?.billing_method === 'credit_card'
@@ -295,7 +365,9 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     isCreditCardPayment &&
     Boolean(payment) &&
     !isPaid &&
-    (isEnrollmentPaymentFlow || checkoutStatus === 'pending_payment')
+    (isAdvancePaymentFlow ||
+      isEnrollmentPaymentFlow ||
+      checkoutStatus === 'pending_payment')
   const cardBrand = detectCardBrand(form.cardNumber)
   const isCardBackVisible = focusedField === 'cvv' || focusedField === 'expiry'
   const shortExpiryHint = useMemo(() => {
@@ -345,6 +417,53 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     setSelectedInstallments(String(defaultInstallment ?? 1))
   }, [allowedInstallments, payment])
 
+  useEffect(() => {
+    if (
+      !isAdvancePaymentFlow ||
+      requestedPaymentType !== 'pix' ||
+      !canAdvancePayment ||
+      advanceResult
+    ) {
+      return
+    }
+
+    const requestKey = `${orderId}:${advanceCycleNumbers.join(',')}:${advanceAttempt}`
+    if (advanceRequestRef.current === requestKey) return
+    advanceRequestRef.current = requestKey
+
+    setIsSubmitting(true)
+    setAdvanceError(null)
+
+    advancePayment(orderId, {
+      cycle_numbers: advanceCycleNumbers,
+      billing_method: 'pix',
+    })
+      .then((response) => {
+        setAdvanceResult(response)
+        toast.success('Pagamento antecipado gerado com sucesso.')
+      })
+      .catch((submitError) => {
+        const message =
+          submitError instanceof Error
+            ? submitError.message
+            : 'Não foi possível gerar o pagamento antecipado.'
+        setAdvanceError(message)
+        toast.error(message)
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+  }, [
+    advanceAttempt,
+    advanceCycleNumbers,
+    advancePayment,
+    advanceResult,
+    canAdvancePayment,
+    isAdvancePaymentFlow,
+    orderId,
+    requestedPaymentType,
+  ])
+
   const handleFieldChange =
     (field: keyof CardFormState, formatter?: (value: string) => string) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,7 +510,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
   const handleSubmit = async () => {
     if (!payment || !paymentPayload) return
 
-    const validationErrors = validateForm(payment, form)
+    const validationErrors = validateForm(payment, form, !isAdvancePaymentFlow)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       toast.error('Revise os dados do pagamento.')
@@ -402,8 +521,19 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
 
     try {
       setSubmittedCardBrand(cardBrand)
-      const response = await startPayment(payment.order_id, paymentPayload)
-      setSuccessResult(response)
+      if (isAdvancePaymentFlow) {
+        const response = await advancePayment(payment.order_id, {
+          cycle_numbers: advanceCycleNumbers,
+          billing_method: 'credit_card',
+          ...(paymentPayload.holder ? { holder: paymentPayload.holder } : {}),
+          holder_is_customer: paymentPayload.holder_is_customer,
+          credit_card: paymentPayload.credit_card,
+        })
+        setAdvanceResult(response)
+      } else {
+        const response = await startPayment(payment.order_id, paymentPayload)
+        setSuccessResult(response)
+      }
       toast.success('Pagamento processado com sucesso.')
     } catch (submitError) {
       const message =
@@ -452,7 +582,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     )
   }
 
-  if (!payment && !paymentStatus) {
+  if (!payment && !paymentStatus && !advanceResult) {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-semibold">Pagamento não encontrado</h1>
@@ -471,13 +601,24 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary/70">
-            Pagamento
+            {isAdvancePaymentFlow ? 'Antecipação' : 'Pagamento'}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
             Pedido #{payment?.order_id ?? paymentStatus?.order_id ?? orderId}
           </h1>
+          {paymentStatus?.cycle_number && (
+            <p className="text-sm font-medium text-primary">
+              Ciclo {paymentStatus.cycle_number}
+              {paymentStatus.cycle_total ? ` de ${paymentStatus.cycle_total}` : ''}
+              {paymentStatus.is_current_cycle ? ' · Mês atual' : ''}
+            </p>
+          )}
+          {isAdvancePaymentFlow && (
+            <p className="text-sm font-medium text-primary">
+              Ciclos {advanceCycleNumbers.join(', ')}
+            </p>
+          )}
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Consulte os dados da cobrança e conclua o pagamento quando o método exigir cartão.
             {isPixPayment && !isPaid ? ' O status do Pix é atualizado automaticamente.' : ''}
           </p>
         </div>
@@ -492,8 +633,12 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge
-                value={checkoutStatus}
-                label={checkoutStatusMap[checkoutStatus] ?? checkoutStatus}
+                value={displayedStatus}
+                label={
+                  isAdvancePaymentFlow || cycleNumber
+                    ? chargeStatusMap[displayedStatus] ?? displayedStatus
+                    : checkoutStatusMap[displayedStatus] ?? displayedStatus
+                }
               />
               <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
                 {paymentTypeMap[paymentType] ?? paymentType}
@@ -536,17 +681,27 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
               </p>
             </div>
           )}
+          {isAdvancePaymentFlow && (
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+              <p className="text-xs text-muted-foreground">Ciclos antecipados</p>
+              <p className="mt-1 text-base font-semibold">
+                {advanceCycleNumbers.join(', ')}
+              </p>
+            </div>
+          )}
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">Status da cobrança</p>
             <p className="mt-1 text-base font-semibold">
-              {checkoutStatus === 'pending_payment'
+              {isAdvancePaymentFlow || cycleNumber
+                ? (chargeStatusMap[displayedStatus] ?? displayedStatus) || 'Não informado'
+                : checkoutStatus === 'pending_payment'
                 ? checkoutStatusMap.pending_payment
                 : chargeStatusMap[latestCharge?.status ?? ''] ??
                 latestCharge?.status ??
                 'Não informado'}
             </p>
           </div>
-          {isPixPayment && billingSubscription?.next_due_date && (
+          {isPixPayment && !isAdvancePaymentFlow && billingSubscription?.next_due_date && (
             <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
               <p className="text-xs text-muted-foreground">Próxima data de pagamento</p>
               <p className="mt-1 text-base font-semibold">
@@ -563,7 +718,8 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
               <div>
                 <p className="text-xs text-muted-foreground">Período de vigência</p>
                 <p className="text-sm font-medium">
-                  {formatDate(payment.current_period_start)} até {formatDate(payment.current_period_end)}
+                  {formatDate(paymentStatus?.period_start ?? payment.current_period_start)} até{' '}
+                  {formatDate(paymentStatus?.period_end ?? payment.current_period_end)}
                 </p>
               </div>
             </div>
@@ -582,7 +738,60 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
         )}
       </Card>
 
-      {isCreditCardPayment && payment && (successResult || shouldShowCreditCardForm) ? (
+      {isAdvancePaymentFlow && isCreditCardPayment && advanceResult ? (
+        <Card className="border-border/60 p-8 shadow-sm">
+          <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+            <div className="success-ring relative mb-6 flex h-28 w-28 items-center justify-center rounded-full bg-emerald-50">
+              <div className="success-check flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+                <CheckCircle2 className="h-10 w-10" />
+              </div>
+            </div>
+            <Badge className="mb-4 rounded-full bg-emerald-600 px-3 py-1 text-white hover:bg-emerald-600">
+              Antecipação processada
+            </Badge>
+            <h2 className="text-2xl font-semibold">Pagamento enviado</h2>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              Os ciclos selecionados foram consolidados em uma única cobrança.
+            </p>
+
+            <div className="mt-6 grid w-full gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
+                <p className="text-xs text-muted-foreground">Valor total</p>
+                <p className="mt-1 text-xl font-semibold">
+                  {formatCurrency(advanceResult.total_amount)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
+                <p className="text-xs text-muted-foreground">Ciclos</p>
+                <p className="mt-1 text-base font-semibold">
+                  {advanceResult.cycle_numbers.join(', ')}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
+                <p className="text-xs text-muted-foreground">Método</p>
+                <p className="mt-1 text-base font-semibold">Cartão de crédito</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="mt-1 text-base font-semibold">
+                  {chargeStatusMap[latestCharge?.status ?? ''] ??
+                    latestCharge?.status ??
+                    'Processando'}
+                </p>
+              </div>
+            </div>
+
+            {receiptUrl && (
+              <Button asChild className="mt-6">
+                <a href={receiptUrl} target="_blank" rel="noopener noreferrer">
+                  Ver recibo
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            )}
+          </div>
+        </Card>
+      ) : isCreditCardPayment && payment && (successResult || shouldShowCreditCardForm) ? (
         successResult ? (
           <Card className="border-border/60 p-8 shadow-sm">
             <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
@@ -946,23 +1155,32 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                   <div className="grid gap-4 md:grid-cols-[1fr_240px] md:items-end">
                     <div>
                       <p className="text-xs text-muted-foreground">Cobrança desta operação</p>
-                      <p className="text-lg font-semibold">{formatCurrency(payment.value)}</p>
+                      <p className="text-lg font-semibold">{formatCurrency(paymentValue)}</p>
                     </div>
-                    <div>
-                      <Label htmlFor="installments">Parcelamento</Label>
-                      <Select value={selectedInstallments} onValueChange={setSelectedInstallments}>
-                        <SelectTrigger id="installments" className="mt-2 h-11">
-                          <SelectValue placeholder="Selecione as parcelas" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allowedInstallments.map((installment) => (
-                            <SelectItem key={installment} value={String(installment)}>
-                              {installment === 1 ? '1x sem parcelamento' : `${installment}x`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {isAdvancePaymentFlow ? (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Mensalidades selecionadas</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          Ciclos {advanceCycleNumbers.join(', ')}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <Label htmlFor="installments">Parcelamento</Label>
+                        <Select value={selectedInstallments} onValueChange={setSelectedInstallments}>
+                          <SelectTrigger id="installments" className="mt-2 h-11">
+                            <SelectValue placeholder="Selecione as parcelas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allowedInstallments.map((installment) => (
+                              <SelectItem key={installment} value={String(installment)}>
+                                {installment === 1 ? '1x sem parcelamento' : `${installment}x`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   <Button
@@ -978,12 +1196,14 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                     ) : (
                       <>
                         <ShieldCheck className="h-4 w-4" />
-                        Realizar pagamento
+                        {isAdvancePaymentFlow
+                          ? 'Pagar mensalidades antecipadas'
+                          : 'Realizar pagamento'}
                       </>
                     )}
                   </Button>
 
-                  {payment.contract?.contract_file_url && (
+                  {!isAdvancePaymentFlow && payment.contract?.contract_file_url && (
                     <p className="mt-3 text-center text-xs text-muted-foreground">
                       Ao realizar o pagamento, concordo com o{' '}
                       <a
@@ -1021,7 +1241,27 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
             </h2>
           </div>
 
-          {isPaid ? (
+          {isAdvancePaymentFlow && isPixPayment && isSubmitting && !advanceResult ? (
+            <div className="flex min-h-72 items-center justify-center">
+              <LogoPulseLoader label="Gerando cobrança Pix..." />
+            </div>
+          ) : isAdvancePaymentFlow && isPixPayment && advanceError ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+              <Receipt className="mx-auto mb-3 h-8 w-8 text-destructive" />
+              <p className="text-sm font-medium">Não foi possível gerar a cobrança</p>
+              <p className="mt-1 text-sm text-muted-foreground">{advanceError}</p>
+              <Button
+                type="button"
+                className="mt-4"
+                onClick={() => {
+                  setAdvanceError(null)
+                  setAdvanceAttempt((attempt) => attempt + 1)
+                }}
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          ) : isPaid ? (
             <div className="grid gap-4">
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
                 <div className="success-ring mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-white">
@@ -1062,13 +1302,13 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                 )}
               </div>
             </div>
-          ) : pixQrCode ? (
+          ) : pixQrImage ? (
             <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
               <div className="rounded-xl border border-border/60 bg-white p-5">
                 <div className="flex h-full min-h-72 items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`data:image/png;base64,${pixQrCode.encodedImage}`}
+                    src={`data:image/png;base64,${pixQrImage}`}
                     alt="QR Code Pix"
                     className="h-64 w-64 rounded-lg object-contain"
                   />
@@ -1081,6 +1321,11 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                   <p className="mt-2 text-3xl font-semibold text-foreground">
                     {formatCurrency(paymentValue)}
                   </p>
+                  {isAdvancePaymentFlow && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Ciclos {advanceCycleNumbers.join(', ')}
+                    </p>
+                  )}
                 </div>
 
                 {pixCopyPaste && (

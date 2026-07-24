@@ -1,3 +1,5 @@
+import type { PaymentCycle } from '@/src/features/finance/types'
+
 export const weekdayMap: Record<string, string> = {
   Mon: 'Seg',
   Tue: 'Ter',
@@ -48,6 +50,17 @@ export const chargeStatusMap: Record<string, string> = {
   expired: 'Expirado',
   refunded: 'Reembolsado',
   failed: 'Falhou',
+}
+
+export function getVisiblePaymentCycles(cycles: PaymentCycle[] = []) {
+  const sortedCycles = [...cycles].sort((a, b) => a.cycle_number - b.cycle_number)
+  const currentIndex = sortedCycles.findIndex((cycle) => cycle.is_current_cycle)
+
+  if (currentIndex === -1) return sortedCycles.slice(0, 3)
+
+  return sortedCycles.filter((_, index) =>
+    [currentIndex - 1, currentIndex, currentIndex + 1].includes(index)
+  )
 }
 
 export function formatCurrency(value: string | number | null | undefined) {
