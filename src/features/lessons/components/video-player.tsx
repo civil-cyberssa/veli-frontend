@@ -210,8 +210,12 @@ export function VideoPlayer({
     <div className="border-border/50 overflow-hidden bg-black">
       <div
         ref={containerRef}
-        className="relative w-full bg-black flex items-center justify-center"
-        style={{ height: '60vh', minHeight: '400px' }}
+        className={cn(
+          "relative flex w-full items-center justify-center bg-black",
+          isFullscreen
+            ? "h-screen min-h-0"
+            : "aspect-video md:aspect-auto md:h-[60vh] md:min-h-[400px]"
+        )}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => playing && setShowControls(false)}
       >

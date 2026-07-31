@@ -4,18 +4,13 @@ import * as React from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
-import {
-  ChevronsLeft,
-  ChevronsRight,
-  LayoutDashboard,
-  PlayCircle,
-  ClipboardList,
-  Palette,
-  CreditCard,
-  BookOpen,
-} from "lucide-react"
+import { ChevronsLeft, ChevronsRight } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
+import {
+  getNavigationSections,
+  isNavigationItemActive,
+} from "@/components/navigation-items"
 import {
   Sidebar,
   SidebarContent,
@@ -23,46 +18,6 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
-
-const baseNavData = {
-  sections: [
-    {
-      label: "PRINCIPAL",
-      items: [
-        {
-          title: "Dashboard",
-          url: "/home",
-          icon: LayoutDashboard,
-        },
-        {
-          title: "Atividades Diárias",
-          url: "/activities",
-          icon: ClipboardList,
-        },
-        {
-          title: "Financeiro",
-          url: "/financeiro",
-          icon: CreditCard,
-        },
-        {
-          title: "Cursos disponíveis",
-          url: "/cursos-disponiveis",
-          icon: BookOpen,
-        },
-      ],
-    },
-    {
-      label: "CONTEÚDO",
-      items: [
-        {
-          title: "Minhas Aulas",
-          url: "/minhas-aulas",
-          icon: PlayCircle,
-        },
-      ],
-    },
-  ],
-}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
@@ -72,26 +27,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Calcula dinamicamente o isActive baseado na rota atual
   const navSectionsWithActiveState = React.useMemo(() => {
-    const sections = [...baseNavData.sections]
-
-    if (role === "manager") {
-      sections.push({
-        label: "ADMINISTRAÇÃO",
-        items: [
-          {
-            title: "Cores da marca",
-            url: "/admin",
-            icon: Palette,
-          },
-        ],
-      })
-    }
+    const sections = getNavigationSections(role)
 
     return sections.map((section) => ({
       ...section,
       items: section.items.map((item) => ({
         ...item,
-        isActive: pathname === item.url || (item.url !== "#" && pathname.startsWith(item.url)),
+        isActive: isNavigationItemActive(pathname, item.url),
       })),
     }))
   }, [pathname, role])

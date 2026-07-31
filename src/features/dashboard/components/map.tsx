@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, Clock, CheckCircle2 } from "lucide-react"
+import { Play, CheckCircle2 } from "lucide-react"
 import React from "react"
 import Link from "next/link"
 import { useNextAsyncLesson } from "../hooks/useNextAsyncLesson"
@@ -12,24 +12,8 @@ import { LogoPulseLoader } from "@/components/shared/logo-loader"
 export function WelcomeCard({ subscriptionId }: { subscriptionId: number | null }) {
   const { data: nextLesson, isLoading } = useNextAsyncLesson(subscriptionId)
 
-  const currentDate = new Date().toLocaleDateString('pt-BR', {
-    day: 'numeric',
-    month: 'short'
-  })
-
-  const formatScheduledDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   return (
-    <Card className="group relative overflow-hidden  transition-all border-0 shadow-none">
+    <Card className="group relative -mx-6 overflow-hidden rounded-none border-0 py-0 shadow-none transition-all md:mx-0 md:rounded-xl">
       {/* Vídeo de fundo sutil */}
       <div className="absolute inset-0">
         <video
@@ -49,31 +33,30 @@ export function WelcomeCard({ subscriptionId }: { subscriptionId: number | null 
 
       {/* Conteúdo */}
       <div className="relative border-0">
-        <div className="mb-6 flex justify-end">
-          <div className="flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-sm ">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{currentDate}</span>
-          </div>
-        </div>
-
         {/* Card do vídeo */}
         {isLoading ? (
-          <div className="relative overflow-hidden rounded-2xl bg-card shadow-sm">
-            <div className="flex h-72 md:h-80 items-center justify-center bg-muted">
+          <div className="relative overflow-hidden rounded-none bg-card shadow-sm md:rounded-2xl">
+            <div className="flex h-[27.6rem] items-center justify-center bg-muted sm:h-80">
               <LogoPulseLoader label="Carregando próxima aula..." />
             </div>
           </div>
         ) : nextLesson ? (
           <Link href={`/course/${nextLesson.student_class_id}`} className="block">
-            <div className="relative overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer group/card">
-              <div className="relative h-72 md:h-80">
+            <div className="group/card relative cursor-pointer overflow-hidden rounded-none bg-card shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl md:rounded-2xl">
+              <div className="relative h-[27.6rem] sm:h-80">
                 {/* Vídeo de fundo - usa a própria thumbnail do vídeo */}
                 <video
-                  preload="metadata"
+                  autoPlay
+                  preload="auto"
                   muted
                   playsInline
                   className="h-full w-full object-cover"
                   src={nextLesson.video_url}
+                  onTimeUpdate={(event) => {
+                    if (event.currentTarget.currentTime >= 4) {
+                      event.currentTarget.pause()
+                    }
+                  }}
                 />
 
                 {/* Overlay escuro com gradient melhorado */}
@@ -115,10 +98,6 @@ export function WelcomeCard({ subscriptionId }: { subscriptionId: number | null 
                     >
                       {nextLesson.module_name}
                     </Badge>
-                    <span className="flex items-center gap-1.5 text-white/90 bg-black/30 backdrop-blur-sm rounded-full px-3 py-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span className="font-medium">{formatScheduledDate(nextLesson.scheduled_datetime)}</span>
-                    </span>
                   </div>
                   <div>
                     <h3 className="text-2xl md:text-3xl font-bold text-white drop-shadow-2xl leading-tight">
@@ -136,8 +115,8 @@ export function WelcomeCard({ subscriptionId }: { subscriptionId: number | null 
             </div>
           </Link>
         ) : (
-          <div className="relative overflow-hidden rounded-2xl bg-card shadow-sm border-2 border-dashed border-muted">
-            <div className="flex h-72 md:h-80 flex-col items-center justify-center gap-4 text-center p-6">
+          <div className="relative overflow-hidden rounded-none border-2 border-dashed border-muted bg-card shadow-sm md:rounded-2xl">
+            <div className="flex h-[27.6rem] flex-col items-center justify-center gap-4 p-6 text-center sm:h-80">
               <div className="rounded-full bg-muted p-6">
                 <Play className="h-12 w-12 text-muted-foreground/60" />
               </div>

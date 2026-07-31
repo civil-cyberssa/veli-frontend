@@ -232,6 +232,18 @@ export function CourseTour() {
   if (!targetRect) return null
 
   const getPopoverStyle = () => {
+    if (window.innerWidth < 640) {
+      return {
+        top: 'auto',
+        right: 16,
+        bottom: 'max(1rem, env(safe-area-inset-bottom))',
+        left: 16,
+        width: 'auto',
+        maxWidth: 'none',
+        transform: 'none',
+      }
+    }
+
     if (step.position === 'bottom' || step.position === 'top') {
       return {
         top:
@@ -239,6 +251,7 @@ export function CourseTour() {
             ? targetRect.bottom + 16
             : targetRect.top - 16,
         left: targetRect.left + targetRect.width / 2,
+        maxWidth: 'calc(100vw - 2rem)',
         transform: step.position === 'top' ? 'translate(-50%, -100%)' : 'translateX(-50%)',
       }
     }
@@ -249,6 +262,7 @@ export function CourseTour() {
         step.position === 'left'
           ? targetRect.left - 360
           : targetRect.right + 16,
+      maxWidth: 'calc(100vw - 2rem)',
       transform: 'translateY(-50%)',
     }
   }
@@ -286,11 +300,8 @@ export function CourseTour() {
 
       {/* Popover Card */}
       <div
-        className="fixed z-[102] w-80 animate-in fade-in slide-in-from-bottom-4 duration-300"
-        style={{
-          ...getPopoverStyle(),
-          maxWidth: 'calc(100vw - 2rem)',
-        }}
+        className="fixed z-[102] max-h-[calc(100dvh-2rem)] w-80 animate-in overflow-y-auto overscroll-contain fade-in slide-in-from-bottom-4 duration-300"
+        style={getPopoverStyle()}
       >
         <Card className="p-5 bg-card text-card-foreground shadow-2xl border-2 border-border">
           <button

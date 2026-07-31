@@ -92,8 +92,8 @@ export function CourseGreeting({ courseName }: CourseGreetingProps) {
   }, [activePhrases, displayText, firstName, isAnimatedGreeting, isDeleting, phraseIndex])
 
   return (
-    <div className="flex min-h-11 items-center">
-      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground to-foreground/65 bg-clip-text text-transparent">
+    <div className="flex h-20 items-start overflow-hidden sm:h-12 sm:items-center">
+      <h1 className="bg-gradient-to-r from-foreground via-foreground to-foreground/65 bg-clip-text text-3xl font-bold leading-tight tracking-tight text-transparent sm:text-4xl">
         {displayText}
         {isAnimatedGreeting && (
           <span className="ml-1 inline-block h-[0.95em] w-[2px] translate-y-0.5 animate-pulse rounded-full bg-primary align-middle" />

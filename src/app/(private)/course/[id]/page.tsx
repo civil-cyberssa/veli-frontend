@@ -22,6 +22,7 @@ import { LessonInteractionTabs } from '@/src/features/lessons/components/lesson-
 import { useLessonDoubts } from '@/src/features/lessons/hooks/useLessonDoubts'
 import { QuizPromptModal } from '@/src/features/lessons/components/quiz-prompt-modal'
 import { CourseTour } from '@/src/features/lessons/components/course-tour'
+import { MobileLessonOverview } from '@/src/features/lessons/components/mobile-lesson-overview'
 import { toast } from 'sonner'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
 
@@ -338,7 +339,7 @@ export default function LessonPage() {
           {/* Coluna principal: Vídeo + Conteúdo adicional */}
           <div className={`space-y-4 ${sidebarCollapsed ? '' : 'lg:col-span-3'}`}>
             {/* Vídeo */}
-            <div className="animate-scale-in animate-delay-100" data-tour="video-player">
+            <div className="-mx-6 -mt-4 animate-scale-in animate-delay-100 md:mx-0 md:mt-0" data-tour="video-player">
               {lesson?.content_url ? (
                 <VideoPlayer
                   url={lesson.content_url}
@@ -363,7 +364,7 @@ export default function LessonPage() {
                   }}
                 />
               ) : (
-                <Card className="border-border/50 overflow-hidden">
+                <Card className="overflow-hidden rounded-none border-0 border-border/50 lg:rounded-xl lg:border">
                   <div className="relative aspect-video bg-black">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center space-y-3">
@@ -378,24 +379,39 @@ export default function LessonPage() {
 
             {/* Rating */}
             <div className="animate-slide-up animate-delay-200" data-tour="lesson-description">
-              <LessonDescriptionCard
-                key={selectedLessonId ?? 'lesson-card'}
+              <MobileLessonOverview
+                key={`mobile-${selectedLessonId ?? 'lesson'}`}
                 title={lesson?.lesson_name}
                 description={lesson?.description}
-                courseName={currentCourseName}
                 initialRating={selectedLessonProgress?.rating ?? null}
-                isWatched={selectedLessonProgress?.watched ?? false}
                 ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
                 onRatingChange={handleRatingChange}
-                onMarkAsWatched={handleMarkAsWatched}
-                watchProgress={watchProgress}
-                isMarkingWatched={isMarkingWatched}
                 eventId={selectedLessonProgress?.event_id}
                 exercise={selectedLessonProgress?.exercise ?? null}
-                exerciseScore={selectedLessonProgress?.exercise_score ?? null}
                 supportMaterialUrl={lesson?.support_material_url}
                 onOpenQuiz={handleOpenQuiz}
               />
+
+              <div className="hidden lg:block">
+                <LessonDescriptionCard
+                  key={selectedLessonId ?? 'lesson-card'}
+                  title={lesson?.lesson_name}
+                  description={lesson?.description}
+                  courseName={currentCourseName}
+                  initialRating={selectedLessonProgress?.rating ?? null}
+                  isWatched={selectedLessonProgress?.watched ?? false}
+                  ratingDisabled={Boolean(selectedLessonProgress?.rating) || isUpdatingRating}
+                  onRatingChange={handleRatingChange}
+                  onMarkAsWatched={handleMarkAsWatched}
+                  watchProgress={watchProgress}
+                  isMarkingWatched={isMarkingWatched}
+                  eventId={selectedLessonProgress?.event_id}
+                  exercise={selectedLessonProgress?.exercise ?? null}
+                  exerciseScore={selectedLessonProgress?.exercise_score ?? null}
+                  supportMaterialUrl={lesson?.support_material_url}
+                  onOpenQuiz={handleOpenQuiz}
+                />
+              </div>
             </div>
 
             {/* Comentários e Perguntas ao Professor */}

@@ -9,7 +9,7 @@ export default function LessonLayout({
     <div className="min-h-screen bg-background animate-fade-in flex flex-col">
 
 
-      <main className="flex-1 px-4 py-6 animate-slide-up">
+      <main className="flex-1 px-0 py-0 animate-slide-up md:px-4 md:py-6">
         {children}
       </main>
 

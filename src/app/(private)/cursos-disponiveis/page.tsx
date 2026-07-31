@@ -52,16 +52,21 @@ export default function CursosDisponiveisPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 pb-8">
-      <section className="overflow-hidden rounded-2xl border border-dashed border-border/70 bg-muted/20">
-        <div className="min-h-56 p-8 sm:min-h-72" />
+      <section className="overflow-hidden rounded-2xl border border-border/70">
+        <Image
+          src="/banner_cursos_aluno_veli.png"
+          alt="Banner de cursos disponíveis da Veli"
+          width={1983}
+          height={793}
+          priority
+          sizes="(max-width: 1280px) 100vw, 1280px"
+          className="h-auto w-full"
+        />
       </section>
 
       <section className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">
-            <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary/70">
-              Cursos disponíveis
-            </p>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">
               Escolha um idioma
             </h1>
@@ -77,26 +82,26 @@ export default function CursosDisponiveisPage() {
         </div>
 
         <div className="relative">
-          <div className="flex gap-4 overflow-x-auto pb-3 [scrollbar-width:thin]">
+          <div className="flex gap-3 overflow-x-auto pb-3 [scrollbar-width:thin]">
             <Button
               type="button"
               variant="ghost"
               onClick={() => setSelectedLanguageId(null)}
-              className={`h-auto min-w-28 flex-col gap-2 rounded-2xl border px-4 py-4 ${
+              className={`h-auto min-w-24 flex-col gap-1.5 rounded-xl border px-3 py-3 ${
                 selectedLanguageId === null
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border/60 bg-background hover:bg-muted/60'
               }`}
             >
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-muted ring-1 ring-border/60">
-                <Globe2 className="h-7 w-7" />
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted ring-1 ring-border/60">
+                <Globe2 className="h-6 w-6" />
               </span>
               <span className="text-sm font-semibold">Todos</span>
             </Button>
 
             {isLoadingLanguages ? (
-              <div className="flex min-w-40 items-center justify-center rounded-2xl border border-border/60 bg-muted/20 px-6">
-                <LogoPulseLoader label="Idiomas..." size={44} />
+              <div className="flex min-w-32 items-center justify-center rounded-xl border border-border/60 bg-muted/20 px-4">
+                <LogoPulseLoader label="Idiomas..." size={36} />
               </div>
             ) : (
               languages.map((language) => {
@@ -108,18 +113,18 @@ export default function CursosDisponiveisPage() {
                     type="button"
                     variant="ghost"
                     onClick={() => setSelectedLanguageId(language.id)}
-                    className={`h-auto min-w-28 flex-col gap-2 rounded-2xl border px-4 py-4 ${
+                    className={`h-auto min-w-24 flex-col gap-1.5 rounded-xl border px-3 py-3 ${
                       isSelected
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border/60 bg-background hover:bg-muted/60'
                     }`}
                   >
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1.5 shadow-sm ring-1 ring-border/60">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white p-1 shadow-sm ring-1 ring-border/60">
                       <Image
                         src={language.image}
                         alt={language.name}
-                        width={56}
-                        height={56}
+                        width={44}
+                        height={44}
                         className="h-full w-full rounded-full object-cover"
                       />
                     </span>
