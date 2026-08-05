@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { HeaderUserControls } from "@/components/header-user-controls"
@@ -53,11 +53,22 @@ export default function Layout({children}: {children: React.ReactNode}) {
   }
 
   return (
-    <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 z-10">
-          <div className="flex items-center gap-3 px-6 w-full">
+    <SidebarProvider
+      open={isSidebarOpen}
+      onOpenChange={setIsSidebarOpen}
+      className="flex-col"
+    >
+      <header className="sticky top-0 z-20 flex h-16 w-full shrink-0 items-center border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex w-full items-center gap-3 px-6">
+          <Image
+            src="/Veli_logo fundo azul médio.png"
+            alt="Veli"
+            width={1080}
+            height={671}
+            className="h-auto w-[5.6rem] rounded-xl object-contain"
+            priority
+          />
+          <div className="flex min-w-0 flex-1 items-center">
             {isBackButtonPage ? (
               <Button
                 type="button"
@@ -70,24 +81,27 @@ export default function Layout({children}: {children: React.ReactNode}) {
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-            ) : (
-              <SidebarTrigger className="-ml-1 hidden rounded-md transition-colors hover:bg-accent hover:text-accent-foreground md:inline-flex" />
-            )}
+            ) : null}
             <HeaderUserControls />
           </div>
-        </header>
-        <div
-          className={cn(
-            "flex flex-1 flex-col gap-6 px-6 pt-6",
-            isCoursePage
-              ? "pb-6"
-              : "pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-6"
-          )}
-        >
-          {children}
         </div>
-        {isCoursePage ? null : <MobileBottomNav />}
-      </SidebarInset>
+      </header>
+      <div className="flex min-h-0 w-full flex-1">
+        <AppSidebar className="!top-16 !h-[calc(100svh-4rem)]" />
+        <SidebarInset>
+          <div
+            className={cn(
+              "flex flex-1 flex-col gap-6 px-6 pt-6",
+              isCoursePage
+                ? "pb-6"
+                : "pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-6"
+            )}
+          >
+            {children}
+          </div>
+          {isCoursePage ? null : <MobileBottomNav />}
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   )
 }

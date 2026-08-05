@@ -1,4 +1,5 @@
 import CredentialsProvider from "next-auth/providers/credentials"
+import { authenticateWithGoogle } from "@/src/features/auth/google-auth"
 
 const authOptions = {
   providers: [
@@ -33,6 +34,21 @@ const authOptions = {
         }
 
         return null
+      },
+    }),
+    CredentialsProvider({
+      id: "google-credentials",
+      name: "Google",
+      credentials: {
+        credential: { label: "credential", type: "text" },
+      },
+      async authorize(credentials) {
+        const user = await authenticateWithGoogle(credentials?.credential ?? "")
+
+        return {
+          id: user.student_full_name,
+          ...user,
+        }
       },
     }),
   ],

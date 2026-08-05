@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { ChevronsLeft, ChevronsRight } from "lucide-react"
@@ -51,16 +50,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           >
             {open ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
           </button>
-        </div>
-        <div className="flex items-center justify-center px-3 py-2 group-data-[collapsible=icon]:px-2">
-          <Image
-            src="/Veli_logo fundo azul médio.png"
-            alt="Veli"
-            width={1080}
-            height={671}
-            className="h-auto w-[5.6rem] rounded-xl object-contain group-data-[collapsible=icon]:w-[2.1rem]"
-            priority
-          />
         </div>
       </SidebarHeader>
       <SidebarContent>

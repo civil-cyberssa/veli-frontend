@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import React, { useState, FormEvent, useEffect } from "react";
+import React, { useState, FormEvent, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,21 +8,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Mail, Lock, LogIn, Loader2 } from "lucide-react";
 import { ModeToggle } from "@/components/shared/theme-toggle-mode";
 import { useTheme } from "next-themes";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { GoogleLoginButton } from "@/src/features/auth/google-login-button";
+
+type LoginMethod = "credentials" | "google";
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [saveCredentials, setSaveCredentials] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMethod, setLoadingMethod] = useState<LoginMethod | null>(null);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const { resolvedTheme } = useTheme();
   const router = useRouter();
+  const isLoading = loadingMethod !== null;
 
   const publicFigures = [
     "https://randomuser.me/api/portraits/women/44.jpg",
@@ -70,6 +74,79 @@ export default function LoginScreen() {
     setIsFirstLogin(!hasLoggedBefore);
   }, []);
 
+  const completeAuthentication = useCallback((destination = "/home") => {
+    if (destination === "/home") {
+      toast.success("Login realizado com sucesso!", {
+        description: "Você será redirecionado para o sistema.",
+        position: "top-center",
+        duration: 3000,
+      });
+    }
+
+    localStorage.removeItem("courseSelectionCompleted");
+    localStorage.removeItem("lastSelectedCourseId");
+
+    if (isFirstLogin) {
+      localStorage.setItem("hasLoggedBefore", "true");
+
+      if (destination !== "/home") {
+        router.replace(destination);
+        return;
+      }
+
+      setTimeout(() => {
+        router.replace(destination);
+      }, 1500);
+      return;
+    }
+
+    router.replace(destination);
+  }, [isFirstLogin, router]);
+
+  const handleGoogleCredential = useCallback(
+    async (credential: string) => {
+      if (isLoading) return;
+
+      setLoadingMethod("google");
+
+      try {
+        const result = await signIn("google-credentials", {
+          credential,
+          redirect: false,
+        });
+
+        if (!result?.ok) {
+          const description =
+            result?.error && result.error !== "CredentialsSignin"
+              ? result.error
+              : "Não foi possível entrar com o Google. Tente novamente.";
+
+          toast.error("Falha na autenticação", {
+            description,
+            position: "top-center",
+            duration: 5000,
+          });
+          setLoadingMethod(null);
+          return;
+        }
+
+        const session = await getSession();
+        completeAuthentication(
+          session?.completed_profile === false ? "/complete-profile" : "/home",
+        );
+      } catch (error) {
+        console.error("Erro durante autenticação com Google:", error);
+        toast.error("Erro de sistema", {
+          description: "Não foi possível entrar com o Google. Tente novamente.",
+          position: "top-center",
+          duration: 5000,
+        });
+        setLoadingMethod(null);
+      }
+    },
+    [completeAuthentication, isLoading],
+  );
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -82,7 +159,7 @@ export default function LoginScreen() {
       return;
     }
 
-    setIsLoading(true);
+    setLoadingMethod("credentials");
 
     try {
       if (saveCredentials) {
@@ -112,28 +189,11 @@ export default function LoginScreen() {
         });
 
         console.error("Erro de autenticação:", result?.error);
-        setIsLoading(false);
+        setLoadingMethod(null);
         return;
       }
 
-      toast.success("Login realizado com sucesso!", {
-        description: "Você será redirecionado para o sistema.",
-        position: "top-center",
-        duration: 3000,
-      });
-
-      // Limpar seleção de curso anterior ao fazer login
-      localStorage.removeItem("courseSelectionCompleted");
-      localStorage.removeItem("lastSelectedCourseId");
-
-      if (isFirstLogin) {
-        localStorage.setItem("hasLoggedBefore", "true");
-        setTimeout(() => {
-          router.replace("/home");
-        }, 1500);
-      } else {
-        router.replace("/home");
-      }
+      completeAuthentication();
     } catch (error) {
       console.error("Erro durante autenticação:", error);
       toast.error("Erro de sistema", {
@@ -143,7 +203,7 @@ export default function LoginScreen() {
         duration: 5000,
       });
 
-      setIsLoading(false);
+      setLoadingMethod(null);
     }
   };
 
@@ -218,6 +278,21 @@ export default function LoginScreen() {
                 <p className="text-xs sm:text-sm text-muted-foreground font-medium">
                   Junte-se a milhares de estudantes
                 </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <GoogleLoginButton
+                disabled={isLoading}
+                onCredential={handleGoogleCredential}
+              />
+
+              <div className="flex items-center gap-3" aria-hidden="true">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs font-medium text-muted-foreground">
+                  ou continue com e-mail
+                </span>
+                <div className="h-px flex-1 bg-border" />
               </div>
             </div>
 
@@ -316,7 +391,7 @@ export default function LoginScreen() {
                 disabled={isLoading}
                 className="w-full h-11 sm:h-12 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-lg sm:rounded-xl"
               >
-                {isLoading ? (
+                {loadingMethod === "credentials" ? (
                   <>
                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
                     Entrando...

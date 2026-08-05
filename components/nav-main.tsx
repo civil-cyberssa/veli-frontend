@@ -32,7 +32,7 @@ export function NavMain({
           <SidebarGroupLabel className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/50">
             {section.label}
           </SidebarGroupLabel>
-          <SidebarMenu className="space-y-0.5 px-2">
+          <SidebarMenu className="space-y-0.5 px-2 group-data-[collapsible=icon]:gap-[0.5625rem] group-data-[collapsible=icon]:space-y-0">
             {section.items.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
