@@ -9,6 +9,7 @@ import type {
   AvailableOffer,
   CreateOrderPayload,
   CreateOrderResponse,
+  CouponPreview,
   CurrentContractedOfferResponse,
   PendingPayment,
   PaymentStatusResponse,
@@ -340,4 +341,36 @@ export function useCreateOrder() {
   }
 
   return { createOrder }
+}
+
+export function useValidateCoupon() {
+  const { data: session } = useSession()
+
+  const validateCoupon = async (
+    offerId: number,
+    payload: { coupon_code: string; billing_option_code: string }
+  ) => {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/hotsite/offers/${offerId}/validate-coupon/`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access ? { Authorization: `Bearer ${session.access}` } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      const couponError = Array.isArray(errorData?.coupon_code) ? errorData.coupon_code[0] : null
+      throw new Error(couponError || errorData?.detail || 'Cupom inválido para esta oferta.')
+    }
+
+    return response.json() as Promise<CouponPreview>
+  }
+
+  return { validateCoupon }
 }

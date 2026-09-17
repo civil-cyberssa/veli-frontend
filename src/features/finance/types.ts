@@ -317,6 +317,16 @@ export interface CreateOrderPayload {
   billing_option_code: string
   installments: number
   preference_period?: string[]
+  coupon_code?: string
+}
+
+export interface CouponPreview {
+  offer_id: number
+  billing_option_code: string
+  amount_original: string
+  discount_amount: string
+  amount_total: string
+  coupon_code: string
 }
 
 export interface CreateOrderResponse {

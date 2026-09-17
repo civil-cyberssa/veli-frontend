@@ -25,6 +25,7 @@ import { CourseTour } from '@/src/features/lessons/components/course-tour'
 import { MobileLessonOverview } from '@/src/features/lessons/components/mobile-lesson-overview'
 import { toast } from 'sonner'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
+import { trackStudentAnalyticsEvent } from '@/src/lib/analytics'
 
 export default function LessonPage() {
   const params = useParams()
@@ -52,6 +53,18 @@ export default function LessonPage() {
     if (!allLessons || !selectedLessonId) return null
     return allLessons.get(selectedLessonId) || null
   }, [allLessons, selectedLessonId])
+
+  useEffect(() => {
+    if (!selectedLessonId || !lesson) return
+    trackStudentAnalyticsEvent({
+      event_type: 'lesson_viewed',
+      metadata: {
+        lesson_id: selectedLessonId,
+        lesson_name: lesson.lesson_name,
+        course_id: Number(courseId),
+      },
+    })
+  }, [courseId, lesson, selectedLessonId])
   const { markAsWatched, isLoading: isMarkingWatched } = useMarkLessonWatched()
   const { updateRating, isLoading: isUpdatingRating } = useUpdateLessonRating()
   const { data: subscriptions } = useSubscriptions()
@@ -65,11 +78,21 @@ export default function LessonPage() {
     [eventProgress, selectedLessonId]
   )
 
-  // Usar student_class_id se disponível, senão usar courseId da URL
-  const registrationIdForDoubts = selectedLessonProgress?.student_class_id ?? (courseId ? parseInt(courseId) : undefined)
+  const registrationIdForCourse = useMemo(() => {
+    if (selectedLessonProgress?.registration_id) {
+      return selectedLessonProgress.registration_id
+    }
+
+    const studentClassId = courseId ? Number(courseId) : null
+    if (!studentClassId) return undefined
+
+    return subscriptions?.find(
+      (subscription) => subscription.student_class_id === studentClassId
+    )?.id
+  }, [courseId, selectedLessonProgress?.registration_id, subscriptions])
 
   const { data: doubtsData = [] } = useLessonDoubts(
-    registrationIdForDoubts,
+    registrationIdForCourse,
     selectedLessonId ?? undefined
   )
 
@@ -77,7 +100,7 @@ export default function LessonPage() {
 
   const currentCourseName = useMemo(() => {
     const subscriptionCourse = subscriptions?.find(
-      (subscription) => subscription.id === Number(courseId)
+      (subscription) => subscription.student_class_id === Number(courseId)
     )?.course_name
 
     return (
@@ -343,6 +366,7 @@ export default function LessonPage() {
               {lesson?.content_url ? (
                 <VideoPlayer
                   url={lesson.content_url}
+                  caption={lesson.caption}
                   autoPlay={autoplay}
                   onProgress={(progress) => {
                     setWatchProgress(progress.played)
@@ -424,7 +448,7 @@ export default function LessonPage() {
                 onDeleteComment={handleDeleteComment}
                 isSubmittingComment={isCreatingComment}
                 lessonId={selectedLessonId || 0}
-                registrationId={registrationIdForDoubts}
+                registrationId={registrationIdForCourse}
                 doubtsCount={doubtsData.length}
               />
             </div>
@@ -476,11 +500,11 @@ export default function LessonPage() {
       )}
 
       {/* Quiz Modal/Overlay */}
-      {quizState && selectedLessonProgress && (
+      {quizState && selectedLessonProgress && registrationIdForCourse && (
         <QuizView
           eventId={quizState.eventId}
           exerciseName={quizState.name}
-          subscriptionId={selectedLessonProgress.student_class_id ?? parseInt(courseId)}
+          subscriptionId={registrationIdForCourse}
           onClose={handleCloseQuiz}
         />
       )}

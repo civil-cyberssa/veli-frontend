@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { use, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, CheckCircle2, CircleHelp, CreditCard, Loader2, SunMedium } from 'lucide-react'
+import { ArrowRight, CheckCircle2, CircleHelp, CreditCard, Loader2, SunMedium, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,9 @@ import { LogoPulseLoader } from '@/components/shared/logo-loader'
 import {
   useAvailableOffers,
   useCreateOrder,
+  useValidateCoupon,
 } from '@/src/features/finance/hooks/useFinanceData'
+import type { CouponPreview } from '@/src/features/finance/types'
 import {
   billingGroupLabels,
   billingMethodLabels,
@@ -34,6 +36,7 @@ export default function OfferEnrollmentPage({ params }: OfferEnrollmentPageProps
   const router = useRouter()
   const { data: offers, error, isLoading } = useAvailableOffers()
   const { createOrder } = useCreateOrder()
+  const { validateCoupon } = useValidateCoupon()
 
   const offer = useMemo(() => offers.find((item) => item.id === offerId), [offerId, offers])
   const groupedOptions = useMemo(
@@ -48,12 +51,18 @@ export default function OfferEnrollmentPage({ params }: OfferEnrollmentPageProps
   const [selectedBillingCode, setSelectedBillingCode] = useState<string>('')
   const [selectedInstallments, setSelectedInstallments] = useState<number>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [couponCode, setCouponCode] = useState('')
+  const [couponPreview, setCouponPreview] = useState<CouponPreview | null>(null)
+  const [couponError, setCouponError] = useState<string | null>(null)
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
 
   const selectedBillingOption = offer?.billing_options.find((option) => option.code === selectedBillingCode)
   const selectedStudentClass = offer?.student_classes.find(
     (studentClass) => studentClass.id === selectedStudentClassId
   )
-  const summaryPrice =
+  const summaryPrice = couponPreview
+    ? Number(couponPreview.amount_total)
+    :
     selectedBillingOption?.type === 'recurring' ? Number(offer?.price ?? 0) : Number(selectedBillingOption?.price ?? offer?.price ?? 0)
   const canSubmit = Boolean(
     selectedBillingGroup &&
@@ -78,6 +87,33 @@ export default function OfferEnrollmentPage({ params }: OfferEnrollmentPageProps
     const nextInstallments = selectedBillingOption.allowed_installments[0] ?? 1
     setSelectedInstallments(nextInstallments)
   }, [selectedBillingGroup, selectedBillingOption])
+
+  useEffect(() => {
+    setCouponPreview(null)
+    setCouponError(null)
+  }, [selectedBillingCode])
+
+  const handleApplyCoupon = async () => {
+    if (!offer || !selectedBillingOption || !couponCode.trim()) {
+      setCouponError('Informe um cupom e selecione a forma de pagamento.')
+      return
+    }
+    setIsApplyingCoupon(true)
+    setCouponError(null)
+    try {
+      const preview = await validateCoupon(offer.id, {
+        coupon_code: couponCode.trim().toUpperCase(),
+        billing_option_code: selectedBillingOption.code,
+      })
+      setCouponPreview(preview)
+      setCouponCode(preview.coupon_code)
+    } catch (couponValidationError) {
+      setCouponPreview(null)
+      setCouponError(couponValidationError instanceof Error ? couponValidationError.message : 'Cupom inválido.')
+    } finally {
+      setIsApplyingCoupon(false)
+    }
+  }
 
   useEffect(() => {
     if (!selectedBillingGroup) {
@@ -115,6 +151,7 @@ export default function OfferEnrollmentPage({ params }: OfferEnrollmentPageProps
             : {}),
         billing_option_code: selectedBillingOption.code,
         installments: selectedInstallments,
+        ...(couponPreview?.coupon_code ? { coupon_code: couponPreview.coupon_code } : {}),
       })
 
       const nextOrderId =
@@ -386,10 +423,22 @@ export default function OfferEnrollmentPage({ params }: OfferEnrollmentPageProps
               <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary/70">
                 Resumo do pedido
               </p>
+              {couponPreview && <p className="mt-2 text-sm text-muted-foreground line-through">{formatCurrency(couponPreview.amount_original)}</p>}
               <p className="mt-2 text-2xl font-semibold text-foreground">
                 {formatCurrency(summaryPrice)}
               </p>
+              {couponPreview && <p className="mt-1 text-xs font-semibold text-emerald-700">Cupom {couponPreview.coupon_code}: -{formatCurrency(couponPreview.discount_amount)}</p>}
               <p className="mt-1 text-sm text-muted-foreground">{offer.course.name}</p>
+            </div>
+
+            <div className="rounded-xl border border-dashed border-primary/35 bg-primary/5 p-4">
+              <label htmlFor="enrollment-coupon" className="flex items-center gap-2 text-sm font-semibold"><Tag className="h-4 w-4 text-primary" />Cupom de desconto</label>
+              <div className="mt-2 flex gap-2">
+                <input id="enrollment-coupon" value={couponCode} onChange={(event) => { setCouponCode(event.target.value.toUpperCase()); setCouponPreview(null); setCouponError(null) }} placeholder="DIGITE O CÓDIGO" className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 font-mono text-sm uppercase outline-none focus:ring-2 focus:ring-ring" />
+                <Button type="button" variant="outline" disabled={!selectedBillingOption || isApplyingCoupon} onClick={handleApplyCoupon}>{isApplyingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Aplicar'}</Button>
+              </div>
+              {couponError && <p className="mt-2 text-xs text-destructive">{couponError}</p>}
+              {couponPreview && <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-700"><CheckCircle2 className="h-3.5 w-3.5" />Cupom aplicado ao pedido.</p>}
             </div>
 
             <div className="space-y-3">

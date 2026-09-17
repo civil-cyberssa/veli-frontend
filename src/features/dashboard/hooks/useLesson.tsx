@@ -12,6 +12,20 @@ export interface Activity {
   score?: number
 }
 
+export interface LessonCaptionCue {
+  start_ms: number
+  end_ms: number
+  text: string
+}
+
+export interface LessonCaption {
+  language: string
+  label: string
+  position_percent: number
+  text_color: string
+  cues: LessonCaptionCue[]
+}
+
 // Interface da API real
 export interface LessonApiResponse {
   lesson_id: number
@@ -31,6 +45,7 @@ export interface LessonApiResponse {
     questions_count: number
   }
   is_weekly: boolean
+  caption?: LessonCaption | null
 }
 
 // Interface processada para uso na aplicação
@@ -52,6 +67,7 @@ export interface Lesson {
     questions_count: number
   }
   is_weekly: boolean
+  caption?: LessonCaption | null
   // Mock fields (serão implementados depois)
   rating: number | null
   comment: string
@@ -176,6 +192,7 @@ const fetcher = async (
     support_material_url: data.support_material_url,
     exercise: data.exercise,
     is_weekly: data.is_weekly,
+    caption: data.caption,
     // Mock data (será implementado depois via API)
     rating: null,
     comment: '',

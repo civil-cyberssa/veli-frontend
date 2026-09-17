@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { use, useMemo } from 'react'
+import { use, useEffect, useMemo } from 'react'
 import { ArrowRight, CalendarDays, Clock3, FileText, Wallet } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card'
 import { LogoPulseLoader } from '@/components/shared/logo-loader'
 import { useAvailableOffers } from '@/src/features/finance/hooks/useFinanceData'
 import { formatCurrency, formatWeekdays } from '@/src/features/finance/utils'
+import { trackStudentAnalyticsEvent } from '@/src/lib/analytics'
 
 interface OfferDetailsPageProps {
   params: Promise<{
@@ -22,6 +23,14 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
   const { data: offers, error, isLoading } = useAvailableOffers()
 
   const offer = useMemo(() => offers.find((item) => item.id === offerId), [offerId, offers])
+
+  useEffect(() => {
+    if (!offer) return
+    trackStudentAnalyticsEvent({
+      event_type: 'offer_viewed',
+      metadata: { offer_id: offer.id, offer_name: offer.name },
+    })
+  }, [offer])
 
   if (isLoading) {
     return (

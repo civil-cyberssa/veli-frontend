@@ -12,6 +12,7 @@ import {
   Minimize,
   SkipBack,
   SkipForward,
+  Captions,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import type { LessonCaption } from '@/src/features/dashboard/hooks/useLesson'
 
 interface VideoPlayerProps {
   url: string
@@ -27,6 +29,7 @@ interface VideoPlayerProps {
   onProgress?: (progress: { played: number; playedSeconds: number }) => void
   onEnded?: () => void
   autoPlay?: boolean
+  caption?: LessonCaption | null
 }
 
 export function VideoPlayer({ 
@@ -34,7 +37,8 @@ export function VideoPlayer({
   poster, 
   onProgress, 
   onEnded, 
-  autoPlay = false
+  autoPlay = false,
+  caption,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -49,7 +53,25 @@ export function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
+  const [captionsEnabled, setCaptionsEnabled] = useState(false)
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null)
+  const hasCaptions = Boolean(caption?.cues.length)
+
+  const activeCaption = captionsEnabled ? caption?.cues.find(
+    (cue) => currentTime * 1000 >= cue.start_ms && currentTime * 1000 < cue.end_ms
+  ) : undefined
+
+  useEffect(() => {
+    setCaptionsEnabled(false)
+  }, [url, caption?.language])
+
+  useEffect(() => {
+    return () => {
+      if (hideControlsTimeout.current) {
+        clearTimeout(hideControlsTimeout.current)
+      }
+    }
+  }, [])
 
   // Atualizar volume do vídeo
   useEffect(() => {
@@ -271,6 +293,24 @@ export function VideoPlayer({
             </div>
           )}
 
+          {activeCaption && (
+            <div
+              className="pointer-events-none absolute inset-x-4 flex justify-center px-2"
+              style={{ bottom: `${caption?.position_percent ?? 14}%` }}
+              aria-live="off"
+            >
+              <span
+                className="max-w-4xl rounded-lg bg-black/85 px-3 py-1.5 text-center text-base font-medium leading-relaxed shadow-lg md:text-lg"
+                style={{
+                  color: caption?.text_color ?? '#FFFFFF',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.95)',
+                }}
+              >
+                {activeCaption.text}
+              </span>
+            </div>
+          )}
+
           {/* Controls */}
           <div
             className={cn(
@@ -295,8 +335,8 @@ export function VideoPlayer({
             </div>
 
             {/* Control buttons */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-1 sm:gap-2">
                 {/* Play/Pause */}
                 <Button
                   variant="ghost"
@@ -312,7 +352,7 @@ export function VideoPlayer({
                   variant="ghost"
                   size="icon"
                   onClick={skipBackward}
-                  className="text-white hover:text-white hover:bg-white/20 cursor-pointer"
+                  className="hidden text-white hover:bg-white/20 hover:text-white min-[360px]:inline-flex"
                 >
                   <SkipBack className="h-4 w-4" />
                 </Button>
@@ -322,7 +362,7 @@ export function VideoPlayer({
                   variant="ghost"
                   size="icon"
                   onClick={skipForward}
-                  className="text-white hover:text-white hover:bg-white/20 cursor-pointer"
+                  className="hidden text-white hover:bg-white/20 hover:text-white min-[360px]:inline-flex"
                 >
                   <SkipForward className="h-4 w-4" />
                 </Button>
@@ -353,7 +393,25 @@ export function VideoPlayer({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                {hasCaptions && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCaptionsEnabled((current) => !current)}
+                    aria-pressed={captionsEnabled}
+                    aria-label={captionsEnabled ? 'Desativar legendas' : 'Ativar legendas'}
+                    title={captionsEnabled ? 'Desativar legendas' : 'Ativar legendas'}
+                    className={cn(
+                      'gap-1 text-xs text-white hover:bg-white/20 hover:text-white',
+                      captionsEnabled && 'bg-white text-black hover:bg-white/90 hover:text-black'
+                    )}
+                  >
+                    <Captions className="h-4 w-4" />
+                    <span className="hidden sm:inline">CC</span>
+                  </Button>
+                )}
+
                 {/* Playback speed */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

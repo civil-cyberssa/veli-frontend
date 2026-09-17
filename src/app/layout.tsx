@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "../providers/theme-provider";
 import { Toaster } from "sonner";
 import NextAuthSessionProvider from "../providers/auth-provider";
+import AnalyticsProvider from "../providers/analytics-provider";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -35,14 +36,16 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <NextAuthSessionProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
+          <AnalyticsProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
+          </AnalyticsProvider>
         </NextAuthSessionProvider>
         <Toaster
           position="top-right"

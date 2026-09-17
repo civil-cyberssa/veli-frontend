@@ -64,6 +64,7 @@ const fetcher = async (
             support_material_url: data.support_material_url,
             exercise: data.exercise,
             is_weekly: data.is_weekly,
+            caption: data.caption,
             rating: null,
             comment: '',
             activities: [],
