@@ -33,10 +33,16 @@ import { LogoPulseLoader } from '@/components/shared/logo-loader'
 import { useStudentProfile } from '@/src/features/profile/hooks/use-student-profile'
 import {
   useAdvancePayment,
+  useChangePaymentOption,
   useOrderPaymentStatus,
   usePendingPayment,
+  usePaymentGatewayConfig,
   useStartPayment,
 } from '@/src/features/finance/hooks/useFinanceData'
+import {
+  AbacatePayCardFields,
+  type AbacatePayCardFieldsRef,
+} from '@/src/features/finance/components/abacatepay-card-fields'
 import type {
   AdvancePaymentResponse,
   PendingPayment,
@@ -277,14 +283,22 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     Number.isInteger(requestedCycleNumber) && requestedCycleNumber > 0
       ? requestedCycleNumber
       : null
-  const { data: payment, error, isLoading } = usePendingPayment(orderId)
+  const { data: payment, error, isLoading, mutate: mutatePayment } = usePendingPayment(orderId)
   const {
     data: paymentStatus,
     error: paymentStatusError,
     isLoading: isLoadingPaymentStatus,
+    mutate: mutatePaymentStatus,
   } = useOrderPaymentStatus(orderId, cycleNumber)
   const { data: profileData, loading: loadingProfile } = useStudentProfile()
+  const {
+    data: paymentConfig,
+    error: paymentConfigError,
+    isLoading: isLoadingPaymentConfig,
+    mutate: mutatePaymentConfig,
+  } = usePaymentGatewayConfig(orderId)
   const { startPayment } = useStartPayment()
+  const { changePaymentOption, isReady: canChangePaymentOption } = useChangePaymentOption()
   const { advancePayment, isReady: canAdvancePayment } = useAdvancePayment()
 
   const [form, setForm] = useState<CardFormState>(initialFormState)
@@ -299,6 +313,10 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
   const [submittedCardBrand, setSubmittedCardBrand] = useState<string>('CRÉDITO')
   const [selectedInstallments, setSelectedInstallments] = useState<string>('')
   const [hasCopiedPix, setHasCopiedPix] = useState(false)
+  const [tokenizationReady, setTokenizationReady] = useState(false)
+  const [isChangingPaymentOption, setIsChangingPaymentOption] = useState(false)
+  const abacatePayRef = useRef<AbacatePayCardFieldsRef>(null)
+  const usesAbacatePay = paymentConfig?.gateway === 'abacatepay'
 
   const advanceCharge =
     advanceResult?.consolidated_payment?.payment ??
@@ -391,6 +409,13 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
 
     return [1]
   }, [payment?.allowed_installments, paymentInstallments])
+  const availablePaymentOptions = payment?.available_payment_options ?? []
+  const canSelectPaymentOption =
+    availablePaymentOptions.length > 1 &&
+    payment?.can_change_payment_option === true &&
+    !isPaid &&
+    !isAdvancePaymentFlow &&
+    !cycleNumber
 
   useEffect(() => {
     if (!profileData) return
@@ -507,10 +532,90 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     }
   }, [form, payment, selectedInstallments])
 
+  const handlePaymentOptionChange = async (billingOptionCode: string) => {
+    if (
+      !payment ||
+      billingOptionCode === payment.billing_option_code ||
+      !canChangePaymentOption
+    ) {
+      return
+    }
+    const option = availablePaymentOptions.find((item) => item.code === billingOptionCode)
+    if (!option) return
+
+    setIsChangingPaymentOption(true)
+    setSuccessResult(null)
+    setTokenizationReady(false)
+    try {
+      const nextPayment = await changePaymentOption(orderId, {
+        billing_option_code: option.code,
+        installments:
+          option.billing_method === 'credit_card'
+            ? option.allowed_installments[0] ?? 1
+            : 1,
+      })
+      await mutatePayment(nextPayment, { revalidate: false })
+      await Promise.all([
+        mutatePaymentStatus(),
+        mutatePaymentConfig(),
+      ])
+      toast.success(
+        option.billing_method === 'pix'
+          ? 'Forma de pagamento alterada para Pix.'
+          : 'Forma de pagamento alterada para cartão de crédito.'
+      )
+    } catch (changeError) {
+      toast.error(
+        changeError instanceof Error
+          ? changeError.message
+          : 'Não foi possível alterar a forma de pagamento.'
+      )
+    } finally {
+      setIsChangingPaymentOption(false)
+    }
+  }
+
+  const handleGeneratePixPayment = async () => {
+    if (!payment || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await startPayment(payment.order_id, {
+        holder_is_customer: true,
+        installments: 1,
+        accept_contract: true,
+      })
+      await Promise.all([mutatePayment(), mutatePaymentStatus()])
+      toast.success('Cobrança Pix gerada com sucesso.')
+    } catch (pixError) {
+      toast.error(
+        pixError instanceof Error
+          ? pixError.message
+          : 'Não foi possível gerar a cobrança Pix.'
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handleSubmit = async () => {
     if (!payment || !paymentPayload) return
 
-    const validationErrors = validateForm(payment, form, !isAdvancePaymentFlow)
+    if (isLoadingPaymentConfig) {
+      toast.error('A configuração do gateway de pagamento ainda está carregando.')
+      return
+    }
+    if (paymentConfigError || !paymentConfig) {
+      toast.error(
+        paymentConfigError instanceof Error
+          ? paymentConfigError.message
+          : 'Não foi possível carregar a configuração do gateway de pagamento.'
+      )
+      return
+    }
+
+    const validationErrors = usesAbacatePay
+      ? {}
+      : validateForm(payment, form, !isAdvancePaymentFlow)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       toast.error('Revise os dados do pagamento.')
@@ -520,18 +625,38 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
     setIsSubmitting(true)
 
     try {
+      let submittedPayload = paymentPayload
+      if (usesAbacatePay) {
+        if (!tokenizationReady || !profileData || !paymentConfig?.public_key) {
+          throw new Error('O formulário seguro do cartão ainda não está pronto.')
+        }
+        const cardToken = await abacatePayRef.current?.tokenize({
+          name: `${profileData.user.first_name} ${profileData.user.last_name}`.trim(),
+          email: profileData.user.email,
+          taxId: profileData.user.cpf,
+        })
+        if (!cardToken) throw new Error('Não foi possível tokenizar o cartão.')
+        submittedPayload = {
+          holder_is_customer: true,
+          card_token: cardToken,
+          installments: Number(selectedInstallments) || 1,
+          accept_contract: true,
+        }
+      }
       setSubmittedCardBrand(cardBrand)
       if (isAdvancePaymentFlow) {
         const response = await advancePayment(payment.order_id, {
           cycle_numbers: advanceCycleNumbers,
           billing_method: 'credit_card',
-          ...(paymentPayload.holder ? { holder: paymentPayload.holder } : {}),
-          holder_is_customer: paymentPayload.holder_is_customer,
-          credit_card: paymentPayload.credit_card,
+          ...(submittedPayload.holder ? { holder: submittedPayload.holder } : {}),
+          holder_is_customer: submittedPayload.holder_is_customer,
+          ...(submittedPayload.card_token
+            ? { card_token: submittedPayload.card_token }
+            : { credit_card: submittedPayload.credit_card }),
         })
         setAdvanceResult(response)
       } else {
-        const response = await startPayment(payment.order_id, paymentPayload)
+        const response = await startPayment(payment.order_id, submittedPayload)
         setSuccessResult(response)
       }
       toast.success('Pagamento processado com sucesso.')
@@ -667,6 +792,49 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
             )}
           </div>
         </div>
+
+        {payment && availablePaymentOptions.length > 1 && !isAdvancePaymentFlow && !cycleNumber && (
+          <div className="mt-6 rounded-2xl border border-border/60 bg-muted/20 p-4">
+            <div className="grid gap-3 md:grid-cols-[1fr_320px] md:items-center">
+              <div>
+                <Label htmlFor="payment-option" className="text-sm font-semibold">
+                  Forma de pagamento
+                </Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Escolha uma das formas de pagamento disponíveis para esta oferta.
+                </p>
+              </div>
+              <Select
+                value={payment.billing_option_code ?? undefined}
+                onValueChange={handlePaymentOptionChange}
+                disabled={!canSelectPaymentOption || isChangingPaymentOption}
+              >
+                <SelectTrigger id="payment-option" className="h-11 bg-background">
+                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePaymentOptions.map((option) => (
+                    <SelectItem key={option.code} value={option.code}>
+                      {option.billing_method === 'pix' ? 'Pix' : 'Cartão de crédito'} ·{' '}
+                      {formatCurrency(option.price)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {isChangingPaymentOption && (
+              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Atualizando forma de pagamento e gateway
+              </p>
+            )}
+            {!payment.can_change_payment_option && payment.payment_option_change_blocked_reason && (
+              <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+                {payment.payment_option_change_blocked_reason}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
@@ -813,7 +981,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                 <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
                   <p className="text-xs text-muted-foreground">Cobrado agora</p>
                   <p className="mt-1 text-xl font-semibold">
-                    {formatCurrency(successResult.raw.value)}
+                    {formatCurrency(paymentValue)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
@@ -821,6 +989,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                   <div className="mt-2">
                     <CardBrandLogo
                       brand={
+                        successResult.card_brand ??
                         successResult.raw.creditCard?.creditCardBrand ??
                         submittedCardBrand ??
                         cardBrand
@@ -831,12 +1000,14 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                 <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
                   <p className="text-xs text-muted-foreground">Cartão final</p>
                   <p className="mt-1 text-base font-semibold">
-                    **** {successResult.raw.creditCard?.creditCardNumber ?? '----'}
+                    **** {successResult.card_last4 ?? successResult.raw.creditCard?.creditCardNumber ?? '----'}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-left">
                   <p className="text-xs text-muted-foreground">Status do gateway</p>
-                  <p className="mt-1 text-base font-semibold">{successResult.raw.status}</p>
+                  <p className="mt-1 text-base font-semibold">
+                    {successResult.gateway_status ?? successResult.raw.status}
+                  </p>
                 </div>
               </div>
 
@@ -983,6 +1154,32 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
               </div>
 
               <div className="space-y-6 px-6 py-6">
+                {isLoadingPaymentConfig ? (
+                  <div className="flex items-center justify-center gap-2 rounded-xl border border-border/60 p-6 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando formulário seguro de pagamento
+                  </div>
+                ) : paymentConfigError || !paymentConfig ? (
+                  <p className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                    {paymentConfigError instanceof Error
+                      ? paymentConfigError.message
+                      : 'Não foi possível carregar a configuração do gateway de pagamento. Atualize a página e tente novamente.'}
+                  </p>
+                ) : usesAbacatePay ? (
+                  paymentConfig?.public_key ? (
+                    <AbacatePayCardFields
+                      ref={abacatePayRef}
+                      publicKey={paymentConfig.public_key}
+                      amount={Math.round(Number(paymentValue ?? 0) * 100)}
+                      scriptUrl={paymentConfig.card_script_url ?? 'https://abacatepay.com/abacatepay.js'}
+                      onReadyChange={setTokenizationReady}
+                    />
+                  ) : (
+                    <p className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                      A chave pública da AbacatePay não está configurada.
+                    </p>
+                  )
+                ) : (
                 <div className="payment-fields grid gap-4 md:grid-cols-2">
                   <div className="field-animate md:col-span-2">
                     <Label htmlFor="cardName">Nome no cartão</Label>
@@ -1050,8 +1247,9 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                     {errors.cvv && <p className="mt-1 text-xs text-destructive">{errors.cvv}</p>}
                   </div>
                 </div>
+                )}
 
-                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+                {paymentConfig?.gateway === 'asaas' && <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="holderIsCustomer"
@@ -1149,7 +1347,7 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
 
                 <div className="rounded-2xl border border-border/60 bg-background p-4">
                   <div className="grid gap-4 md:grid-cols-[1fr_240px] md:items-end">
@@ -1186,7 +1384,13 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
                   <Button
                     className="mt-4 h-11 w-full"
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={
+                      isSubmitting ||
+                      isLoadingPaymentConfig ||
+                      !paymentConfig ||
+                      Boolean(paymentConfigError) ||
+                      (usesAbacatePay && (!tokenizationReady || loadingProfile))
+                    }
                   >
                     {isSubmitting ? (
                       <>
@@ -1353,10 +1557,29 @@ export default function PaymentDetailsPage({ params }: PaymentDetailsPageProps) 
           ) : (
             <div className="rounded-xl border border-dashed border-border/60 p-6 text-center">
               <Receipt className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-              <p className="text-sm font-medium">Visualização disponível em breve</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Este pedido ainda não tem conteúdo detalhado de cobrança para exibir.
+              <p className="text-sm font-medium">
+                {isPixPayment ? 'Cobrança Pix ainda não gerada' : 'Visualização disponível em breve'}
               </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {isPixPayment
+                  ? 'Gere a cobrança para receber o QR Code e o código Pix copia e cola.'
+                  : 'Este pedido ainda não tem conteúdo detalhado de cobrança para exibir.'}
+              </p>
+              {isPixPayment && payment && !isAdvancePaymentFlow && (
+                <Button
+                  type="button"
+                  className="mt-4"
+                  onClick={handleGeneratePixPayment}
+                  disabled={isSubmitting || isChangingPaymentOption}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <QrCode className="h-4 w-4" />
+                  )}
+                  Gerar cobrança Pix
+                </Button>
+              )}
             </div>
           )}
         </Card>

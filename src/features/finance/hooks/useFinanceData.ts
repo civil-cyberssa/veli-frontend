@@ -9,10 +9,12 @@ import type {
   AvailableOffer,
   CreateOrderPayload,
   CreateOrderResponse,
+  ChangePaymentOptionPayload,
   CouponPreview,
   CurrentContractedOfferResponse,
   PendingPayment,
   PaymentStatusResponse,
+  PaymentGatewayConfig,
   SimpleLanguage,
   StartPaymentPayload,
   StartPaymentResponse,
@@ -29,7 +31,16 @@ const fetcher = async <T,>(url: string, token: string): Promise<T> => {
   })
 
   if (!response.ok) {
-    throw new Error(`Erro ao buscar dados financeiros: ${response.status}`)
+    const payload = await response.json().catch(() => null)
+    const detail =
+      payload && typeof payload === 'object' && 'detail' in payload
+        ? payload.detail
+        : null
+    throw new Error(
+      typeof detail === 'string' && detail
+        ? detail
+        : `Erro ao buscar dados financeiros: ${response.status}`
+    )
   }
 
   return response.json()
@@ -159,6 +170,68 @@ export function usePendingPayment(orderId: number | null) {
     error: error ?? null,
     isLoading,
     mutate,
+  }
+}
+
+export function usePaymentGatewayConfig(orderId?: number | null) {
+  const { data: session, status } = useSession()
+  const { data, error, isLoading, mutate } = useSWR<PaymentGatewayConfig>(
+    status === 'authenticated' && session?.access
+      ? [
+          `${process.env.NEXT_PUBLIC_API_URL}/student-portal/payments/config${orderId ? `?order_id=${orderId}` : ''}`,
+          session.access,
+        ]
+      : null,
+    ([url, token]: [string, string]) => fetcher<PaymentGatewayConfig>(url, token),
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  )
+
+  return { data, error: error ?? null, isLoading, mutate }
+}
+
+export function useChangePaymentOption() {
+  const { data: session } = useSession()
+
+  const changePaymentOption = useCallback(async (
+    orderId: number,
+    payload: ChangePaymentOptionPayload
+  ) => {
+    if (!session?.access) {
+      throw new Error('Sessão inválida para alterar a forma de pagamento.')
+    }
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/student-portal/pending-payments/${orderId}/`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      const detail = errorData?.detail
+      const fieldMessage = Object.values(errorData ?? {}).find(
+        (value) => Array.isArray(value) && typeof value[0] === 'string'
+      ) as string[] | undefined
+      throw new Error(
+        typeof detail === 'string'
+          ? detail
+          : fieldMessage?.[0] ?? `Erro ao alterar a forma de pagamento: ${response.status}`
+      )
+    }
+
+    return response.json() as Promise<PendingPayment>
+  }, [session?.access])
+
+  return {
+    changePaymentOption,
+    isReady: Boolean(session?.access),
   }
 }
 

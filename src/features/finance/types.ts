@@ -179,12 +179,30 @@ export interface PendingPayment {
   contract_acceptance_status: string
   payment_mode: string
   payment_type: string
+  billing_option_code: string | null
+  available_payment_options: PaymentOption[]
+  can_change_payment_option: boolean
+  payment_option_change_blocked_reason: string | null
   current_period_start: string
   current_period_end: string
   contract: ContractSummary | null
   billing_subscription: BillingSubscription | null
   latest_charge: LatestCharge | null
   payment_cycles?: PaymentCycle[]
+}
+
+export interface PaymentOption {
+  code: string
+  billing_method: 'pix' | 'credit_card'
+  type: 'one_time' | 'recurring'
+  cycle: 'none' | 'monthly'
+  price: string
+  allowed_installments: number[]
+}
+
+export interface ChangePaymentOptionPayload {
+  billing_option_code: string
+  installments?: number
 }
 
 export interface PaymentHolderPayload {
@@ -205,7 +223,8 @@ export interface CreditCardPayload {
 export interface StartPaymentPayload {
   holder?: PaymentHolderPayload
   holder_is_customer: boolean
-  credit_card: CreditCardPayload
+  credit_card?: CreditCardPayload
+  card_token?: string
   installments: number
   accept_contract: boolean
 }
@@ -216,6 +235,15 @@ export interface AdvancePaymentPayload {
   holder_is_customer?: boolean
   holder?: PaymentHolderPayload
   credit_card?: CreditCardPayload
+  card_token?: string
+}
+
+export interface PaymentGatewayConfig {
+  gateway: 'abacatepay' | 'asaas'
+  methods: Array<'pix' | 'credit_card'>
+  capabilities: string[]
+  public_key?: string
+  card_script_url?: string
 }
 
 export interface AdvancePaymentResponse {
@@ -306,6 +334,11 @@ export interface StartPaymentResponse {
   mode: string
   charge_id: number
   gateway_charge_id: string
+  gateway?: 'abacatepay' | 'asaas'
+  gateway_status?: string
+  payment_status?: string
+  card_brand?: string | null
+  card_last4?: string | null
   pix_qr_code: string | null
   pix_copy_paste: string | null
   raw: PaymentGatewayResponseRaw
