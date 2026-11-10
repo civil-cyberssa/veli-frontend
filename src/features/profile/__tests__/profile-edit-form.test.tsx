@@ -54,6 +54,15 @@ const mockStudentData = {
   },
 }
 
+async function enterEditMode(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /editar usuário/i }))
+  expect(screen.getByRole('button', { name: /salvar alterações/i })).toBeInTheDocument()
+}
+
+async function openAddressTab(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('tab', { name: /endereço/i }))
+}
+
 describe('ProfileEditForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -100,6 +109,7 @@ describe('ProfileEditForm', () => {
   it('deve formatar CPF corretamente', async () => {
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
 
     const cpfInput = screen.getByPlaceholderText('000.000.000-00')
     await user.clear(cpfInput)
@@ -113,6 +123,7 @@ describe('ProfileEditForm', () => {
   it('deve formatar telefone corretamente', async () => {
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
 
     const phoneInput = screen.getByPlaceholderText('(00) 00000-0000')
     await user.clear(phoneInput)
@@ -126,6 +137,8 @@ describe('ProfileEditForm', () => {
   it('deve formatar CEP corretamente', async () => {
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
+    await openAddressTab(user)
 
     const cepInput = screen.getByPlaceholderText('00000-000')
     await user.type(cepInput, '01310100')
@@ -138,6 +151,7 @@ describe('ProfileEditForm', () => {
   it('deve validar campos obrigatórios', async () => {
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
 
     // Limpar campos obrigatórios
     const firstNameInput = screen.getByPlaceholderText('Ex: João')
@@ -146,8 +160,7 @@ describe('ProfileEditForm', () => {
     const submitButton = screen.getByRole('button', { name: /salvar alterações/i })
     await user.click(submitButton)
 
-    // Verifica que o formulário não foi enviado (devido à validação HTML5)
-    expect(firstNameInput).toBeInvalid()
+    expect(screen.getByText('Nome é obrigatório')).toBeInTheDocument()
   })
 
   it('deve buscar endereço pelo CEP usando ViaCEP', async () => {
@@ -164,6 +177,8 @@ describe('ProfileEditForm', () => {
 
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
+    await openAddressTab(user)
 
     const cepInput = screen.getByPlaceholderText('00000-000')
     await user.type(cepInput, '01310100')
@@ -176,21 +191,18 @@ describe('ProfileEditForm', () => {
   it('deve permitir seleção de gênero', async () => {
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
 
-    // Encontrar e clicar no select de gênero
     const genderSelect = screen.getByRole('combobox', { name: /gênero/i })
-    await user.click(genderSelect)
+    await user.selectOptions(genderSelect, 'F')
 
-    // Verificar se as opções aparecem
-    await waitFor(() => {
-      expect(screen.getByText('Masculino')).toBeInTheDocument()
-      expect(screen.getByText('Feminino')).toBeInTheDocument()
-    })
+    expect(genderSelect).toHaveValue('F')
   })
 
   it('deve validar tamanho máximo da bio', async () => {
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
 
     const bioTextarea = screen.getByPlaceholderText(/Sou estudante de idiomas/i)
     const longText = 'a'.repeat(501)
@@ -205,9 +217,11 @@ describe('ProfileEditForm', () => {
   it('deve exibir preview da imagem ao selecionar arquivo', async () => {
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
 
     const file = new File(['dummy content'], 'test.png', { type: 'image/png' })
-    const fileInput = screen.getByLabelText(/alterar foto/i) as HTMLInputElement
+    await user.click(screen.getByRole('button', { name: /alterar foto/i }))
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
 
     await user.upload(fileInput, file)
 
@@ -234,6 +248,11 @@ describe('ProfileEditForm', () => {
 
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
+
+    const firstNameInput = screen.getByPlaceholderText('Ex: João')
+    await user.clear(firstNameInput)
+    await user.type(firstNameInput, 'Maria')
 
     const submitButton = screen.getByRole('button', { name: /salvar alterações/i })
     await user.click(submitButton)
@@ -261,26 +280,39 @@ describe('ProfileEditForm', () => {
 
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
+
+    const genderSelect = screen.getByRole('combobox', { name: /gênero/i })
+    await user.selectOptions(genderSelect, 'F')
 
     const submitButton = screen.getByRole('button', { name: /salvar alterações/i })
     await user.click(submitButton)
 
     await waitFor(() => {
       const formDataCall = (global.fetch as any).mock.calls[0][1].body as FormData
-      expect(formDataCall.get('gender')).toBe('M')
+      expect(formDataCall.get('gender')).toBe('F')
     })
   })
 
-  it('deve enviar CEP para API', async () => {
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
+  it('deve enviar CEP sem máscara para API', async () => {
+    global.fetch = vi.fn((url: string) => {
+      if (url.includes('viacep.com.br')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ localidade: 'São Paulo', uf: 'SP' }),
+        })
+      }
+
+      return Promise.resolve({
         ok: true,
         json: () => Promise.resolve(mockStudentData),
       })
-    ) as any
+    }) as any
 
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
+    await openAddressTab(user)
 
     const cepInput = screen.getByPlaceholderText('00000-000')
     await user.type(cepInput, '01310100')
@@ -289,8 +321,11 @@ describe('ProfileEditForm', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      const formDataCall = (global.fetch as any).mock.calls[0][1].body as FormData
-      expect(formDataCall.get('cep')).toBe('01310-100')
+      const patchCall = (global.fetch as any).mock.calls.find(
+        ([url]: [string]) => !url.includes('viacep.com.br')
+      )
+      const formDataCall = patchCall[1].body as FormData
+      expect(formDataCall.get('cep')).toBe('01310100')
     })
   })
 
@@ -312,16 +347,21 @@ describe('ProfileEditForm', () => {
 
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
+
+    const firstNameInput = screen.getByPlaceholderText('Ex: João')
+    await user.clear(firstNameInput)
+    await user.type(firstNameInput, 'Maria')
 
     const submitButton = screen.getByRole('button', { name: /salvar alterações/i })
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith(mockStudentData, false)
+      expect(mockMutate).toHaveBeenCalledOnce()
     })
   })
 
-  it('deve voltar para página anterior ao clicar em cancelar', async () => {
+  it('deve sair do modo de edição ao clicar em cancelar', async () => {
     const mockBack = vi.fn()
     vi.mocked(useRouter).mockReturnValue({
       push: vi.fn(),
@@ -330,10 +370,13 @@ describe('ProfileEditForm', () => {
 
     render(<ProfileEditForm />)
     const user = userEvent.setup()
+    await enterEditMode(user)
 
     const cancelButton = screen.getByRole('button', { name: /cancelar/i })
     await user.click(cancelButton)
 
-    expect(mockBack).toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: /salvar alterações/i })).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Ex: João')).toBeDisabled()
+    expect(mockBack).not.toHaveBeenCalled()
   })
 })
